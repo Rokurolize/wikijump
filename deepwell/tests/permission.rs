@@ -28,14 +28,16 @@ use deepwell::license::License;
 use deepwell::services::category::CategoryService;
 use deepwell::services::forum::{CreateForumCategory, CreateForumGroup, ForumService};
 use deepwell::services::page::{CreatePage, PageService};
+use deepwell::services::page_lock::{CreatePageLockInput, PageLockService};
 use deepwell::services::permission::{
     CheckPermissionContext, DecoratedPermission, PERMISSION_CACHE_FENCE_TTL_SECONDS,
     PERMISSION_CACHE_INVALIDATION_CHANNEL, PERMISSION_CACHE_TTL_SECONDS, PermissionCache,
     PermissionService, PermissionTarget, SetUserPermissionInput,
 };
 use deepwell::services::relation::{
-    CreateSiteBan, CreateSiteMember, RelationService, RemoveSiteMember, SiteBanData,
-    SiteMemberAccepted, SiteMemberData,
+    CreateSiteBan, CreateSiteMember, PageAttributionEntry, PageAttributionKind,
+    PageAttributionMetadata, RelationService, RemoveSiteMember, SetPageAttributions,
+    SiteBanData, SiteMemberAccepted, SiteMemberData,
 };
 use deepwell::services::role::{
     GetRolePermissionsInput, GetUserRolesInput, GrantUserRoleInput,
@@ -45,7 +47,7 @@ use deepwell::services::role::{
 use deepwell::services::site::{CreateSite, SiteService};
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::services::{RequestContext, ServiceContext};
-use deepwell::types::{Action, Permission, Reference, Resource, UserType};
+use deepwell::types::{Action, PageLockType, Permission, Reference, Resource, UserType};
 use futures::StreamExt;
 use redis::AsyncCommands;
 use serde_json::json;
@@ -85,6 +87,7 @@ struct PermissionFixture {
     category_id: i64,
     other_category_id: i64,
     role_a: i64,
+    role_b: i64,
     user_a: i64,
     user_b: i64,
     user_c: i64,
@@ -242,6 +245,7 @@ impl PermissionFixture {
             category_id,
             other_category_id,
             role_a,
+            role_b,
             user_a,
             user_b,
             user_c,
@@ -311,6 +315,56 @@ async fn grant_role(ctx: &ServiceContext<'_>, site_id: i64, user_id: i64, role_i
     )
     .await
     .expect("Failed to grant role to user");
+}
+
+async fn create_page_lock(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    lock_type: PageLockType,
+) {
+    PageLockService::create(
+        runner.context(),
+        site_id,
+        SYSTEM_USER_ID,
+        Reference::Id(page_id),
+        CreatePageLockInput {
+            page: Reference::Id(page_id),
+            expires_at: None,
+            from_wikidot: false,
+            lock_type,
+            reason: Some("edit permission report regression".to_owned()),
+            override_existing: false,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Failed to create page lock fixture");
+}
+
+async fn create_default_page(runner: &TestRunner, fixture: &PermissionFixture) -> i64 {
+    let site = SiteService::get(runner.context(), Reference::Id(fixture.site_id))
+        .await
+        .expect("Failed to get site");
+    PageService::create(
+        runner.context(),
+        CreatePage {
+            site_id: fixture.site_id,
+            wikitext: str!("Main page"),
+            title: str!("Main Page"),
+            alt_title: None,
+            tags: Vec::new(),
+            slug: site.default_page.clone(),
+            layout: None,
+            revision_comments: str!(""),
+            user_id: SYSTEM_USER_ID,
+            bypass_filter: true,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("Failed to create default page")
+    .page_id
 }
 
 async fn revoke_role(ctx: &ServiceContext<'_>, site_id: i64, user_id: i64, role_id: i64) {
@@ -1799,6 +1853,185 @@ async fn check_permission_endpoint() {
         ..Default::default()
     });
     run_endpoint_err!(runner, page_edit_permission);
+}
+
+#[tokio::test]
+async fn page_edit_permission_reports_permission_only_lock() {
+    let mut runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+    create_site_member(runner.context(), f.site_id, f.user_a).await;
+    grant_role(runner.context(), f.site_id, f.user_a, f.role_b).await;
+    grant_role(runner.context(), f.site_id, f.user_d, f.role_a).await;
+    grant_role(runner.context(), f.site_id, f.user_d, f.role_b).await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(f.test_page_id)),
+        ..Default::default()
+    });
+    assert!(
+        run_endpoint!(runner, page_edit_permission).can_edit,
+        "member should keep edit permission before the lock"
+    );
+
+    create_page_lock(
+        &runner,
+        f.site_id,
+        f.test_page_id,
+        PageLockType::PermissionOnly,
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(f.test_page_id)),
+        ..Default::default()
+    });
+    assert!(
+        !run_endpoint!(runner, page_edit_permission).can_edit,
+        "member without bypass should not edit a permission-only locked page"
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_d),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(f.test_page_id)),
+        ..Default::default()
+    });
+    assert!(
+        run_endpoint!(runner, page_edit_permission).can_edit,
+        "bypass holder should edit a permission-only locked page"
+    );
+}
+
+#[tokio::test]
+async fn page_edit_permission_reports_default_page_permission_only_lock() {
+    let mut runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+    create_site_member(runner.context(), f.site_id, f.user_a).await;
+    grant_role(runner.context(), f.site_id, f.user_d, f.role_a).await;
+    let default_page_id = create_default_page(&runner, &f).await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: None,
+        ..Default::default()
+    });
+    assert!(
+        run_endpoint!(runner, page_edit_permission).can_edit,
+        "member should keep edit permission on the default page before the lock"
+    );
+
+    create_page_lock(
+        &runner,
+        f.site_id,
+        default_page_id,
+        PageLockType::PermissionOnly,
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: None,
+        ..Default::default()
+    });
+    assert!(
+        !run_endpoint!(runner, page_edit_permission).can_edit,
+        "member without bypass should not edit the locked default page"
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_d),
+        site_id: Some(f.site_id),
+        page_reference: None,
+        ..Default::default()
+    });
+    assert!(
+        run_endpoint!(runner, page_edit_permission).can_edit,
+        "bypass holder should edit the locked default page"
+    );
+}
+
+#[tokio::test]
+async fn page_edit_permission_reports_author_or_permission_only_lock() {
+    let mut runner = TestRunner::setup().await;
+    let f = PermissionFixture::setup(&runner).await;
+    create_site_member(runner.context(), f.site_id, f.user_a).await;
+    create_site_member(runner.context(), f.site_id, f.user_b).await;
+    grant_role(runner.context(), f.site_id, f.user_a, f.role_b).await;
+    RelationService::set_page_attributions(
+        runner.context(),
+        SetPageAttributions {
+            site_id: f.site_id,
+            page: Reference::Id(f.test_page_id),
+            updated_by: SYSTEM_USER_ID,
+            attributions: vec![PageAttributionEntry {
+                user_id: f.user_a,
+                metadata: PageAttributionMetadata {
+                    attribution_type: PageAttributionKind::Author,
+                    attribution_date: Date::from_calendar_date(2026, Month::November, 26)
+                        .expect("fixture attribution date should be valid"),
+                },
+            }],
+        },
+    )
+    .await
+    .expect("Failed to create page author fixture");
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(f.test_page_id)),
+        ..Default::default()
+    });
+    assert!(
+        run_endpoint!(runner, page_edit_permission).can_edit,
+        "author should keep edit permission before the lock"
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_b),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(f.test_page_id)),
+        ..Default::default()
+    });
+    assert!(
+        run_endpoint!(runner, page_edit_permission).can_edit,
+        "non-author member should have base edit permission before the lock"
+    );
+
+    create_page_lock(
+        &runner,
+        f.site_id,
+        f.test_page_id,
+        PageLockType::AuthorOrPermissionOnly,
+    )
+    .await;
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_a),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(f.test_page_id)),
+        ..Default::default()
+    });
+    assert!(
+        run_endpoint!(runner, page_edit_permission).can_edit,
+        "page author should edit an author-or-permission locked page"
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(f.user_b),
+        site_id: Some(f.site_id),
+        page_reference: Some(Reference::Id(f.test_page_id)),
+        ..Default::default()
+    });
+    assert!(
+        !run_endpoint!(runner, page_edit_permission).can_edit,
+        "non-author member should not edit an author-or-permission locked page"
+    );
 }
 
 #[tokio::test]
