@@ -81,6 +81,7 @@ async fn create_viewing_user(ctx: &ServiceContext<'_>, site_id: i64, tag: &str) 
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role_id),
+            expected_role_revision: 0,
             new_permissions: vec![Permission {
                 resource_type: Resource::Page,
                 resource_category: None,

@@ -4,6 +4,7 @@ import {
   isInvalidSessionTokenError,
   isPageEditLockConflictError,
   isPageEditLockMissingError,
+  isRoleRevisionConflictError,
   isUserRevisionConflictError
 } from "../deepwell/public-error.ts"
 import type { JsonValue } from "$lib/types"
@@ -115,7 +116,8 @@ export function failForActionError(
               ? 403
               : isPageEditLockConflictError(error) ||
                   isPageEditLockMissingError(error) ||
-                  isUserRevisionConflictError(error)
+                  isUserRevisionConflictError(error) ||
+                  isRoleRevisionConflictError(error)
                 ? 409
                 : fallbackStatus
   return fail(

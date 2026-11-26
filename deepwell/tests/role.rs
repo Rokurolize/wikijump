@@ -45,13 +45,15 @@ use self::common::TestRunner;
 use deepwell::constants::SYSTEM_USER_ID;
 use deepwell::error::prelude::*;
 use deepwell::license::License;
+use deepwell::models::audit_log::{self, Entity as AuditLog};
 use deepwell::models::role::Model as RoleModel;
 use deepwell::services::SessionService;
 use deepwell::services::page::{CreatePage, PageService};
 use deepwell::services::site::{CreateSite, SiteService};
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::types::{Action, Permission, Reference, RelationType, Resource, UserType};
-use serde_json::json;
+use sea_orm::{ColumnTrait, EntityTrait, QueryFilter, QueryOrder};
+use serde_json::{Value as JsonValue, json};
 use std::borrow::Cow;
 
 static FIXTURE_COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -514,6 +516,7 @@ async fn grant_role_management(runner: &TestRunner, site_id: i64, user_id: i64, 
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: vec![
                 Permission {
                     resource_type: Resource::Role,
@@ -582,12 +585,18 @@ async fn set_role_perms(
         .iter()
         .map(|a| json!({ "resource_type": "page", "resource_category": null, "action": a }))
         .collect();
+    let expected_role_revision =
+        RoleService::get(runner.context(), site_id, role_id.into())
+            .await
+            .expect("role revision should load")
+            .revision;
     run_endpoint!(
         runner,
         role_update_permissions,
         json!({
             "site_id": site_id,
             "role_reference": role_id,
+            "expected_role_revision": expected_role_revision,
             "new_permissions": permissions,
             "cascade_removals": cascade,
             "updating_user_id": SYSTEM_USER_ID,
@@ -682,6 +691,7 @@ async fn role_update_info() {
         json!({
             "site_id": f.site_id,
             "role_id": role.role_id,
+            "expected_role_revision": role.revision,
             "name": "NewName",
             "description": "New description",
             "updating_user_id": SYSTEM_USER_ID,
@@ -724,6 +734,7 @@ async fn role_mutations_require_request_actor_with_role_edit_permission() {
         json!({
             "site_id": f.site_id,
             "role_id": root_role.role_id,
+            "expected_role_revision": root_role.revision,
             "name": "AnonymousRename",
             "description": "Anonymous rename",
             "updating_user_id": SYSTEM_USER_ID,
@@ -759,6 +770,7 @@ async fn role_mutations_require_request_actor_with_role_edit_permission() {
         json!({
             "site_id": f.site_id,
             "role_reference": root_role.role_id,
+            "expected_role_revision": root_role.revision,
             "new_permissions": [
                 { "resource_type": "page", "resource_category": null, "action": "view" },
             ],
@@ -809,6 +821,143 @@ async fn role_mutations_require_request_actor_with_role_edit_permission() {
 }
 
 #[tokio::test]
+async fn role_update_permissions_revision_guard_serializes_stale_writes() {
+    let mut runner = TestRunner::setup().await;
+    let RoleFixture {
+        user_id, site_id, ..
+    } = RoleFixture::setup(&mut runner).await;
+    let role = RoleService::create(
+        runner.context(),
+        InternalCreateRoleInput {
+            site_id,
+            name: str!("revision guarded role"),
+            description: None,
+            is_virtual: false,
+            parent_role_id: None,
+            creating_user_id: SYSTEM_USER_ID,
+            ip_address: common::IP_ADDRESS,
+        },
+    )
+    .await
+    .expect("revision guarded role should be created");
+    runner.set_request_context(RequestContext {
+        user_id: Some(user_id),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+
+    let role_id = role.role_id;
+    let view =
+        json!({"resource_type": "page", "resource_category": null, "action": "view"});
+    let edit =
+        json!({"resource_type": "page", "resource_category": null, "action": "edit"});
+    let permission_params = |expected_role_revision: i64, permissions: Vec<JsonValue>| {
+        json!({
+            "site_id": site_id,
+            "role_reference": role_id,
+            "expected_role_revision": expected_role_revision,
+            "new_permissions": permissions,
+            "cascade_removals": false,
+            "updating_user_id": SYSTEM_USER_ID,
+            "ip_address": common::IP_ADDRESS,
+        })
+    };
+    let read_actions = || async {
+        let permissions = run_endpoint!(
+            runner,
+            get_role_permissions,
+            json!({
+                "site_id": site_id,
+                "role_reference": role_id,
+                "human_readable_categories": false,
+            }),
+        );
+        let mut actions: Vec<String> = permissions
+            .iter()
+            .map(|permission| permission.action.to_string())
+            .collect();
+        actions.sort();
+        actions
+    };
+    let audit_actions = || async {
+        let rows = AuditLog::find()
+            .filter(audit_log::Column::EventType.eq("role.update_permissions"))
+            .filter(audit_log::Column::ExtraId1.eq(role_id))
+            .order_by_asc(audit_log::Column::EventId)
+            .all(runner.context().transaction())
+            .await
+            .expect("permission audit rows should load");
+        rows.iter()
+            .map(|row| {
+                let parse = |value: &Option<String>| {
+                    let mut actions: Vec<String> =
+                        serde_json::from_str::<Vec<JsonValue>>(
+                            value.as_deref().unwrap_or("[]"),
+                        )
+                        .expect("audit permission data should parse")
+                        .iter()
+                        .map(|permission| {
+                            permission["action"]
+                                .as_str()
+                                .expect("audit permission action should be a string")
+                                .to_string()
+                        })
+                        .collect();
+                    actions.sort();
+                    actions
+                };
+                (parse(&row.extra_string_1), parse(&row.extra_string_2))
+            })
+            .collect::<Vec<_>>()
+    };
+
+    run_endpoint!(
+        runner,
+        role_update_permissions,
+        permission_params(role.revision, vec![view.clone()]),
+    );
+    assert_eq!(read_actions().await, vec![str!("view")]);
+    assert_eq!(
+        audit_actions().await,
+        vec![(Vec::<String>::new(), vec![str!("view")])]
+    );
+
+    let stale = run_endpoint_err!(
+        runner,
+        role_update_permissions,
+        permission_params(role.revision, vec![edit.clone()]),
+    );
+    assert_contains_error!(
+        stale,
+        ErrorType::RoleRevisionConflict {
+            expected_revision: 0,
+            current_revision: 1,
+        }
+    );
+    assert_eq!(read_actions().await, vec![str!("view")]);
+    assert_eq!(audit_actions().await.len(), 1);
+
+    let reloaded_revision = RoleService::get(runner.context(), site_id, role_id.into())
+        .await
+        .expect("role should reload after the refused stale write")
+        .revision;
+    assert_eq!(reloaded_revision, 1);
+    run_endpoint!(
+        runner,
+        role_update_permissions,
+        permission_params(reloaded_revision, vec![view.clone(), edit.clone()]),
+    );
+    assert_eq!(read_actions().await, vec![str!("edit"), str!("view")]);
+    assert_eq!(
+        audit_actions().await,
+        vec![
+            (Vec::<String>::new(), vec![str!("view")]),
+            (vec![str!("view")], vec![str!("edit"), str!("view")]),
+        ]
+    );
+}
+
+#[tokio::test]
 async fn role_update_permissions_respect_hierarchy() {
     let mut runner = TestRunner::setup().await;
     let f = RoleFixture::setup(&mut runner).await;
@@ -834,6 +983,7 @@ async fn role_update_permissions_respect_hierarchy() {
         json!({
             "site_id": f.site_id,
             "role_reference": child.role_id,
+            "expected_role_revision": child.revision + 1,
             "new_permissions": [
                 { "resource_type": "page", "resource_category": null, "action": "view" },
                 { "resource_type": "page", "resource_category": null, "action": "create" },
@@ -854,6 +1004,7 @@ async fn role_update_permissions_respect_hierarchy() {
         json!({
             "site_id": f.site_id,
             "role_reference": parent.role_id,
+            "expected_role_revision": parent.revision + 1,
             "new_permissions": [
                 { "resource_type": "page", "resource_category": null, "action": "edit" },
             ],

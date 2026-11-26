@@ -103,6 +103,7 @@ async fn create_registered_rate_page(
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: vec![
                 Permission {
                     resource_type: Resource::Site,

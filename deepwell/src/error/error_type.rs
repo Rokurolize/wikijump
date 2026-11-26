@@ -157,6 +157,10 @@ pub enum ErrorType {
         role_id: i64,
         parent_role_id: i64,
     },
+    RoleRevisionConflict {
+        expected_revision: i64,
+        current_revision: i64,
+    },
     DeleteRoleWithChildren,
 
     BadRequest,
@@ -426,6 +430,7 @@ impl ErrorType {
             ErrorType::CyclicRoleViolation { .. } => 3107,
             ErrorType::RoleHierarchyViolation { .. } => 3108,
             ErrorType::DeleteRoleWithChildren => 3109,
+            ErrorType::RoleRevisionConflict { .. } => 3110,
 
             ErrorType::BadRequest => 4000,
 
@@ -650,6 +655,9 @@ impl ErrorType {
             ErrorType::RoleHierarchyViolation { .. } => {
                 "Role permission set violates hierarchy constraints"
             }
+            ErrorType::RoleRevisionConflict { .. } => {
+                "The role changed since this edit was loaded"
+            }
             ErrorType::DeleteRoleWithChildren => {
                 "Cannot delete a role which has child roles, you must reparent or delete the child roles first"
             }
@@ -853,6 +861,13 @@ impl ErrorType {
                 "actual": actual,
             }),
             ErrorType::BlobBlacklisted(bytes) => json!(*blob_hash_to_hex(bytes)),
+            ErrorType::RoleRevisionConflict {
+                expected_revision,
+                current_revision,
+            } => json!({
+                "expected_revision": expected_revision,
+                "current_revision": current_revision,
+            }),
             ErrorType::CyclicRoleViolation {
                 role_id,
                 parent_role_id,
@@ -1011,6 +1026,13 @@ mod tests {
                 3108,
             ),
             (ErrorType::DeleteRoleWithChildren, 3109),
+            (
+                ErrorType::RoleRevisionConflict {
+                    expected_revision: 2,
+                    current_revision: 3,
+                },
+                3110,
+            ),
             (ErrorType::BadRequest, 4000),
             (ErrorType::UserNameTooShort, 4100),
             (ErrorType::UserSlugEmpty, 4101),
@@ -1229,6 +1251,17 @@ mod tests {
             json!({
                 "expected_revision": 2,
                 "current_revision": 3,
+            }),
+        );
+        assert_eq!(
+            ErrorType::RoleRevisionConflict {
+                expected_revision: 4,
+                current_revision: 5,
+            }
+            .data(),
+            json!({
+                "expected_revision": 4,
+                "current_revision": 5,
             }),
         );
         assert_eq!(

@@ -64,6 +64,7 @@ async fn grant_page_lock_permissions(
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: [
                 Permission {
                     resource_type: Resource::Page,

@@ -23,6 +23,7 @@ const role = {
   from_wikidot: false,
   is_virtual: false,
   parent_role_id: null,
+  revision: 3,
   created_at: "2026-01-02T03:04:05Z",
   updated_at: null,
   deleted_at: null
@@ -270,6 +271,10 @@ test("admin surfaces load from the real domain and role endpoints", async () => 
   assert.match(rolesBody, /page:null:view|page:\*:view/u)
   assert.match(rolesBody, /\?\/roleCreate/u)
   assert.match(rolesBody, /\?\/rolePermissions/u)
+  assert.equal(
+    (rolesBody.match(/name="expectedRoleRevision"[^>]*value="3"/g) ?? []).length,
+    2
+  )
 
   const blocksBody = render(blocksComponent, {
     props: { data },
@@ -375,6 +380,7 @@ test("role actions use real endpoints with session attribution", async () => {
     actionEvent("roleUpdateInfo", {
       siteId,
       roleId: role.role_id,
+      expectedRoleRevision: role.revision,
       name: "Senior moderator",
       description: "Updated description"
     })
@@ -385,6 +391,7 @@ test("role actions use real endpoints with session attribution", async () => {
     params: {
       site_id: siteId,
       role_id: role.role_id,
+      expected_role_revision: role.revision,
       name: "Senior moderator",
       description: "Updated description",
       updating_user_id: 41,
@@ -415,6 +422,7 @@ test("role actions use real endpoints with session attribution", async () => {
     actionEvent("rolePermissions", {
       siteId,
       roleId: role.role_id,
+      expectedRoleRevision: role.revision,
       permissions: JSON.stringify([decoratedPermission.permission])
     })
   )
@@ -424,6 +432,7 @@ test("role actions use real endpoints with session attribution", async () => {
     params: {
       site_id: siteId,
       role_reference: role.role_id,
+      expected_role_revision: role.revision,
       new_permissions: [decoratedPermission.permission],
       cascade_removals: true,
       updating_user_id: 41,
@@ -443,6 +452,39 @@ test("role actions use real endpoints with session attribution", async () => {
   )
   assert.equal(denied.status, 403)
   assert.deepEqual(calls, [])
+})
+
+test("role writes reject a missing revision before reaching deepwell", async () => {
+  const calls: any[] = []
+  installRpcMock(calls)
+  const permissions = await actions.rolePermissionsUpdateAction(
+    actionEvent("rolePermissions", {
+      siteId,
+      roleId: role.role_id,
+      permissions: JSON.stringify([decoratedPermission.permission])
+    })
+  )
+  assert.equal(permissions.status, 400)
+  assert.equal(permissions.data.message, "Missing role revision.")
+  assert.equal(
+    calls.some((call) => call.method === "role_update_permissions"),
+    false
+  )
+
+  calls.length = 0
+  const renamed = await actions.roleUpdateInfoAction(
+    actionEvent("roleUpdateInfo", {
+      siteId,
+      roleId: role.role_id,
+      name: "Senior moderator",
+      description: "Updated description"
+    })
+  )
+  assert.equal(renamed.status, 400)
+  assert.equal(
+    calls.some((call) => call.method === "role_update_info"),
+    false
+  )
 })
 
 test("block actions use the site ban endpoints with matching actor and IP", async () => {

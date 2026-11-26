@@ -301,6 +301,7 @@ async fn random_listpages_rechecks_actor_visibility_and_deleted_candidates() {
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(viewer_role.role_id),
+            expected_role_revision: viewer_role.revision,
             new_permissions: vec![Permission {
                 resource_type: Resource::Page,
                 resource_category: Some(Reference::Id(category_id)),

@@ -333,6 +333,7 @@ async fn lifecycle_membership_blocking_and_audit() {
         UpdateRolePermissionsInput {
             site_id: other_site_id,
             role_reference: Reference::Id(manager_role.role_id),
+            expected_role_revision: manager_role.revision,
             new_permissions: vec![Permission {
                 resource_type: Resource::Role,
                 resource_category: None,
@@ -626,6 +627,7 @@ async fn authorized_manager_can_remove_ban_after_target_is_tombstoned() {
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(manager_role.role_id),
+            expected_role_revision: manager_role.revision,
             new_permissions: vec![
                 Permission {
                     resource_type: Resource::Page,

@@ -185,4 +185,16 @@ test("edit lock failures are conflicts with truthful codes, not server errors", 
     code: 4112,
     data: { expected_revision: 2, current_revision: 3 }
   })
+
+  const roleConflict = failForActionError({
+    message: "The role changed since this edit was loaded",
+    code: 3110,
+    data: { expected_revision: 0, current_revision: 1 }
+  })
+  assert.equal(roleConflict.status, 409)
+  assert.deepEqual(roleConflict.data, {
+    message: "The role changed since this edit was loaded",
+    code: 3110,
+    data: { expected_revision: 0, current_revision: 1 }
+  })
 })

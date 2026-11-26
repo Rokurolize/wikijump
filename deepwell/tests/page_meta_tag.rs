@@ -306,6 +306,7 @@ async fn page_editor_cannot_mutate_site_wide_meta_tags() {
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: vec![Permission {
                 resource_type: Resource::Page,
                 resource_category: Some(Reference::Id(page_model.page_category_id)),

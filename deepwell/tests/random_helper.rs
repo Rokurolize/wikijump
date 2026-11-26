@@ -176,6 +176,7 @@ async fn setup_fixture_site(runner: &mut TestRunner) -> (i64, String) {
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(viewer_role.role_id),
+            expected_role_revision: viewer_role.revision,
             new_permissions: vec![Permission {
                 resource_type: Resource::Page,
                 resource_category: None,
@@ -226,6 +227,7 @@ async fn setup_fixture_site(runner: &mut TestRunner) -> (i64, String) {
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(private_role.role_id),
+            expected_role_revision: private_role.revision,
             new_permissions: vec![Permission {
                 resource_type: Resource::Page,
                 resource_category: Some(Reference::Id(private_category_id)),

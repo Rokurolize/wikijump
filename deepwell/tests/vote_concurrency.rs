@@ -179,6 +179,7 @@ impl VoteContentionFixture {
                 UpdateRolePermissionsInput {
                     site_id: created.site_id,
                     role_reference: Reference::Id(everyone.role_id),
+                    expected_role_revision: everyone.revision,
                     new_permissions: [Action::View]
                         .into_iter()
                         .map(|action| Permission {

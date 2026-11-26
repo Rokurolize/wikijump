@@ -6,7 +6,17 @@
 
   import type { PageProps } from "./$types"
 
-  let { data }: { data: PageProps["data"] } = $props()
+  let { data, actionData = null }: { data: PageProps["data"]; actionData?: unknown } =
+    $props()
+
+  function getRoleActionMessage(actionData: unknown): string | null {
+    if (!actionData || typeof actionData !== "object") return null
+    if (!("roleId" in actionData) || !("message" in actionData)) return null
+    if (!("code" in actionData) || actionData.code !== 3110) return null
+    return typeof actionData.message === "string" ? actionData.message : null
+  }
+
+  let roleActionMessage = $derived(getRoleActionMessage(actionData))
 
   const { form, enhance } = superForm(
     untrack(() => data.roleForm),
@@ -50,6 +60,11 @@
 
 <section id="wikidot-permissions-settings" class="admin-section">
   <div class="page-header"><h2>Permissions</h2></div>
+  {#if roleActionMessage}
+    <div class="wj-error-panel">
+      <p>{roleActionMessage} Reload the admin page and retry.</p>
+    </div>
+  {/if}
   <h3>Create a role</h3>
   {#if data.roles.length === 0}
     <p>No roles are available to use as a parent.</p>
@@ -97,6 +112,7 @@
             <form class="role-details" action="?/roleUpdateInfo" method="POST">
               <input name="siteId" type="hidden" value={data.site.site_id} />
               <input name="roleId" type="hidden" value={role.role_id} />
+              <input name="expectedRoleRevision" type="hidden" value={role.revision} />
               <input name="name" type="text" maxlength="100" value={role.name} />
               <input
                 name="description"
@@ -111,6 +127,7 @@
             <form class="permission-list" action="?/rolePermissions" method="POST">
               <input name="siteId" type="hidden" value={data.site.site_id} />
               <input name="roleId" type="hidden" value={role.role_id} />
+              <input name="expectedRoleRevision" type="hidden" value={role.revision} />
               <input
                 name="permissions"
                 type="hidden"
@@ -148,6 +165,14 @@
 </section>
 
 <style>
+  .wj-error-panel {
+    padding: 0.75rem 1rem;
+    margin-bottom: 1rem;
+    color: #8c2500;
+    background: #fff1ed;
+    border: 1px solid #c4512c;
+  }
+
   .role-list {
     display: grid;
     gap: 1.5rem;

@@ -297,6 +297,7 @@ async fn grant_page_view(runner: &TestRunner, site_id: i64, user_id: i64) {
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role_id),
+            expected_role_revision: 0,
             new_permissions: vec![Permission {
                 resource_type: Resource::Page,
                 resource_category: None,

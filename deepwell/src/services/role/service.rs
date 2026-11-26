@@ -23,7 +23,7 @@ use super::structs::{
     InternalReparentRoleInput, RevokeUserRoleInput, UpdateRoleInput,
 };
 use crate::constants::{ADMIN_USER_ID, SYSTEM_USER_ID};
-use crate::error::prelude::{Result, ResultExt};
+use crate::error::prelude::{OptionExt, Result, ResultExt};
 use crate::error::{Error, ErrorType};
 use crate::models::role::{self, Entity as Role, Model as RoleModel};
 use crate::models::user_role;
@@ -111,6 +111,7 @@ impl RoleService {
         UpdateRoleInput {
             site_id,
             role_id,
+            expected_role_revision,
             name,
             description,
             updating_user_id,
@@ -129,12 +130,25 @@ impl RoleService {
             )
         };
 
-        Self::assert_exists(ctx, site_id, role_id.into())
+        let role = Self::get_for_update(ctx, site_id, role_id.into())
             .await
             .or_raise(make_error)?;
+        if expected_role_revision != role.revision {
+            bail!(Error::new(
+                format!(
+                    "role changed since revision {expected_role_revision}; current revision is {}. Reload the admin page and retry",
+                    role.revision,
+                ),
+                ErrorType::RoleRevisionConflict {
+                    expected_revision: expected_role_revision,
+                    current_revision: role.revision,
+                },
+            ));
+        }
 
         let mut model = role::ActiveModel {
             role_id: Set(role_id),
+            revision: Set(role.revision + 1),
             updated_at: Set(Some(now())),
             ..Default::default()
         };
@@ -177,7 +191,7 @@ impl RoleService {
     ) -> Result<RoleModel> {
         let txn = ctx.transaction();
 
-        let role = Self::get(ctx, site_id, role_id.into())
+        let role = Self::get_for_update(ctx, site_id, role_id.into())
             .await
             .or_raise(|| Error::new("failed to delete role", ErrorType::Role))?;
 
@@ -252,6 +266,7 @@ impl RoleService {
 
         let deleted_role = role::ActiveModel {
             role_id: Set(role.role_id),
+            revision: Set(role.revision + 1),
             deleted_at: Set(Some(now())),
             ..Default::default()
         }
@@ -322,6 +337,38 @@ impl RoleService {
     ) -> Result<()> {
         let _ = Self::get(ctx, site_id, reference).await?;
         Ok(())
+    }
+
+    pub async fn get_for_update(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        reference: Reference<'_>,
+    ) -> Result<RoleModel> {
+        let role_id = match reference {
+            Reference::Id(id) => id,
+            Reference::Slug(slug) => {
+                Self::get(ctx, site_id, Reference::Slug(slug))
+                    .await?
+                    .role_id
+            }
+        };
+
+        Role::find()
+            .filter(
+                Condition::all()
+                    .add(role::Column::RoleId.eq(role_id))
+                    .add(role::Column::SiteId.eq(site_id)),
+            )
+            .lock_exclusive()
+            .one(ctx.transaction())
+            .await
+            .or_raise(|| Error::new("failed to lock role", ErrorType::Role))?
+            .ok_or_raise(|| {
+                Error::new(
+                    format!("role ID {role_id} in site ID {site_id} not found"),
+                    ErrorType::RoleNotFound,
+                )
+            })
     }
 
     pub async fn grant_role_to_user(
@@ -539,7 +586,7 @@ impl RoleService {
             )
         };
 
-        Self::assert_exists(ctx, site_id, role_id.into())
+        let role = Self::get_for_update(ctx, site_id, role_id.into())
             .await
             .or_raise(make_error)?;
 
@@ -578,6 +625,7 @@ impl RoleService {
 
         role::ActiveModel {
             role_id: Set(role_id),
+            revision: Set(role.revision + 1),
             parent_role_id: Set(new_parent_id),
             updated_at: Set(Some(now())),
             ..Default::default()

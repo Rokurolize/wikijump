@@ -139,6 +139,7 @@ async fn grant_private_parent_view_role(ctx: &ServiceContext<'_>, site_id: i64) 
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role.role_id),
+            expected_role_revision: role.revision,
             new_permissions: [Action::View, Action::Create, Action::Edit]
                 .into_iter()
                 .map(|action| Permission {
