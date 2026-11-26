@@ -491,7 +491,7 @@ async fn delete_bypasses_live_lease_and_removes_its_rows() {
 }
 
 #[tokio::test]
-async fn rollback_kills_live_lease_and_dead_row_rules_follow() {
+async fn rollback_kills_live_lease_and_killed_credentials_are_rejected() {
     let mut runner = TestRunner::setup().await;
     let (site_id, page_id, revision_id) =
         setup_page(&mut runner, "lease-writers-rollback", "rollback v0").await;
@@ -548,6 +548,8 @@ async fn rollback_kills_live_lease_and_dead_row_rules_follow() {
         "rollback must kill the conflicting live lease",
     );
 
+    let revisions_after_rollback = revision_count(&runner, page_id).await;
+
     let stale = edit(
         &runner,
         site_id,
@@ -558,8 +560,8 @@ async fn rollback_kills_live_lease_and_dead_row_rules_follow() {
         Some(lease_of(&a, PageEditLockMode::Page)),
     )
     .await
-    .expect_err("a killed lease with a stale presented id must fail page_changed");
-    assert_contains_error!(stale, ErrorType::NotLatestRevisionId);
+    .expect_err("a killed lease with a stale presented id must fail");
+    assert_contains_error!(stale, ErrorType::PageEditLockConflict);
 
     let fresh = edit(
         &runner,
@@ -571,9 +573,16 @@ async fn rollback_kills_live_lease_and_dead_row_rules_follow() {
         Some(lease_of(&a, PageEditLockMode::Page)),
     )
     .await
-    .expect("a killed lease presenting the current latest should commit")
-    .expect("should create a revision");
-    assert!(fresh.lock_recreated);
+    .expect_err("a killed lease presenting the current latest must fail");
+    assert_contains_error!(fresh, ErrorType::PageEditLockConflict);
+    assert_eq!(
+        revision_count(&runner, page_id).await,
+        revisions_after_rollback,
+    );
+    assert_eq!(
+        latest_wikitext(&runner, site_id, page_id).await,
+        "rollback v0",
+    );
 }
 
 #[tokio::test]

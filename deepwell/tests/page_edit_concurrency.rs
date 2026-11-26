@@ -34,6 +34,7 @@ use tokio::time::sleep;
 
 const IP: &str = "192.0.2.90";
 const NOT_LATEST_REVISION_ID: i64 = 4303;
+const PAGE_EDIT_LOCK_CONFLICT: i64 = 4304;
 
 struct Outcome {
     status: Option<u16>,
@@ -462,16 +463,16 @@ impl Fixture {
     }
 }
 
-fn assert_one_winner_one_conflict(a: &Outcome, b: &Outcome) -> i64 {
+fn assert_one_winner_one_conflict_with_code(a: &Outcome, b: &Outcome, code: i64) -> i64 {
     let a_revision = a.result_revision_id();
     let b_revision = b.result_revision_id();
     match (a_revision, b_revision) {
         (Some(revision_id), None) => {
-            b.assert_typed_conflict();
+            assert_eq!(b.error_code(), Some(code));
             revision_id
         }
         (None, Some(revision_id)) => {
-            a.assert_typed_conflict();
+            assert_eq!(a.error_code(), Some(code));
             revision_id
         }
         _ => panic!(
@@ -589,6 +590,10 @@ async fn leased_edit_holding_row_lock_serializes_racing_move() {
         .await;
 }
 
+fn assert_one_winner_one_conflict(a: &Outcome, b: &Outcome) -> i64 {
+    assert_one_winner_one_conflict_with_code(a, b, NOT_LATEST_REVISION_ID)
+}
+
 #[tokio::test]
 async fn two_edits_passing_check_then_insert_race_loser_gets_typed_conflict() {
     let fixture = setup().await;
@@ -645,7 +650,11 @@ async fn two_edits_passing_check_then_insert_race_loser_gets_typed_conflict() {
         .expect("page_revision gate should release");
     let outcome_a = saver_a.await.expect("saver alpha task should join");
     let outcome_b = saver_b.await.expect("saver beta task should join");
-    let winner = assert_one_winner_one_conflict(&outcome_a, &outcome_b);
+    let winner = assert_one_winner_one_conflict_with_code(
+        &outcome_a,
+        &outcome_b,
+        PAGE_EDIT_LOCK_CONFLICT,
+    );
 
     fixture.assert_gapless_chain_at_tip(page_id, winner).await;
 }
@@ -954,7 +963,7 @@ async fn stale_save_without_race_is_typed_conflict() {
     let stale_edit = fixture
         .leased_edit(3, page_id, rev0, "stale content", &lease)
         .await;
-    stale_edit.assert_typed_conflict();
+    assert_eq!(stale_edit.error_code(), Some(PAGE_EDIT_LOCK_CONFLICT));
 
     let stale_delete = fixture
         .call(

@@ -196,6 +196,15 @@ async fn latest_revision_id(runner: &TestRunner, site_id: i64, page_id: i64) -> 
         .revision_id
 }
 
+async fn latest_wikitext(runner: &TestRunner, site_id: i64, page_id: i64) -> String {
+    let latest = PageRevisionService::get_latest(runner.context(), site_id, page_id)
+        .await
+        .expect("latest revision should exist");
+    deepwell::services::TextService::get(runner.context(), &latest.wikitext_hash)
+        .await
+        .expect("latest wikitext should load")
+}
+
 async fn revision_count(runner: &TestRunner, page_id: i64) -> usize {
     deepwell::models::page_revision::Entity::find()
         .filter(deepwell::models::page_revision::Column::PageId.eq(page_id))
@@ -428,6 +437,7 @@ async fn force_takeover_then_superseded_save_outcomes() {
     .expect("rival save should commit")
     .expect("rival save should create a revision");
     assert!(!output.lock_recreated);
+    let revisions_after_rival = revision_count(&runner, page_id).await;
 
     let result = edit(
         &runner,
@@ -440,7 +450,26 @@ async fn force_takeover_then_superseded_save_outcomes() {
     )
     .await;
     let error = result.expect_err("superseded save after the rival saved must fail");
-    assert_contains_error!(error, ErrorType::NotLatestRevisionId);
+    assert_contains_error!(error, ErrorType::PageEditLockConflict);
+
+    let current = latest_revision_id(&runner, site_id, page_id).await;
+    let result = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_A,
+        current,
+        text_body("a retries with the current base"),
+        Some(lease_of(&a, PageEditLockMode::Page)),
+    )
+    .await;
+    let error = result.expect_err("a revoked lease with the current base must fail");
+    assert_contains_error!(error, ErrorType::PageEditLockConflict);
+    assert_eq!(
+        revision_count(&runner, page_id).await,
+        revisions_after_rival,
+    );
+    assert_eq!(latest_wikitext(&runner, site_id, page_id).await, "b wins",);
 }
 
 #[tokio::test]
@@ -461,6 +490,36 @@ async fn expired_holder_commits_with_recreation_until_rival_saves() {
         .await,
     );
     expire_leases(&runner, page_id).await;
+    let revisions_before = revision_count(&runner, page_id).await;
+
+    let mut wrong_secret = lease_of(&a, PageEditLockMode::Page);
+    wrong_secret.lock_secret = ["wrong-", "secret"].concat();
+    let result = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_A,
+        revision_id,
+        text_body("a after expiry with a wrong secret"),
+        Some(wrong_secret),
+    )
+    .await;
+    let error = result.expect_err("an expired lease with a wrong secret must fail");
+    assert_contains_error!(error, ErrorType::PageEditLockConflict);
+
+    let result = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_B,
+        revision_id,
+        text_body("b after expiry with a's lease"),
+        Some(lease_of(&a, PageEditLockMode::Page)),
+    )
+    .await;
+    let error = result.expect_err("an expired lease presented by another user must fail");
+    assert_contains_error!(error, ErrorType::PageEditLockConflict);
+    assert_eq!(revision_count(&runner, page_id).await, revisions_before);
 
     let output = edit(
         &runner,
@@ -635,7 +694,7 @@ async fn renew_recreates_expired_and_rejects_superseded() {
 }
 
 #[tokio::test]
-async fn save_releases_and_presented_id_rules_after_release() {
+async fn save_releases_and_released_credentials_are_rejected() {
     let mut runner = TestRunner::setup().await;
     let (site_id, page_id, revision_id) =
         setup_page(&mut runner, "edit-lock-release", "v0").await;
@@ -670,6 +729,8 @@ async fn save_releases_and_presented_id_rules_after_release() {
         "a successful save releases the lease",
     );
 
+    let revisions_after_release = revision_count(&runner, page_id).await;
+
     let result = edit(
         &runner,
         site_id,
@@ -681,10 +742,10 @@ async fn save_releases_and_presented_id_rules_after_release() {
     )
     .await;
     let error = result.expect_err("old presented id after release must fail");
-    assert_contains_error!(error, ErrorType::NotLatestRevisionId);
+    assert_contains_error!(error, ErrorType::PageEditLockConflict);
 
     let current = latest_revision_id(&runner, site_id, page_id).await;
-    let output = edit(
+    let result = edit(
         &runner,
         site_id,
         page_id,
@@ -693,12 +754,11 @@ async fn save_releases_and_presented_id_rules_after_release() {
         text_body("a v2 fresh"),
         Some(lease_of(&a, PageEditLockMode::Page)),
     )
-    .await
-    .expect("current presented id after release should commit")
-    .expect("should create a revision");
-    assert!(output.lock_recreated);
+    .await;
+    let error = result.expect_err("a released lease with the current base must fail");
+    assert_contains_error!(error, ErrorType::PageEditLockConflict);
 
-    let noop = edit(
+    let result = edit(
         &runner,
         site_id,
         page_id,
@@ -707,9 +767,13 @@ async fn save_releases_and_presented_id_rules_after_release() {
         EditPageBody::default(),
         Some(lease_of(&a, PageEditLockMode::Page)),
     )
-    .await
-    .expect("no-change save should succeed");
-    assert!(noop.is_none(), "no-change save creates no revision");
+    .await;
+    let error = result.expect_err("a no-change save with a released lease must fail");
+    assert_contains_error!(error, ErrorType::PageEditLockConflict);
+    assert_eq!(
+        revision_count(&runner, page_id).await,
+        revisions_after_release,
+    );
 }
 
 #[tokio::test]
@@ -884,8 +948,8 @@ async fn section_saves_rebase_and_detect_section_moves() {
         Some(section_lease_of(&a2, 0)),
     )
     .await;
-    let error = result.expect_err("save over a moved section must fail");
-    assert_contains_error!(error, ErrorType::NotLatestRevisionId);
+    let error = result.expect_err("a force-killed section lease must fail");
+    assert_contains_error!(error, ErrorType::PageEditLockConflict);
 }
 
 #[tokio::test]
@@ -1076,6 +1140,100 @@ async fn bad_credentials_against_a_live_lease_are_other_locks() {
     assert_contains_error!(error, ErrorType::PageEditLockConflict);
 
     assert_eq!(revision_count(&runner, page_id).await, revisions_before);
+}
+
+#[tokio::test]
+async fn fabricated_released_and_cross_page_leases_are_rejected() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, page_id, revision_id) =
+        setup_page(&mut runner, "edit-lock-unauthenticated", "v0").await;
+    let revisions_before = revision_count(&runner, page_id).await;
+
+    let fabricated = EditPageLease {
+        lock_id: 987_654_321,
+        lock_secret: ["never-", "issued"].concat(),
+        mode: PageEditLockMode::Page,
+        section_index: None,
+    };
+    let result = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_A,
+        revision_id,
+        text_body("fabricated lease"),
+        Some(fabricated),
+    )
+    .await;
+    let error = result.expect_err("a fabricated lease with the current base must fail");
+    assert_contains_error!(error, ErrorType::PageEditLockConflict);
+    assert_eq!(revision_count(&runner, page_id).await, revisions_before);
+
+    let released = grant(
+        &acquire(
+            &runner,
+            site_id,
+            page_id,
+            USER_A,
+            PageEditLockMode::Page,
+            None,
+        )
+        .await,
+    );
+    let removed = PageEditLockService::release(
+        runner.context(),
+        ReleasePageEditLock {
+            site_id,
+            page: Reference::Id(page_id),
+            user_id: USER_A,
+            lock_id: released.lock_id,
+            lock_secret: released.lock_secret.clone(),
+        },
+    )
+    .await
+    .expect("release should not error");
+    assert!(removed);
+    let result = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_A,
+        revision_id,
+        text_body("released lease"),
+        Some(lease_of(&released, PageEditLockMode::Page)),
+    )
+    .await;
+    let error = result.expect_err("a released lease with the current base must fail");
+    assert_contains_error!(error, ErrorType::PageEditLockConflict);
+    assert_eq!(revision_count(&runner, page_id).await, revisions_before);
+
+    let (_, other_page_id, _) =
+        setup_page(&mut runner, "edit-lock-unauthenticated-other", "other v0").await;
+    let cross_page = grant(
+        &acquire(
+            &runner,
+            site_id,
+            other_page_id,
+            USER_A,
+            PageEditLockMode::Page,
+            None,
+        )
+        .await,
+    );
+    let result = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_A,
+        revision_id,
+        text_body("cross-page lease"),
+        Some(lease_of(&cross_page, PageEditLockMode::Page)),
+    )
+    .await;
+    let error = result.expect_err("a lease acquired on another page must fail here");
+    assert_contains_error!(error, ErrorType::PageEditLockConflict);
+    assert_eq!(revision_count(&runner, page_id).await, revisions_before);
+    assert_eq!(latest_wikitext(&runner, site_id, page_id).await, "v0",);
 }
 
 #[tokio::test]
@@ -1495,7 +1653,7 @@ mod race {
             .collect();
         let conflicts: Vec<&Outcome> = outcomes
             .iter()
-            .filter(|outcome| outcome.error_code() == Some(4303))
+            .filter(|outcome| outcome.error_code() == Some(4304))
             .copied()
             .collect();
 
@@ -1509,7 +1667,7 @@ mod race {
         assert_eq!(
             conflicts.len(),
             1,
-            "the other parallel save is a typed page_changed: {} / {}",
+            "the other parallel save is a typed lock conflict: {} / {}",
             first.describe(),
             second.describe(),
         );
