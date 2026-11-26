@@ -31,7 +31,7 @@ pub struct PasswordService;
 pub const ACCOUNT_PASSWORD_MIN_CODE_POINTS: usize = 15;
 
 impl PasswordService {
-    pub async fn new_account_hash(password: &str) -> Result<String> {
+    pub fn validate_account_password(password: &str) -> Result<()> {
         let length = password.chars().count();
         if length < ACCOUNT_PASSWORD_MIN_CODE_POINTS {
             bail!(Error::new(
@@ -42,6 +42,12 @@ impl PasswordService {
                 },
             ));
         }
+
+        Ok(())
+    }
+
+    pub async fn new_account_hash(password: &str) -> Result<String> {
+        Self::validate_account_password(password)?;
 
         // Argon2 is deliberately expensive, so it runs on a blocking
         // thread rather than on a runtime worker.
@@ -78,6 +84,20 @@ impl PasswordService {
         hash: &str,
     ) -> Result<()> {
         Self::verify_impl(ctx, password, hash, false).await
+    }
+
+    pub async fn matches_stored_hash(password: &str, hash: &str) -> Result<bool> {
+        let password = password.to_owned();
+        let hash = hash.to_owned();
+        task::spawn_blocking(move || match Self::verify_internal(&password, &hash) {
+            Ok(()) => Ok(true),
+            Err(error) if error.error_type == ErrorType::InvalidAuthentication => {
+                Ok(false)
+            }
+            Err(error) => Err(error),
+        })
+        .await
+        .map_err(join_error)?
     }
 
     async fn verify_impl(
@@ -217,6 +237,29 @@ mod tests {
         let password = "ééééééééééééééé";
         let hash = PasswordService::new_account_hash(password).await.unwrap();
         PasswordService::verify_internal(password, &hash).unwrap();
+    }
+
+    #[tokio::test]
+    async fn stored_hash_match_distinguishes_match_mismatch_and_hash_failure() {
+        let password = Uuid::new_v4().to_string();
+        let wrong_password = Uuid::new_v4().to_string();
+        let hash = PasswordService::new_hash(&password).unwrap();
+
+        assert!(
+            PasswordService::matches_stored_hash(&password, &hash)
+                .await
+                .unwrap()
+        );
+        assert!(
+            !PasswordService::matches_stored_hash(&wrong_password, &hash)
+                .await
+                .unwrap()
+        );
+        assert!(
+            PasswordService::matches_stored_hash(&password, "not phc")
+                .await
+                .is_err()
+        );
     }
 
     #[test]

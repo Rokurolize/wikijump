@@ -842,6 +842,45 @@ async fn account_holders_change_their_password_with_the_current_one() {
         },
     );
 
+    let before_user = UserService::get_real(runner.context(), Reference::Id(user_id))
+        .await
+        .expect("the auth test user should load");
+    let unchanged = run_endpoint!(
+        runner,
+        user_password_change,
+        json!({
+            "current_password": PASSWORD,
+            "new_password": PASSWORD,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let unchanged_json = serde_json::to_value(&unchanged).unwrap();
+    assert_eq!(
+        unchanged_json,
+        json!({
+            "password_changed": false,
+            "other_sessions_revoked": 0,
+        }),
+    );
+    assert!(
+        SessionService::get_optional(runner.context(), &current.session_token)
+            .await
+            .unwrap()
+            .is_some()
+    );
+    assert!(
+        SessionService::get_optional(runner.context(), &other.session_token)
+            .await
+            .unwrap()
+            .is_some()
+    );
+    let after_unchanged_user =
+        UserService::get_real(runner.context(), Reference::Id(user_id))
+            .await
+            .expect("the auth test user should load");
+    assert_eq!(after_unchanged_user.password, before_user.password);
+    assert_eq!(after_unchanged_user.revision, before_user.revision);
+
     let changed = run_endpoint!(
         runner,
         user_password_change,
@@ -851,6 +890,8 @@ async fn account_holders_change_their_password_with_the_current_one() {
             "ip_address": common::IP_ADDRESS,
         }),
     );
+    let changed_json = serde_json::to_value(&changed).unwrap();
+    assert_eq!(changed_json["password_changed"], json!(true));
     assert_eq!(changed.other_sessions_revoked, 1);
 
     assert!(
