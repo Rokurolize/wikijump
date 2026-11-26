@@ -1,4 +1,4 @@
-import { escapeFeedXmlText as escapeXml } from "./feed-xml.ts"
+import { escapeFeedXmlCdata, escapeFeedXmlText as escapeXml } from "./feed-xml.ts"
 
 export type WikidotForumFeedKind = "threads" | "posts"
 export type WikidotForumFeedScope = "site" | "category" | "thread"
@@ -79,10 +79,6 @@ const XML_HEADERS = {
   expires: "Mon, 26 Jul 1997 05:00:00 GMT"
 } as const
 
-function cdata(value: string): string {
-  return value.replaceAll("]]>", "]]]]><![CDATA[>")
-}
-
 export function formatWikidotForumFeedDate(value: Date): string {
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   const months = [
@@ -137,7 +133,7 @@ function itemXml(
     `\t\t\t<wikidot:authorUserId>${item.author_user_id}</wikidot:authorUserId>`,
     "\t\t\t<content:encoded>",
     "\t\t\t\t<![CDATA[",
-    `\t\t\t\t${cdata(content)}`,
+    `\t\t\t\t${escapeFeedXmlCdata(content)}`,
     "\t\t\t\t]]>",
     "\t\t\t</content:encoded>",
     "\t\t</item>"
