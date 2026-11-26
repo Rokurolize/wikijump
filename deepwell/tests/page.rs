@@ -6867,6 +6867,128 @@ async fn unbound_include_variables_remain_literal_in_attributes_and_text() {
 }
 
 #[tokio::test]
+async fn include_parameter_in_module_css_substitutes_verbatim_into_active_styles() {
+    const COMPONENT_SLUG: &str = "component:artex-629-css-carrier";
+    const CONSUMER_SLUG: &str = "fixture-artex-629-css-consumer";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMPONENT_SLUG,
+        "ARTEX 629 CSS Carrier",
+        concat!(
+            "[[module CSS]]\n",
+            ".artex-629-pin { color: {$css_value}; }\n",
+            "[[/module]]\n",
+            "ARTEX-629-BODY",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        CONSUMER_SLUG,
+        "ARTEX 629 CSS Consumer",
+        &format!("[[include {COMPONENT_SLUG} |css_value=rgb(12,34,56)]]"),
+    )
+    .await;
+
+    let page = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": site_id,
+            "page": CONSUMER_SLUG,
+            "details": {"compiled": true},
+        }),
+    )
+    .expect("ARTEX 629 consumer should exist");
+    let html = page
+        .compiled_body_html
+        .expect("ARTEX 629 consumer should have compiled HTML");
+    let styles = page.compiled_body_styles.unwrap_or_default();
+
+    assert!(html.contains("ARTEX-629-BODY"), "{html}");
+    assert!(
+        styles
+            .iter()
+            .any(|css| { css.contains(".artex-629-pin { color: rgb(12,34,56); }") }),
+        "the include parameter must reach the active CSS channel verbatim: {styles:?}",
+    );
+    assert!(
+        !styles.iter().any(|css| css.contains("{$css_value}")),
+        "the CSS include variable must not remain unsubstituted: {styles:?}",
+    );
+}
+
+#[tokio::test]
+async fn include_parameter_in_raw_html_style_attribute_substitutes_verbatim() {
+    const COMPONENT_SLUG: &str = "component:artex-630-html-carrier";
+    const CONSUMER_SLUG: &str = "fixture-artex-630-html-consumer";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMPONENT_SLUG,
+        "ARTEX 630 HTML Carrier",
+        concat!(
+            "[[html]]\n",
+            "<span style=\"{$style_value}\">ARTEX-630-RAW-HTML</span>\n",
+            "[[/html]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        CONSUMER_SLUG,
+        "ARTEX 630 HTML Consumer",
+        &format!("[[include {COMPONENT_SLUG} |style_value=color:rgb(2,4,6)]]"),
+    )
+    .await;
+    let page_id = listpages_test_page_id(&runner, site_id, CONSUMER_SLUG).await;
+
+    let html_block = run_endpoint!(
+        runner,
+        text_block_get_index,
+        json!({
+            "site_id": site_id,
+            "page_id": page_id,
+            "block_type": "html",
+            "index": 1,
+        }),
+    )
+    .expect("ARTEX 630 HTML block should be stored");
+    let response = runner
+        .context()
+        .s3_tblocks_bucket()
+        .get_object(&html_block.s3_filename)
+        .await
+        .expect("ARTEX 630 HTML block object should be readable");
+    let html =
+        String::from_utf8(response.into()).expect("ARTEX 630 HTML block should be UTF-8");
+
+    assert!(
+        html.contains(r#"<span style="color:rgb(2,4,6)">ARTEX-630-RAW-HTML</span>"#),
+        "the include parameter must land in the raw HTML style attribute verbatim:\n{html}",
+    );
+    assert!(
+        !html.contains("{$style_value}"),
+        "the raw HTML include variable must not remain unsubstituted:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn nested_include_image_blocks_keep_their_attachment_page_owner() {
     const SITE_SLUG: &str = "scp-wiki";
     const FRAGMENT_SLUG: &str = "fragment:attachment-owner-leaf";

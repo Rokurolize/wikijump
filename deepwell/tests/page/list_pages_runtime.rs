@@ -4649,6 +4649,59 @@ async fn imported_listpages_authors_use_snapshot_names_and_rerender_stably() {
 }
 
 #[tokio::test]
+async fn include_parameter_quote_retokenizes_module_attribute_verbatim() {
+    const COMPONENT_SLUG: &str = "component:artex-659-module-carrier";
+    const CONSUMER_SLUG: &str = "fixture-artex-659-module-consumer";
+    const TARGET_SLUG: &str = "fixture-artex-659-target";
+    const DECOY_SLUG: &str = "fixture-artex-659-decoy";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    for (slug, title) in [
+        (TARGET_SLUG, "ARTEX 659 Target"),
+        (DECOY_SLUG, "ARTEX 659 Decoy"),
+    ] {
+        create_listpages_test_page(&mut runner, site_id, slug, title, "ARTEX 659 row.")
+            .await;
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        COMPONENT_SLUG,
+        "ARTEX 659 Module Carrier",
+        concat!(
+            "[[module ListPages category=\"{$injected}\" separate=\"no\" wrapper=\"no\"]]\n",
+            "ROW=%%fullname%%\n",
+            "[[/module]]",
+        ),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        CONSUMER_SLUG,
+        "ARTEX 659 Module Consumer",
+        &format!(
+            "[[include {COMPONENT_SLUG}\n|injected=*\" fullname=\"{TARGET_SLUG}\n]]"
+        ),
+    )
+    .await;
+
+    let html = load_listpages_test_compiled_html(&runner, site_id, CONSUMER_SLUG).await;
+    assert!(
+        html.contains(&format!("ROW={TARGET_SLUG}")),
+        "the injected fullname attribute must select the target page:\n{html}",
+    );
+    assert!(
+        !html.contains(&format!("ROW={DECOY_SLUG}")),
+        "the injected fullname attribute must narrow the category query away from the decoy:\n{html}",
+    );
+}
+
+#[tokio::test]
 async fn included_author_tool_coauthored_branch_renders_named_page_box() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
