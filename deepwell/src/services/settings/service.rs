@@ -30,6 +30,7 @@ use crate::models::page_category::Model as PageCategoryModel;
 use crate::models::site::Model as SiteModel;
 use crate::services::ServiceContext;
 use crate::services::forum::GetForumCategory;
+use crate::services::view::viewer_safe_compiled_body;
 use crate::services::{
     CategoryService, ForumService, PageRevisionService, PageService, SiteService,
 };
@@ -574,7 +575,7 @@ impl SettingsService {
                 return Ok(None);
             };
 
-            PageRevisionService::get_compiled_html_optional(
+            let stored = PageRevisionService::get_compiled_html_optional(
                 ctx,
                 site_id,
                 Reference::Id(page.page_id),
@@ -588,7 +589,32 @@ impl SettingsService {
                     ),
                     ErrorType::Text,
                 )
-            })
+            })?;
+            let Some(stored) = stored else {
+                return Ok(None);
+            };
+            let revision = PageRevisionService::get_latest(ctx, site_id, page.page_id)
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        format!(
+                            "failed to load revision for page '{}' in site ID {}",
+                            page_slug, site_id,
+                        ),
+                        ErrorType::Page,
+                    )
+                })?;
+            viewer_safe_compiled_body(
+                ctx,
+                site_id,
+                page.page_id,
+                &revision,
+                None,
+                ctx.request().user_id,
+                stored,
+            )
+            .await
+            .map(Some)
         }
 
         let (top_bar_html_result, side_bar_html_result) = join!(

@@ -1337,6 +1337,7 @@ impl RenderService {
                 list_pages_pager_route: super::list_pages::ListPagesPagerRoute::SavedPage,
                 page_preview: false,
                 suppress_nested_list_pages: false,
+                view_independent_compiled: false,
             },
         )
         .await?;
@@ -1459,6 +1460,7 @@ impl RenderService {
             list_pages_pager_route,
             page_preview,
             suppress_nested_list_pages,
+            view_independent_compiled,
         } = options;
         let backlinks_page_id = current_page_id;
         let next_previous_page_id = current_page_id;
@@ -1629,6 +1631,7 @@ impl RenderService {
                     current_page_id,
                     viewer_user_id,
                     page_preview,
+                    view_independent_compiled,
                     url,
                     trace,
                 },
@@ -2089,6 +2092,7 @@ impl RenderService {
                 list_pages_pager_route,
                 page_preview: lifecycle == RenderLifecycle::PagePreview,
                 suppress_nested_list_pages,
+                view_independent_compiled: persist_compiled_text,
             },
         )
         .await?;

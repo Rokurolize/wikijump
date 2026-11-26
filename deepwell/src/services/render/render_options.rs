@@ -93,6 +93,7 @@ pub(super) struct RenderExpansionOptions<'a> {
     pub(super) list_pages_pager_route: ListPagesPagerRoute,
     pub(super) page_preview: bool,
     pub(super) suppress_nested_list_pages: bool,
+    pub(super) view_independent_compiled: bool,
 }
 
 impl RenderContext {

@@ -216,6 +216,12 @@ pub fn wikitext_reads_url_arguments(wikitext: &str) -> bool {
         || MEMBERSHIP_EMAIL_INVITATION_MODULE_REGEX.is_match(wikitext)
 }
 
+pub fn wikitext_has_visibility_sensitive_module(wikitext: &str) -> bool {
+    PLATFORM_DIRECTORY_MODULE_REGEX.is_match(wikitext)
+        || LEGACY_PLATFORM_DIRECTORY_MODULE_REGEX.is_match(wikitext)
+        || ACTOR_SENSITIVE_SITE_CHANGES_MODULE_REGEX.is_match(wikitext)
+}
+
 pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
     wikitext_has_bare_pages_module(wikitext)
         || wikitext_has_supported_pages_by_tag_module(wikitext)

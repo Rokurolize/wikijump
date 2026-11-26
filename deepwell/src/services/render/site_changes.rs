@@ -21,6 +21,7 @@
 use super::categories::{ModuleQueryCache, wikidot_category_sort_key};
 use super::compat::CompatHtmlFragments;
 use super::literal_regions::LiteralRegionIndex;
+use super::runtime_modules::ViewerModuleContext;
 use super::service::{
     RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
     format_wikidot_list_pages_date,
@@ -41,6 +42,8 @@ const SITE_CHANGES_BROWSER_ROWS_PER_PAGE: usize = 20;
 const SITE_CHANGES_QUERY_BATCH: usize = 250;
 const SITE_CHANGES_MAX_RAW_SCAN: usize = 5_000;
 const SITE_CHANGES_EMPTY: &str = "Sorry, no revisions matching your criteria.";
+const VIEW_INDEPENDENT_SITE_CHANGES_HTML: &str =
+    r#"<div class="wikidot-runtime-module" data-wikidot-module="site-changes"></div>"#;
 
 pub(super) static SITE_CHANGES_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(r"(?m)^[\t ]*\[\[module[\t ]+SiteChanges[\t ]*\]\][\t ]*$")
@@ -164,12 +167,33 @@ pub(super) async fn expand_site_changes_modules(
     wikitext: String,
     settings: &WikitextSettings,
     current_site_id: Option<i64>,
-    viewer_user_id: Option<i64>,
+    viewer: ViewerModuleContext,
     module_query_cache: &mut ModuleQueryCache,
     compat_html: &mut CompatHtmlFragments,
 ) -> Result<String> {
     if !settings.enable_page_syntax || !SITE_CHANGES_MODULE_REGEX.is_match(&wikitext) {
         return Ok(wikitext);
+    }
+    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+    if viewer.view_independent_compiled {
+        let mut output = String::with_capacity(wikitext.len());
+        let mut cursor = 0;
+        for matched in SITE_CHANGES_MODULE_REGEX.find_iter(&wikitext) {
+            if literal_regions.contains(matched.start()) {
+                continue;
+            }
+            output.push_str(&wikitext[cursor..matched.start()]);
+            output.push_str(
+                &compat_html
+                    .push_block_html(VIEW_INDEPENDENT_SITE_CHANGES_HTML.to_owned()),
+            );
+            cursor = matched.end();
+        }
+        if cursor == 0 {
+            return Ok(wikitext);
+        }
+        output.push_str(&wikitext[cursor..]);
+        return Ok(output);
     }
     let Some(current_site_id) = current_site_id else {
         return Ok(wikitext);
@@ -177,7 +201,7 @@ pub(super) async fn expand_site_changes_modules(
     let snapshot = match load_site_changes_snapshot(
         ctx,
         current_site_id,
-        viewer_user_id,
+        viewer.viewer_user_id,
         module_query_cache,
         WikidotSiteChangesModuleRequest {
             page: 1,
@@ -192,7 +216,6 @@ pub(super) async fn expand_site_changes_modules(
         SiteChangesLoad::Saturated => return Ok(wikitext),
     };
 
-    let literal_regions = LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
     let mut output = String::with_capacity(wikitext.len());
     let mut cursor = 0;
     for matched in SITE_CHANGES_MODULE_REGEX.find_iter(&wikitext) {

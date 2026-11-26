@@ -1,4 +1,5 @@
 use super::*;
+use crate::services::view::viewer_safe_compiled_body;
 
 pub(super) async fn build_page_output(
     ctx: &ServiceContext<'_>,
@@ -45,6 +46,23 @@ pub(super) async fn build_page_output(
     );
     let (wikitext, compiled_body_html, compiled_body_styles) =
         raise_multiple!(wikitext, compiled_body_html, compiled_body_styles; make_error);
+    let compiled_body_html = if details.compiled_html {
+        Some(
+            viewer_safe_compiled_body(
+                ctx,
+                page.site_id,
+                page.page_id,
+                &revision,
+                wikitext.as_deref(),
+                ctx.request().user_id,
+                compiled_body_html.unwrap_or_default(),
+            )
+            .await
+            .or_raise(make_error)?,
+        )
+    } else {
+        None
+    };
     let compiled_body_styles = if details.compiled_html {
         Some(
             compiled_body_styles
