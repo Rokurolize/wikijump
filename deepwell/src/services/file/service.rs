@@ -227,6 +227,67 @@ impl FileService {
         }
     }
 
+    fn revision_mutation_file_query(file_id: i64, site_id: i64) -> sea_orm::Select<File> {
+        File::find_by_id(file_id)
+            .filter(file::Column::SiteId.eq(site_id))
+            .lock_exclusive()
+    }
+
+    async fn lock_file_for_revision_mutation(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        page_id: i64,
+        file_id: i64,
+    ) -> Result<FileModel> {
+        let txn = ctx.transaction();
+        Self::revision_mutation_file_query(file_id, site_id)
+            .one(txn)
+            .await
+            .or_raise(|| {
+                Error::new(
+                    format!(
+                        "failed to lock file ID {} in site ID {} for a revision mutation",
+                        file_id, site_id,
+                    ),
+                    ErrorType::File,
+                )
+            })?
+            .ok_or_raise(|| {
+                Error::new(
+                    format!(
+                        "file ID {} does not exist on page ID {} in site ID {}",
+                        file_id, page_id, site_id,
+                    ),
+                    ErrorType::FileNotFound,
+                )
+            })
+    }
+
+    async fn validate_file_revision_mutation(
+        ctx: &ServiceContext<'_>,
+        file: &FileModel,
+        page_id: i64,
+        last_revision_id: i64,
+    ) -> Result<FileRevisionModel> {
+        let last_revision =
+            FileRevisionService::get_latest_for_file(ctx, file.site_id, file.file_id)
+                .await?;
+
+        check_last_revision(&last_revision, last_revision_id)?;
+
+        if file.page_id != page_id || last_revision.page_id != page_id {
+            bail!(Error::new(
+                format!(
+                    "file ID {} does not exist on page ID {} in site ID {}",
+                    file.file_id, page_id, file.site_id,
+                ),
+                ErrorType::FileNotFound,
+            ));
+        }
+
+        Ok(last_revision)
+    }
+
     pub async fn edit(
         ctx: &ServiceContext<'_>,
         EditFile {
@@ -254,31 +315,16 @@ impl FileService {
         };
 
         let txn = ctx.transaction();
-        File::find_by_id(file_id)
-            .filter(file::Column::SiteId.eq(site_id))
-            .filter(file::Column::PageId.eq(page_id))
-            .lock_exclusive()
-            .one(txn)
+        let file = Self::lock_file_for_revision_mutation(ctx, site_id, page_id, file_id)
             .await
-            .or_raise(make_error)?
-            .ok_or_raise(|| {
-                Error::new(
-                    format!(
-                        "file ID {} does not exist on page ID {} in site ID {}",
-                        file_id, page_id, site_id,
-                    ),
-                    ErrorType::FileNotFound,
-                )
-            })?;
+            .or_raise(make_error)?;
 
         PageLockService::require_write_allowed(ctx, site_id, page_id, user_id).await?;
 
         let last_revision =
-            FileRevisionService::get_latest(ctx, site_id, page_id, file_id)
+            Self::validate_file_revision_mutation(ctx, &file, page_id, last_revision_id)
                 .await
                 .or_raise(make_error)?;
-
-        check_last_revision(&last_revision, last_revision_id).or_raise(make_error)?;
 
         let EditFileBody {
             mut name,
@@ -404,12 +450,18 @@ impl FileService {
         };
 
         let txn = ctx.transaction();
-        let last_revision =
-            FileRevisionService::get_latest(ctx, site_id, current_page_id, file_id)
+        let file =
+            Self::lock_file_for_revision_mutation(ctx, site_id, current_page_id, file_id)
                 .await
                 .or_raise(make_error)?;
-
-        check_last_revision(&last_revision, last_revision_id).or_raise(make_error)?;
+        let last_revision = Self::validate_file_revision_mutation(
+            ctx,
+            &file,
+            current_page_id,
+            last_revision_id,
+        )
+        .await
+        .or_raise(make_error)?;
 
         let destination_page_id =
             PageService::get_id(ctx, site_id, destination_page.borrow())
@@ -519,14 +571,16 @@ impl FileService {
             )
         };
 
+        let file = Self::lock_file_for_revision_mutation(ctx, site_id, page_id, file_id)
+            .await
+            .or_raise(make_error)?;
+
         PageLockService::require_write_allowed(ctx, site_id, page_id, user_id).await?;
 
         let last_revision =
-            FileRevisionService::get_latest(ctx, site_id, page_id, file_id)
+            Self::validate_file_revision_mutation(ctx, &file, page_id, last_revision_id)
                 .await
                 .or_raise(make_error)?;
-
-        check_last_revision(&last_revision, last_revision_id).or_raise(make_error)?;
 
         let output = FileRevisionService::create_tombstone(
             ctx,
@@ -727,6 +781,10 @@ impl FileService {
             )
         };
 
+        let file = Self::lock_file_for_revision_mutation(ctx, site_id, page_id, file_id)
+            .await
+            .or_raise(make_error)?;
+
         PageLockService::require_write_allowed(ctx, site_id, page_id, user_id).await?;
 
         let get_revision_input = GetFileRevision {
@@ -736,14 +794,13 @@ impl FileService {
             revision_number,
         };
 
-        let (target_revision_result, last_revision_result) = join!(
-            FileRevisionService::get(ctx, get_revision_input),
-            FileRevisionService::get_latest(ctx, site_id, page_id, file_id),
-        );
-        let (target_revision, last_revision) =
-            raise_multiple!(target_revision_result, last_revision_result; make_error);
-
-        check_last_revision(&last_revision, last_revision_id).or_raise(make_error)?;
+        let last_revision =
+            Self::validate_file_revision_mutation(ctx, &file, page_id, last_revision_id)
+                .await
+                .or_raise(make_error)?;
+        let target_revision = FileRevisionService::get(ctx, get_revision_input)
+            .await
+            .or_raise(make_error)?;
 
         let FileRevisionModel {
             name,
@@ -1445,6 +1502,18 @@ fn check_last_revision(
 mod tests {
     use super::*;
     use sea_orm::{DbBackend, QueryTrait};
+
+    #[test]
+    fn revision_mutation_file_lookup_locks_the_file_without_a_page_filter() {
+        let statement = FileService::revision_mutation_file_query(123, 456)
+            .build(DbBackend::Postgres)
+            .to_string();
+
+        assert!(statement.contains(r#""file"."file_id" = 123"#));
+        assert!(statement.contains(r#""file"."site_id" = 456"#));
+        assert!(!statement.contains(r#""file"."page_id""#));
+        assert!(statement.ends_with("FOR UPDATE"));
+    }
 
     #[test]
     fn restore_file_lookup_holds_an_exclusive_row_lock() {
