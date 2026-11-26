@@ -252,3 +252,63 @@ test("forum RSS shares the feed XML strip of invalid C0 controls", () => {
   assert.ok(xml.includes("<wikidot:authorName>Eve</wikidot:authorName>"))
   assert.ok(xml.includes("<title>SiteName - new forum threads</title>"))
 })
+
+test("forum RSS strips XML-invalid C0 controls from CDATA post body content", () => {
+  const xml = buildWikidotForumFeedXml(
+    "https://scp-wiki.wikijump.localhost/feed/forum/posts.xml",
+    "posts",
+    {
+      ...output,
+      items: [
+        {
+          ...output.items[0],
+          content_html: "<p>A\u0001B\u001fC\t\n\r & <em>markup</em></p>"
+        }
+      ]
+    },
+    new Date("2026-10-07T16:54:02Z")
+  )
+
+  assert.ok(!hasInvalidXmlC0(xml))
+  assert.ok(
+    xml.includes("\t\t\t\t<![CDATA[\n\t\t\t\t<p>ABC\t\n\r & <em>markup</em></p>\n"),
+    "valid whitespace and markup in the post body stay byte-identical"
+  )
+  assert.equal(
+    (xml.match(/<!\[CDATA\[/gu) ?? []).length,
+    (xml.match(/\]\]>/gu) ?? []).length,
+    "CDATA sections stay balanced"
+  )
+})
+
+test("forum RSS keeps the CDATA ]]> split when post body controls are present", () => {
+  const xml = buildWikidotForumFeedXml(
+    "https://scp-wiki.wikijump.localhost/feed/forum/posts.xml",
+    "posts",
+    {
+      ...output,
+      items: [
+        {
+          ...output.items[0],
+          forum_post_id: 92,
+          content_html: "<p>\u0001one]]>two\u001f</p>"
+        },
+        {
+          ...output.items[0],
+          forum_post_id: 93,
+          content_html: "<p>]]\u0001></p>"
+        }
+      ]
+    },
+    new Date("2026-10-07T16:54:02Z")
+  )
+
+  assert.ok(!hasInvalidXmlC0(xml))
+  assert.ok(xml.includes("<p>one]]]]><![CDATA[>two</p>"))
+  assert.ok(xml.includes("<p>]]]]><![CDATA[></p>"))
+  assert.equal(
+    (xml.match(/<!\[CDATA\[/gu) ?? []).length,
+    (xml.match(/\]\]>/gu) ?? []).length,
+    "CDATA sections stay balanced"
+  )
+})
