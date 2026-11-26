@@ -31,7 +31,7 @@ pub struct PasswordService;
 pub const ACCOUNT_PASSWORD_MIN_CODE_POINTS: usize = 15;
 
 impl PasswordService {
-    pub async fn new_account_hash(password: &str) -> Result<String> {
+    pub fn validate_account_password(password: &str) -> Result<()> {
         let length = password.chars().count();
         if length < ACCOUNT_PASSWORD_MIN_CODE_POINTS {
             bail!(Error::new(
@@ -42,6 +42,12 @@ impl PasswordService {
                 },
             ));
         }
+
+        Ok(())
+    }
+
+    pub async fn new_account_hash(password: &str) -> Result<String> {
+        Self::validate_account_password(password)?;
 
         // Argon2 is deliberately expensive, so it runs on a blocking
         // thread rather than on a runtime worker.

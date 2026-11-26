@@ -1293,6 +1293,8 @@ impl UserService {
         new_password: String,
         ip_address: IpAddr,
     ) -> Result<PasswordChangeOutcome> {
+        PasswordService::validate_account_password(&new_password)?;
+
         let user = Self::get_real_for_update(ctx, Reference::Id(user_id))
             .await
             .or_raise(|| Error::new("failed to change the password", ErrorType::User))?;
