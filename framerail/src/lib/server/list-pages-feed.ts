@@ -1,4 +1,4 @@
-import { escapeFeedXmlText as escapeXml } from "./feed-xml.ts"
+import { escapeFeedXmlCdata, escapeFeedXmlText as escapeXml } from "./feed-xml.ts"
 
 const FEED_PATH_PREFIX = "/feed/pages/"
 const MAX_FEED_PATH_BYTES = 64 * 1024
@@ -139,10 +139,6 @@ export function wikidotListPagesFeedSelectorError(
   return null
 }
 
-function cdata(value: string): string {
-  return value.replaceAll("]]>", "]]]]><![CDATA[>")
-}
-
 export function formatWikidotFeedDate(value: Date): string {
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
   const months = [
@@ -185,7 +181,7 @@ function feedItemXml(origin: string, item: WikidotListPagesFeedItem): string {
     [
       "\t\t\t\t\t\t\t\t\t\t\t\t<content:encoded>",
       "\t\t\t\t\t<![CDATA[",
-      `\t\t\t\t\t\t ${cdata(content)} `,
+      `\t\t\t\t\t\t ${escapeFeedXmlCdata(content)} `,
       "\t\t\t\t \t]]>",
       "\t\t\t\t</content:encoded>"
     ].join("\n"),

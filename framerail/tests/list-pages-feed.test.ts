@@ -204,6 +204,69 @@ test("pages RSS strips XML-invalid C0 controls from channel and item titles", ()
   )
 })
 
+test("pages RSS strips XML-invalid C0 controls from CDATA body content", () => {
+  const path = parseWikidotListPagesFeedPath(
+    "https://sandbox.example/feed/pages/t/Body%20C0"
+  )
+  assert.ok(path)
+  const xml = buildWikidotListPagesFeedXml(
+    "https://sandbox.example/feed/pages/t/body-c0",
+    path,
+    {
+      items: [
+        {
+          slug: "category:one",
+          title: "Body C0",
+          created_at: "2026-07-22T23:23:22Z",
+          body_html: "<p>A\u0001B\u001fC\t\n\r & <em>markup</em></p>",
+          created_by_html: "author"
+        }
+      ]
+    },
+    new Date("2026-07-27T09:53:12Z")
+  )
+
+  assert.ok(!hasInvalidXmlC0(xml))
+  assert.ok(
+    xml.includes("\t\t\t\t\t\t <p>ABC\t\n\r & <em>markup</em></p>\n<p>by author</p> "),
+    "valid whitespace and markup in the body stay byte-identical"
+  )
+  assert.equal(
+    (xml.match(/<!\[CDATA\[/gu) ?? []).length,
+    (xml.match(/\]\]>/gu) ?? []).length,
+    "CDATA sections stay balanced"
+  )
+})
+
+test("pages RSS keeps the CDATA ]]> split when body controls are present", () => {
+  const path = parseWikidotListPagesFeedPath("https://sandbox.example/feed/pages/t/split")
+  assert.ok(path)
+  const xml = buildWikidotListPagesFeedXml(
+    "https://sandbox.example/feed/pages/t/split",
+    path,
+    {
+      items: [
+        {
+          slug: "category:two",
+          title: "Body C0 split",
+          created_at: "2026-07-22T23:23:22Z",
+          body_html: "<p>\u0001one]]>two\u001f</p>",
+          created_by_html: "ed\u0001itor"
+        }
+      ]
+    },
+    new Date("2026-07-27T09:53:12Z")
+  )
+
+  assert.ok(!hasInvalidXmlC0(xml))
+  assert.ok(xml.includes("<p>one]]]]><![CDATA[>two</p>\n<p>by editor</p>"))
+  assert.equal(
+    (xml.match(/<!\[CDATA\[/gu) ?? []).length,
+    (xml.match(/\]\]>/gu) ?? []).length,
+    "CDATA sections stay balanced"
+  )
+})
+
 test("formats the live generic feed error without exposing a stack trace", () => {
   assert.equal(
     wikidotListPagesFeedErrorBody("Invalid rating argument."),

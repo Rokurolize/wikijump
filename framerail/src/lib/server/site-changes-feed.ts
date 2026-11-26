@@ -1,4 +1,4 @@
-import { escapeFeedXmlText as escapeXml } from "./feed-xml.ts"
+import { escapeFeedXmlCdata, escapeFeedXmlText as escapeXml } from "./feed-xml.ts"
 import { formatWikidotFeedDate } from "./list-pages-feed.ts"
 
 export interface WikidotSiteChangesFeedItem {
@@ -35,10 +35,6 @@ function escapeHtmlText(value: string): string {
   return escapeXml(value)
 }
 
-function cdata(value: string): string {
-  return value.replaceAll("]]>", "]]]]><![CDATA[>")
-}
-
 export function formatWikidotSiteChangesFeedDate(value: Date): string {
   return formatWikidotFeedDate(value)
 }
@@ -68,7 +64,7 @@ function itemXml(origin: string, item: WikidotSiteChangesFeedItem): string {
     `\t\t\t<pubDate>${formatWikidotSiteChangesFeedDate(new Date(item.created_at))}</pubDate>`,
     "\t\t\t<content:encoded>",
     "\t\t\t\t<![CDATA[",
-    `\t\t\t\t${cdata(item.body_html)}`,
+    `\t\t\t\t${escapeFeedXmlCdata(item.body_html)}`,
     "\t\t\t\t]]>",
     "\t\t\t</content:encoded>",
     "\t\t</item>"

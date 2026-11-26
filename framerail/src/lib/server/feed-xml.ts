@@ -18,10 +18,21 @@ export function hasInvalidXmlC0(value: string): boolean {
   )
 }
 
+function stripInvalidXmlC0(value: string): string {
+  let stripped = ""
+  for (const character of value) {
+    if (isXmlValidCodePoint(character.codePointAt(0) ?? -1)) stripped += character
+  }
+  return stripped
+}
+
+export function escapeFeedXmlCdata(value: string): string {
+  return stripInvalidXmlC0(value).replaceAll("]]>", "]]]]><![CDATA[>")
+}
+
 export function escapeFeedXmlText(value: string): string {
   let escaped = ""
-  for (const character of value) {
-    if (!isXmlValidCodePoint(character.codePointAt(0) ?? -1)) continue
+  for (const character of stripInvalidXmlC0(value)) {
     switch (character) {
       case "&":
         escaped += "&amp;"
