@@ -21,6 +21,13 @@ name: PR checks
 # stacks, the Theme Lab authority store) and belongs to the provisioned
 # informational run, not a minutes-long PR check.
 
+env:
+  # sccache: store the cache in the GitHub Actions cache service so it
+  # survives the runner. Without this the sccache-action's server keeps
+  # its cache on the ephemeral local disk and every run misses (measured
+  # 2026-11-26 in pr-checks: 835 compile requests executed, 0 hits).
+  SCCACHE_GHA_ENABLED: "true"
+
 on:
   pull_request:
 

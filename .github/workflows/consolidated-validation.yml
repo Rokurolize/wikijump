@@ -5,6 +5,13 @@ name: Consolidated validation
 # targeted checks in pr-checks.yml. The standing application images are not
 # built here because the docker-build-*.yaml workflows already build them.
 
+env:
+  # sccache: store the cache in the GitHub Actions cache service so it
+  # survives the runner. Without this the sccache-action's server keeps
+  # its cache on the ephemeral local disk and every run misses (measured
+  # 2026-11-26 in pr-checks: 835 compile requests executed, 0 hits).
+  SCCACHE_GHA_ENABLED: "true"
+
 on:
   schedule:
     # Nightly on develop (03:17 JST). Informational only.
