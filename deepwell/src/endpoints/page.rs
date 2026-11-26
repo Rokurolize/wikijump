@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::page_action_guard::require_page_edit_permission;
 use super::prelude::*;
 use crate::models::file::Model as FileModel;
 use crate::models::page::Model as PageModel;
@@ -327,6 +328,7 @@ pub async fn page_rollback(
         input.page, input.site_id, input.revision_number,
     );
 
+    require_page_edit_permission(ctx, input.site_id, input.page.borrow()).await?;
     PageService::rollback(ctx, input)
         .await
         .or_raise(|| Error::new("failed to rollback page", ErrorType::Page))
