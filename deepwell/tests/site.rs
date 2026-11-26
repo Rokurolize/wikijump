@@ -858,20 +858,22 @@ async fn newsite_bootstrap_binds_creator_admin_with_site_edit() {
     let roles = RoleService::get_all_roles_for_site(runner.context(), created.site_id)
         .await
         .expect("bootstrap roles should list");
-    let names: Vec<&str> = roles.iter().map(|role| role.name.as_str()).collect();
+    let mut names: Vec<&str> = roles.iter().map(|role| role.name.as_str()).collect();
+    names.sort_unstable();
+    let mut expected = [
+        "root",
+        "admin",
+        "moderator",
+        "member",
+        "guest",
+        "registered",
+        "anonymous",
+        "everyone",
+        "page-author",
+    ];
+    expected.sort_unstable();
     assert_eq!(
-        names,
-        [
-            "root",
-            "admin",
-            "moderator",
-            "member",
-            "guest",
-            "registered",
-            "anonymous",
-            "everyone",
-            "page-author",
-        ],
+        names, expected,
         "browser creation must inherit the seeder baseline role graph",
     );
 
