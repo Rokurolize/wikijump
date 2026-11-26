@@ -9,13 +9,12 @@ asset manifest so a missing acquisition cannot become a false PASS.
 from __future__ import annotations
 
 import argparse
-import base64
 import hashlib
 import json
 import mimetypes
 import re
 from pathlib import Path
-from urllib.parse import unquote, urljoin, urlparse
+from urllib.parse import urljoin, urlparse
 
 
 # A trailing simple @import is terminated by EOF in native CSS even without a

@@ -44,7 +44,7 @@ RUN cargo build --release
 # Final image
 #
 
-FROM debian:bookworm-slim@sha256:7b140f374b289a7c2befc338f42ebe6441b7ea838a042bbd5acbfca6ec875818
+FROM debian:trixie-slim@sha256:020c0d20b9880058cbe785a9db107156c3c75c2ac944a6aa7ab59f2add76a7bd
 
 # Install dependencies.
 RUN apt-get update && \

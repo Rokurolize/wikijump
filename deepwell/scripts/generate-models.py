@@ -2,7 +2,6 @@
 
 from glob import iglob
 import os
-from io import StringIO
 import re
 import subprocess
 import sys

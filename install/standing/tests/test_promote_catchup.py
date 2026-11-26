@@ -151,10 +151,10 @@ class RealPostgresTest(unittest.TestCase):
     def setUpClass(cls) -> None:
         try:
             docker("image", "inspect", PG_IMAGE)
-        except subprocess.CalledProcessError:
+        except subprocess.CalledProcessError as error:
             raise unittest.SkipTest(
                 f"{PG_IMAGE} is not present locally; build or pull it to run the real Postgres catch-up cases"
-            )
+            ) from error
         subprocess.run(["docker", "rm", "--force", cls.container], capture_output=True)
         try:
             docker(
@@ -170,9 +170,9 @@ class RealPostgresTest(unittest.TestCase):
                 try:
                     promote.psql(cls.container, SCHEMA)
                     break
-                except subprocess.CalledProcessError:
+                except subprocess.CalledProcessError as error:
                     if time.monotonic() > deadline:
-                        raise RuntimeError("disposable Postgres did not become ready")
+                        raise RuntimeError("disposable Postgres did not become ready") from error
                     time.sleep(0.5)
         except BaseException:
             subprocess.run(["docker", "rm", "--force", cls.container], capture_output=True)

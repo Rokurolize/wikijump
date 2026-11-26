@@ -387,7 +387,7 @@ class RenderUntilLinksSettleTest(unittest.TestCase):
             summary = original(*args, **flags)
             summary["failures"] = [
                 {"error": "include limit"} if page == 2 else failure
-                for page, failure in zip(summary["failed_page_ids"], summary["failures"])
+                for page, failure in zip(summary["failed_page_ids"], summary["failures"], strict=True)
             ]
             return summary
         site.render = render
