@@ -5931,10 +5931,13 @@ async fn listpages_total_only_body_without_wrapper_uses_default_presentation() {
         0,
         "the ignored total-only body must not render the total once per row:\n{fallback_html}",
     );
+    let wrapped_totals = wrapped_html
+        .split(['<', '>', '\n'])
+        .filter(|part| *part == "3")
+        .count();
     assert_eq!(
-        wrapped_html.matches(">3<").count(),
-        3,
-        "an explicit wrapper attribute must keep the total-only row body:\n{wrapped_html}",
+        wrapped_totals, 3,
+        "an explicit wrapper attribute must keep one total per row:\n{wrapped_html}",
     );
     assert!(
         !wrapped_html.contains("FALLBACK_SUMMARY_ALPHA"),

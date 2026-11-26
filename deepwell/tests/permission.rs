@@ -285,12 +285,15 @@ async fn add_perms_to_role(
     role_id: i64,
     permissions: Vec<Permission<'static>>,
 ) {
+    let role = RoleService::get(ctx, site_id, Reference::Id(role_id))
+        .await
+        .expect("Failed to get role");
     PermissionService::update_permissions_for_role(
         ctx,
         UpdateRolePermissionsInput {
             site_id,
             role_reference: Reference::Id(role_id),
-            expected_role_revision: 0,
+            expected_role_revision: role.revision,
             new_permissions: permissions,
             cascade_removals: false,
             updating_user_id: SYSTEM_USER_ID,
