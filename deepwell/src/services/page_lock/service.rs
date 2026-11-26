@@ -401,4 +401,25 @@ impl PageLockService {
             })
         }
     }
+
+    pub async fn can_user_edit_page(
+        ctx: &ServiceContext<'_>,
+        page: &PageModel,
+        user_id: i64,
+    ) -> Result<bool> {
+        if user_id == SYSTEM_USER_ID {
+            return Ok(true);
+        }
+
+        let lock = Self::can_user_bypass_lock(
+            ctx,
+            page.site_id,
+            page.page_id,
+            Some(page.page_category_id),
+            user_id,
+        )
+        .await?;
+
+        Ok(lock.can_edit)
+    }
 }

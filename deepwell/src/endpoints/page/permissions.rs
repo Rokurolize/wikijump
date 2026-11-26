@@ -1,4 +1,5 @@
 use super::*;
+use crate::constants::ANONYMOUS_USER_ID;
 
 fn slug_targets_reserved_admin_page(slug: &str) -> bool {
     PermissionService::slug_targets_reserved_admin_page(slug)
@@ -268,23 +269,36 @@ pub async fn page_edit_permission(
     let make_error =
         || Error::new("failed to check page edit permission", ErrorType::Page);
 
-    let can_edit = if ctx.request().page_reference.is_some() {
-        PageService::check_user_permission(ctx, Action::Edit)
+    let site_id = ctx.request().site_id().or_raise(make_error)?;
+    let page_reference = match ctx.request().page_reference.clone() {
+        Some(page_reference) => page_reference,
+        None => {
+            let site = SiteService::get(ctx, Reference::Id(site_id))
+                .await
+                .or_raise(make_error)?;
+            Reference::Slug(site.default_page.into())
+        }
+    };
+
+    let can_edit = PageService::check_user_permission_for_page(
+        ctx,
+        site_id,
+        page_reference.clone(),
+        Action::Edit,
+    )
+    .await
+    .or_raise(make_error)?;
+
+    let can_edit = if can_edit {
+        let page = PageService::get(ctx, site_id, page_reference)
+            .await
+            .or_raise(make_error)?;
+        let user_id = ctx.request().user_id.unwrap_or(ANONYMOUS_USER_ID);
+        PageLockService::can_user_edit_page(ctx, &page, user_id)
             .await
             .or_raise(make_error)?
     } else {
-        let site_id = ctx.request().site_id().or_raise(make_error)?;
-        let site = SiteService::get(ctx, Reference::Id(site_id))
-            .await
-            .or_raise(make_error)?;
-        PageService::check_user_permission_for_page(
-            ctx,
-            site_id,
-            Reference::Slug(site.default_page.into()),
-            Action::Edit,
-        )
-        .await
-        .or_raise(make_error)?
+        false
     };
 
     Ok(PageEditPermissionOutput { can_edit })
