@@ -20,23 +20,26 @@
 
 use super::module_arguments::PageModuleArguments;
 use crate::error::exn_any_error;
-use crate::error::prelude::{Error, ErrorType, Result};
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page::Model as PageModel;
 use crate::models::page_revision::Model as PageRevisionModel;
 use crate::models::site::Model as SiteModel;
-use crate::services::ServiceContext;
+use crate::services::{
+    PageService, ServiceContext, SiteService, TextService,
+};
 use crate::services::blueprint::BlueprintPageService;
 use crate::services::render::{
-    RenderService, UrlArguments, wikitext_reads_url_arguments,
-    wikitext_requires_runtime_render,
+    RenderService, UrlArguments, wikitext_has_visibility_sensitive_module,
+    wikitext_reads_url_arguments, wikitext_requires_runtime_render,
 };
 use crate::services::score::ScoreService;
 use crate::services::settings::SettingsService;
-use crate::types::PageId;
+use crate::types::{PageId, Reference};
 use crate::utils::{locale_for_ftml, split_category};
 use exn::Exn;
 use ftml::data::PageInfo;
 use ref_map::OptionRefMap;
+use std::borrow::Cow;
 
 pub(super) struct RenderBodyForModuleArgumentsInput<'a, 'txn> {
     pub ctx: &'a ServiceContext<'txn>,
@@ -128,6 +131,55 @@ pub(super) async fn render_body_for_module_arguments(
         }
         Err(error) => Err(error),
     }
+}
+
+pub(crate) async fn viewer_safe_compiled_body(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    page_id: i64,
+    page_revision: &PageRevisionModel,
+    wikitext: Option<&str>,
+    viewer_user_id: Option<i64>,
+    stored_body: String,
+) -> Result<String> {
+    let wikitext = match wikitext {
+        Some(wikitext) => Cow::Borrowed(wikitext),
+        None => Cow::Owned(
+            TextService::get(ctx, &page_revision.wikitext_hash)
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        "failed to load wikitext for viewer-safe body",
+                        ErrorType::Page,
+                    )
+                })?,
+        ),
+    };
+    if !wikitext_has_visibility_sensitive_module(&wikitext) {
+        return Ok(stored_body);
+    }
+
+    let (page, site) = tokio::try_join!(
+        PageService::get(ctx, site_id, Reference::Id(page_id)),
+        SiteService::get(ctx, Reference::Id(site_id)),
+    )
+    .or_raise(|| {
+        Error::new(
+            "failed to load page for viewer-safe body",
+            ErrorType::Page,
+        )
+    })?;
+    render_body_for_module_arguments(RenderBodyForModuleArgumentsInput {
+        ctx,
+        module_arguments: &PageModuleArguments::default(),
+        wikitext: &wikitext,
+        page: &page,
+        page_revision,
+        site: &site,
+        viewer_user_id,
+        stored_body_html: stored_body,
+    })
+    .await
 }
 
 fn saved_render_answers_failed_render(

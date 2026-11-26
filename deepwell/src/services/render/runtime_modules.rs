@@ -415,6 +415,7 @@ pub(super) struct SecondaryRuntimeModuleExpansionOptions<'a> {
     pub(super) current_page_id: Option<i64>,
     pub(super) viewer_user_id: Option<i64>,
     pub(super) page_preview: bool,
+    pub(super) view_independent_compiled: bool,
     pub(super) url: UrlArguments<'a>,
     pub(super) trace: Option<(&'a CorpusRenderTrace, CorpusRenderScope)>,
 }
@@ -1285,6 +1286,7 @@ impl RenderService {
             settings,
             page_info,
             options.viewer_user_id,
+            options.view_independent_compiled,
             options.url,
             compat_html,
         )
@@ -1364,6 +1366,7 @@ impl RenderService {
             settings,
             options.current_site_id,
             options.viewer_user_id,
+            options.view_independent_compiled,
             module_query_cache,
             compat_html,
         )

@@ -28,6 +28,7 @@ use crate::services::page_revision::{
     UpdatePageRevisionDetails,
 };
 use crate::services::permission::PermissionService;
+use crate::services::view::viewer_safe_compiled_body;
 use crate::services::{MutationAuthorization, TextService};
 use crate::types::{Action, PageDetails, Permission, Reference, Resource};
 use ftml::data::UserInfo;
@@ -284,6 +285,7 @@ async fn filter_and_populate_revision(
     mut details: PageDetails,
     author: Option<UserInfo<'static>>,
 ) -> Result<PageRevisionModelFiltered> {
+    let viewer_safe_revision = model.clone();
     let PageRevisionModel {
         revision_id,
         revision_type,
@@ -404,6 +406,23 @@ async fn filter_and_populate_revision(
 
     let wikitext = wikitext.or_raise(make_error)?;
     let compiled_body_html = compiled_body_html.or_raise(make_error)?;
+    let compiled_body_html = if details.compiled_html {
+        Some(
+            viewer_safe_compiled_body(
+                ctx,
+                site_id,
+                page_id,
+                &viewer_safe_revision,
+                wikitext.as_deref(),
+                ctx.request().user_id,
+                compiled_body_html.unwrap_or_default(),
+            )
+            .await
+            .or_raise(make_error)?,
+        )
+    } else {
+        None
+    };
     let compiled_body_styles = compiled_body_styles.or_raise(make_error)?;
     let compiled_body_styles = if details.compiled_html {
         Some(
