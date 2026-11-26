@@ -35,6 +35,7 @@ const WIKIDOT_GALLERY_SELECTION_ERROR: &str =
 const WIKIDOT_GALLERY_EMPTY_ERROR: &str = r#"<div class="error-block">Sorry, we couldn't find any images attached to this page.</div>"#;
 const MAX_GALLERY_FILES: u64 = 500;
 const MAX_GALLERY_ENTRIES: usize = 500;
+const LOCAL_FILES_PATH_PREFIX: &str = "/local--files/";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 enum GallerySize {
@@ -462,7 +463,7 @@ fn owned_gallery_url(
     {
         return None;
     }
-    let path = url.path().strip_prefix("/local--files/")?;
+    let path = url.path().strip_prefix(LOCAL_FILES_PATH_PREFIX)?;
     let (page_slug, encoded_name) = path.split_once('/')?;
     if page_slug.is_empty()
         || encoded_name.is_empty()
@@ -481,7 +482,10 @@ fn owned_gallery_url(
 fn external_gallery_url(source: &str) -> Option<String> {
     let source = unquote_gallery_token(source);
     let url = Url::parse(source).ok()?;
-    if !matches!(url.scheme(), "http" | "https") || url.host_str().is_none() {
+    if !matches!(url.scheme(), "http" | "https")
+        || url.host_str().is_none()
+        || url.path().starts_with(LOCAL_FILES_PATH_PREFIX)
+    {
         return None;
     }
     Some(source.to_owned())
@@ -755,8 +759,24 @@ mod tests {
         assert_eq!(external_gallery_url("https://"), None);
         assert_eq!(external_gallery_url("a.png"), None);
         assert_eq!(
+            external_gallery_url(
+                "https://example.invalid/local--files/page/gallery%20image.png",
+            ),
+            None,
+        );
+        assert_eq!(
+            external_gallery_url(
+                "https://scp-jp.wdfiles.com/local--files/page/gallery%20image.png",
+            ),
+            None,
+        );
+        assert_eq!(
             inert_gallery_url("*https://example.com/a.png"),
             Some(("https://example.com/a.png".to_owned(), true)),
+        );
+        assert_eq!(
+            inert_gallery_url("*https://example.invalid/local--files/page/a.png"),
+            None,
         );
         assert_eq!(inert_gallery_url("https://example.com/a.png"), None);
         assert_eq!(inert_gallery_url("flickr:12345"), None);
