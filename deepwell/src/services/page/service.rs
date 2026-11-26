@@ -564,6 +564,12 @@ impl PageService {
         }: RestorePage,
     ) -> Result<RestorePageOutput> {
         let txn = ctx.transaction();
+        let user_id = match user_id {
+            Some(user_id) => user_id,
+            None => ctx.request().user_id().or_raise(|| {
+                Error::new("user ID required for write operation", ErrorType::Page)
+            })?,
+        };
 
         let page = Self::get_direct(ctx, page_id, true)
             .await
