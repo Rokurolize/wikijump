@@ -143,7 +143,7 @@ export async function userPasswordChange(
   newPassword: string,
   userIpAddr: string,
   requestContext: RequestContext
-): Promise<{ other_sessions_revoked: number }> {
+): Promise<{ password_changed: boolean; other_sessions_revoked: number }> {
   return client.request(
     "user_password_change",
     {

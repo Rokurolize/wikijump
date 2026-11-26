@@ -20,7 +20,8 @@
 
 use super::locale::validate_locales;
 use super::structs::{
-    ActivateUserFromWikidot, CreateUser, CreateUserOutput, UpdateUserBody, User,
+    ActivateUserFromWikidot, CreateUser, CreateUserOutput, PasswordChangeOutcome,
+    UpdateUserBody, User,
 };
 use crate::config::Config;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
@@ -37,7 +38,9 @@ use crate::services::email::{
     EmailClassification, EmailService, EmailTokenService, EmailValidationOutput,
 };
 use crate::services::filter::{FilterClass, FilterType};
-use crate::services::{AliasService, FilterService, PasswordService, RelationService};
+use crate::services::{
+    AliasService, FilterService, PasswordService, RelationService, SessionService,
+};
 use crate::types::{AliasType, UserType};
 use crate::types::{Maybe, Reference};
 use crate::utils::confusable_skeleton;
@@ -1281,6 +1284,52 @@ impl UserService {
         }
 
         Ok(new_user)
+    }
+
+    pub async fn change_password(
+        ctx: &ServiceContext<'_>,
+        user_id: i64,
+        session_token: &str,
+        new_password: String,
+        ip_address: IpAddr,
+    ) -> Result<PasswordChangeOutcome> {
+        let user = Self::get_real_for_update(ctx, Reference::Id(user_id))
+            .await
+            .or_raise(|| Error::new("failed to change the password", ErrorType::User))?;
+
+        if PasswordService::matches_stored_hash(&new_password, &user.password).await? {
+            return Ok(PasswordChangeOutcome {
+                password_changed: false,
+                other_sessions_revoked: 0,
+            });
+        }
+
+        Self::update(
+            ctx,
+            Reference::Id(user_id),
+            ip_address,
+            UpdateUserBody {
+                password: Maybe::Set(new_password),
+                ..Default::default()
+            },
+        )
+        .await
+        .or_raise(|| Error::new("failed to change the password", ErrorType::User))?;
+
+        let other_sessions_revoked =
+            SessionService::invalidate_others(ctx, session_token, user_id)
+                .await
+                .or_raise(|| {
+                    Error::new(
+                        "failed to revoke the account's other sessions",
+                        ErrorType::User,
+                    )
+                })?;
+
+        Ok(PasswordChangeOutcome {
+            password_changed: true,
+            other_sessions_revoked,
+        })
     }
 
     async fn live_email_owner_exists(

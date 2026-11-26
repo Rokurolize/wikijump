@@ -512,6 +512,12 @@ pub struct UpdateUser<'a> {
     pub current_password: Option<String>,
 }
 
+#[derive(Debug)]
+pub struct PasswordChangeOutcome {
+    pub password_changed: bool,
+    pub other_sessions_revoked: u64,
+}
+
 #[derive(Deserialize, Debug, Default, Clone)]
 #[serde(default)]
 pub struct UpdateUserBody {

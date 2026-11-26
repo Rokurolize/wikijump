@@ -178,7 +178,7 @@ export async function userPasswordChangeAction({
     )
     return redact({
       form: clearPasswordChange(form),
-      passwordChanged: true,
+      passwordChanged: result.password_changed,
       otherSessionsRevoked: result.other_sessions_revoked
     })
   } catch (error) {

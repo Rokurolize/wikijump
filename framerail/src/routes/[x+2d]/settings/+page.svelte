@@ -52,6 +52,8 @@
           passwordStatus = `Password changed. ${revoked} other session${
             revoked === 1 ? " was" : "s were"
           } signed out.`
+        } else if (result.type === "success" && result.data?.passwordChanged === false) {
+          passwordStatus = "Password unchanged."
         } else if (result.type === "failure" && result.data?.message) {
           errorPopupState.current = {
             state: true,

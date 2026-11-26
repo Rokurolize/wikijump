@@ -359,6 +359,7 @@ struct ChangeUserPassword {
 
 #[derive(Serialize, Debug, Clone)]
 pub struct ChangeUserPasswordOutput {
+    pub password_changed: bool,
     pub other_sessions_revoked: u64,
 }
 
@@ -401,32 +402,18 @@ pub async fn user_password_change(
         ));
     }
 
-    PasswordService::new_account_hash(&new_password).await?;
-
     info!("Changing the password of user ID {}", user.user_id);
-    UserService::update(
+    let outcome = UserService::change_password(
         ctx,
-        Reference::Id(user.user_id),
+        user.user_id,
+        &session.session_token,
+        new_password,
         ip_address,
-        UpdateUserBody {
-            password: Maybe::Set(new_password),
-            ..Default::default()
-        },
     )
-    .await
-    .or_raise(|| Error::new("failed to change the password", ErrorType::User))?;
-
-    let other_sessions_revoked =
-        SessionService::invalidate_others(ctx, &session.session_token, user.user_id)
-            .await
-            .or_raise(|| {
-                Error::new(
-                    "failed to revoke the account's other sessions",
-                    ErrorType::User,
-                )
-            })?;
+    .await?;
 
     Ok(ChangeUserPasswordOutput {
-        other_sessions_revoked,
+        password_changed: outcome.password_changed,
+        other_sessions_revoked: outcome.other_sessions_revoked,
     })
 }

@@ -100,7 +100,7 @@ export const handleProfileRpc = ({
       )
       return { responded: true }
     }
-    return { result: { other_sessions_revoked: 2 } }
+    return { result: { password_changed: true, other_sessions_revoked: 2 } }
   }
 
   if (rpcRequest.method !== "user_view") return undefined
