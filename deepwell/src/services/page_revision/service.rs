@@ -2345,14 +2345,14 @@ struct RenderPageInfo<'a> {
 }
 
 #[inline]
-fn replace_hash(dest: &mut Vec<u8>, src: &[u8]) {
+fn replace_hash(dest: &mut [u8], src: &[u8]) {
     debug_assert_eq!(
         dest.len(),
         src.len(),
         "Lengths of hash buffers are not equal",
     );
 
-    dest.as_mut_slice().copy_from_slice(src);
+    dest.copy_from_slice(src);
 }
 
 fn replace_hash_opt<B: AsRef<[u8]>>(dest: &mut Option<Vec<u8>>, src: Option<B>) {

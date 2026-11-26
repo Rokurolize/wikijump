@@ -1,3 +1,5 @@
+#![recursion_limit = "256"]
+
 use deepwell::api::{ServerState, build_server_state_without_workers};
 use deepwell::config::{Config, Secrets};
 use deepwell::constants::ADMIN_USER_ID;

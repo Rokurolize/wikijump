@@ -334,6 +334,26 @@ impl From<(CreatePageRevisionOutput, String)> for RestorePageOutput {
     }
 }
 
+#[derive(Serialize, Debug, Clone)]
+pub struct PageEditPermissionOutput {
+    pub can_edit: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PageCreatePermissionOutput {
+    pub can_create: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PageMovePermissionOutput {
+    pub can_move: bool,
+}
+
+#[derive(Serialize, Debug, Clone)]
+pub struct PageDeletePermissionOutput {
+    pub can_delete: bool,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -386,24 +406,4 @@ mod tests {
             str!("restored-page"),
         ));
     }
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct PageEditPermissionOutput {
-    pub can_edit: bool,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct PageCreatePermissionOutput {
-    pub can_create: bool,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct PageMovePermissionOutput {
-    pub can_move: bool,
-}
-
-#[derive(Serialize, Debug, Clone)]
-pub struct PageDeletePermissionOutput {
-    pub can_delete: bool,
 }

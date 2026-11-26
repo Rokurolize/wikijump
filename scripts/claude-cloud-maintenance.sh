@@ -5,9 +5,9 @@ if [[ "${CLAUDE_CODE_REMOTE:-}" != "true" ]]; then
   exit 0
 fi
 
-script_revision=2026-10-26.3
+script_revision=2026-11-26.1
 node_version=24.22.1
-required_rust_version=1.100.0
+required_rust_version=nightly-2026-11-26
 pnpm_version=11.10.0
 trusted_node24_dir=/opt/wikijump/trusted-node24
 

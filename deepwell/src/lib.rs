@@ -18,6 +18,8 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+#![recursion_limit = "256"]
+
 #[macro_use]
 extern crate exn;
 

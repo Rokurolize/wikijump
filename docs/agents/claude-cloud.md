@@ -14,10 +14,7 @@ environments).
   BASH_DEFAULT_TIMEOUT_MS=600000
   BASH_MAX_TIMEOUT_MS=1800000
   ```
-- **Setup script:** the contents of `scripts/claude-cloud-setup.sh`.
-  It installs Node 24, Rust 1.100.0 and pnpm 11.10.0, installs the
-  `/usr/local/bin/wikijump-claude-services` helper, and prefetches the
-  pnpm and cargo dependencies so the environment snapshot starts warm.
+- **Setup script:** the contents of `scripts/claude-cloud-setup.sh`. It installs Node 24, Rust nightly-2026-11-26 and pnpm 11.10.0, installs the `/usr/local/bin/wikijump-claude-services` helper, and prefetches the pnpm and cargo dependencies so the environment snapshot starts warm.
 - **Network secrets:** none. GitHub traffic goes through the session
   proxy; never place a token in environment variables.
 

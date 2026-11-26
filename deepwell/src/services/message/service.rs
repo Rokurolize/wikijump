@@ -721,6 +721,21 @@ impl MessageService {
     }
 }
 
+#[derive(Debug)]
+struct DraftProcess {
+    is_update: bool,
+    user_id: i64,
+    draft_id: String,
+    recipients: Vec<i64>,
+    carbon_copy: Vec<i64>,
+    blind_carbon_copy: Vec<i64>,
+    locale: String,
+    subject: String,
+    wikitext: String,
+    reply_to: Maybe<Option<String>>,
+    forwarded_from: Maybe<Option<String>>,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -736,19 +751,4 @@ mod tests {
             );
         }
     }
-}
-
-#[derive(Debug)]
-struct DraftProcess {
-    is_update: bool,
-    user_id: i64,
-    draft_id: String,
-    recipients: Vec<i64>,
-    carbon_copy: Vec<i64>,
-    blind_carbon_copy: Vec<i64>,
-    locale: String,
-    subject: String,
-    wikitext: String,
-    reply_to: Maybe<Option<String>>,
-    forwarded_from: Maybe<Option<String>>,
 }
