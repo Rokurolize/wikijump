@@ -44,11 +44,13 @@ use crate::models::role::{self, Entity as Role};
 use crate::models::role_permission::{self, Entity as RolePermission};
 use crate::models::site::{self, Entity as Site};
 use crate::models::site_icon::{self, Entity as SiteIcon};
-use crate::models::user_role::{self, Entity as UserRole};
 use crate::services::ServiceContext;
-use crate::services::relation::RelationService;
+use crate::services::relation::{
+    CreateSiteMember, RelationService, SiteMemberAccepted, SiteMemberData,
+};
+use crate::services::role::{GrantUserRoleInput, RoleService};
 use crate::services::site::{CreateSite, SiteService};
-use crate::types::{Reference, RelationObjectType, RelationType};
+use crate::types::{AccessPolicy, Reference, RelationObjectType, RelationType};
 use ftml::layout::Layout;
 use sea_orm::{
     ActiveModelTrait, ActiveValue::NotSet, ActiveValue::Set, ColumnTrait, Condition,
@@ -215,7 +217,7 @@ impl SiteCloneService {
                 license: source.license,
                 locale: source.locale.clone(),
                 ip_address: input.ip_address,
-                access_policy: source.access_policy,
+                access_policy: AccessPolicy::Private,
             },
             Some(actor_user_id),
         )
@@ -232,7 +234,7 @@ impl SiteCloneService {
             .or_raise(make_error)?
             .ok_or_raise(make_error)?;
         let mut site: site::ActiveModel = dest.into();
-        site.access_policy = Set(source.access_policy);
+        site.access_policy = Set(AccessPolicy::Private);
         site.from_wikidot = Set(source.from_wikidot);
         site.slug = Set(slug.clone());
         site.name = Set(source.name.clone());
@@ -272,6 +274,38 @@ impl SiteCloneService {
 
         Self::clone_categories(txn, source_site_id, site_id, &mut maps).await?;
         Self::clone_roles(txn, source_site_id, site_id, &mut maps).await?;
+
+        let admin_role = RoleService::get(ctx, site_id, Reference::from("admin"))
+            .await
+            .or_raise(make_error)?;
+        RelationService::create_site_member(
+            ctx,
+            CreateSiteMember {
+                site_id,
+                user_id: actor_user_id,
+                metadata: SiteMemberData {
+                    accepted: SiteMemberAccepted::CreatedSite,
+                },
+                created_by: actor_user_id,
+            },
+            input.ip_address,
+        )
+        .await
+        .or_raise(make_error)?;
+        RoleService::grant_role_to_user(
+            ctx,
+            GrantUserRoleInput {
+                site_id,
+                user_id: actor_user_id,
+                role_id: admin_role.role_id,
+                assigning_user_id: actor_user_id,
+                expires_at: None,
+                ip_address: input.ip_address,
+            },
+        )
+        .await
+        .or_raise(make_error)?;
+
         Self::clone_pages(txn, source_site_id, site_id, &mut maps).await?;
         let revision_count =
             Self::clone_revisions(txn, source_site_id, site_id, &mut maps).await?;
@@ -396,20 +430,6 @@ impl SiteCloneService {
             active.role_id = Set(maps.role(role_id)?);
             active.site_id = Set(site_id);
             active.resource_category_id = Set(resource_category_id);
-            active.insert(txn).await.or_raise(make_error)?;
-        }
-
-        let assignments = UserRole::find()
-            .filter(user_role::Column::SiteId.eq(source_site_id))
-            .all(txn)
-            .await
-            .or_raise(make_error)?;
-
-        for assignment in assignments {
-            let role_id = assignment.role_id;
-            let mut active: user_role::ActiveModel = assignment.into();
-            active.role_id = Set(maps.role(role_id)?);
-            active.site_id = Set(site_id);
             active.insert(txn).await.or_raise(make_error)?;
         }
 
@@ -714,9 +734,11 @@ impl SiteCloneService {
             .or_raise(make_error)?;
 
         for rel in relations {
-            if rel.relation_type == RelationType::SiteUser
-                || rel.from_id == source_site_user_id
-                    && rel.from_type == RelationObjectType::User
+            if matches!(
+                rel.relation_type,
+                RelationType::SiteUser | RelationType::SiteMember
+            ) || rel.from_id == source_site_user_id
+                && rel.from_type == RelationObjectType::User
             {
                 continue;
             }
