@@ -37,6 +37,13 @@ test("requests without the header keep the socket peer", () => {
   assert.equal(resolveClientIp(requestWith(null), "8.8.8.8"), "8.8.8.8")
 })
 
+test("v4-mapped IPv6 peers use the embedded IPv4 trust decision", () => {
+  for (const peer of ["::ffff:127.0.0.1", "::ffff:172.18.0.1"]) {
+    assert.ok(isTrustedProxyPeer(peer), peer)
+  }
+  assert.ok(!isTrustedProxyPeer("::ffff:8.8.8.8"))
+})
+
 test("only proxy transports are trusted", () => {
   for (const peer of [
     "127.0.0.1",

@@ -4,7 +4,7 @@ import test from "node:test"
 import type { Server } from "node:http"
 import type { AddressInfo } from "node:net"
 
-import { createFramerailHttpServer } from "../server.ts"
+import { createFramerailHttpServer, resolveFramerailListenHost } from "../server.ts"
 import { createStartupReadiness } from "../startup-readiness.ts"
 
 const listen = async (server: Server) => {
@@ -13,6 +13,11 @@ const listen = async (server: Server) => {
   assert.equal(typeof address, "object")
   return `http://127.0.0.1:${(address as AddressInfo).port}`
 }
+
+test("built-mode listen host defaults to dual-stack and respects explicit HOST", () => {
+  assert.equal(resolveFramerailListenHost(undefined), "::")
+  assert.equal(resolveFramerailListenHost("127.0.0.1"), "127.0.0.1")
+})
 
 test("Framerail HTTP server delegates requests and closes its fence cache", async () => {
   let fenceCacheCloseCount = 0

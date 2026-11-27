@@ -7,7 +7,10 @@ import {
   resetRedisCommandState,
   writeRedisCommand
 } from "../../src/lib/server/cache/redis-command-state.ts"
-import { connectRedisSocket } from "../../src/lib/server/cache/redis-connection.ts"
+import {
+  connectRedisSocket,
+  resolveRedisConnectHost
+} from "../../src/lib/server/cache/redis-connection.ts"
 import {
   encodeRedisCommand,
   parseRedisResponse
@@ -137,6 +140,12 @@ test("Redis command state owns pending request cleanup", async () => {
   assert.equal(state.pending.length, 0)
   assert.equal(state.socket, null)
   assert.equal(destroyed, true)
+})
+
+test("Redis connection host strips IPv6 literal brackets only", () => {
+  assert.equal(resolveRedisConnectHost(new URL("redis://[::1]:6379")), "::1")
+  assert.equal(resolveRedisConnectHost(new URL("redis://cache:6379")), "cache")
+  assert.equal(resolveRedisConnectHost(new URL("redis://127.0.0.1:6379")), "127.0.0.1")
 })
 
 test("Redis connection helper opens a plain socket", async () => {
