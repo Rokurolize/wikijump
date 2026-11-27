@@ -47,7 +47,12 @@ const CLAIM_WIKIDOT_USER_ID: i32 = 123_456_789;
 const CLAIM_WIKIDOT_NAME: &str = "Claimant Alice";
 const CLAIM_WIKIDOT_SLUG: &str = "claimant-alice";
 
-async fn insert_claimable_wikidot_user(runner: &TestRunner, user_id: i32, name: &str, slug: &str) {
+async fn insert_claimable_wikidot_user(
+    runner: &TestRunner,
+    user_id: i32,
+    name: &str,
+    slug: &str,
+) {
     known_user::ActiveModel {
         user_id: Set(i64::from(user_id)),
     }
@@ -183,9 +188,12 @@ async fn staff_claim_token_enables_non_staff_activation_without_email_bypass() {
     );
     assert_contains_error!(reuse_err, ErrorType::AuthorizationToken);
 
-    let loaded = UserService::get(runner.context(), Reference::Id(i64::from(CLAIM_WIKIDOT_USER_ID)))
-        .await
-        .expect("activated user should exist");
+    let loaded = UserService::get(
+        runner.context(),
+        Reference::Id(i64::from(CLAIM_WIKIDOT_USER_ID)),
+    )
+    .await
+    .expect("activated user should exist");
     assert!(matches!(loaded, User::Wikijump(_)));
 }
 
@@ -400,15 +408,22 @@ async fn profile_challenge_http_verifier_checks_wikidot_profile_page() {
     });
 
     let verifier = WikidotProfileChallengeVerifier::new(format!("http://{addr}"));
-    let err = WikidotClaimService::verify_challenge(runner.context(), &started.token, &verifier)
-        .await
-        .expect_err("profile without nonce must fail verification");
+    let err = WikidotClaimService::verify_challenge(
+        runner.context(),
+        &started.token,
+        &verifier,
+    )
+    .await
+    .expect_err("profile without nonce must fail verification");
     assert_contains_error!(err, ErrorType::AuthorizationToken);
 
-    let verified_kind =
-        WikidotClaimService::verify_challenge(runner.context(), &started.token, &verifier)
-            .await
-            .expect("profile containing nonce must pass verification");
+    let verified_kind = WikidotClaimService::verify_challenge(
+        runner.context(),
+        &started.token,
+        &verifier,
+    )
+    .await
+    .expect("profile containing nonce must pass verification");
     assert_eq!(verified_kind, WikidotProofKind::WikidotProfileChallenge);
 
     server_handle.await.expect("mock server task");

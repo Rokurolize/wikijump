@@ -235,8 +235,13 @@ impl WikidotClaimService {
         wikidot_user_id: i64,
         ip_address: IpAddr,
     ) -> Result<IssuedWikidotClaimToken> {
-        Self::issue_internal(ctx, wikidot_user_id, WikidotProofKind::StaffIssued, ip_address)
-            .await
+        Self::issue_internal(
+            ctx,
+            wikidot_user_id,
+            WikidotProofKind::StaffIssued,
+            ip_address,
+        )
+        .await
     }
 
     /// Starts a self-service ownership-proof challenge for an unactivated Wikidot account.
@@ -282,7 +287,8 @@ impl WikidotClaimService {
             return Err(make_error().into());
         };
 
-        let proof_kind = WikidotProofKind::from_str(&model.proof_kind).ok_or_else(make_error)?;
+        let proof_kind =
+            WikidotProofKind::from_str(&model.proof_kind).ok_or_else(make_error)?;
         if model.verified_at.is_some() {
             return Ok(proof_kind);
         }
@@ -291,8 +297,9 @@ impl WikidotClaimService {
             return Err(make_error().into());
         };
 
-        let wikidot_user = Self::load_claimable_wikidot_user(ctx, i64::from(model.wikidot_user_id))
-            .await?;
+        let wikidot_user =
+            Self::load_claimable_wikidot_user(ctx, i64::from(model.wikidot_user_id))
+                .await?;
 
         let verified = verifier
             .verify(ctx, proof_kind, &wikidot_user, challenge_nonce)
@@ -311,7 +318,8 @@ impl WikidotClaimService {
                 Expr::value(Some(current_time)),
             )
             .filter(
-                wikidot_claim_token::Column::WikidotClaimTokenId.eq(model.wikidot_claim_token_id),
+                wikidot_claim_token::Column::WikidotClaimTokenId
+                    .eq(model.wikidot_claim_token_id),
             )
             .filter(wikidot_claim_token::Column::VerifiedAt.is_null())
             .filter(wikidot_claim_token::Column::ConsumedAt.is_null())
@@ -363,7 +371,8 @@ impl WikidotClaimService {
             return Err(make_error().into());
         };
 
-        let proof_kind = WikidotProofKind::from_str(&model.proof_kind).ok_or_else(make_error)?;
+        let proof_kind =
+            WikidotProofKind::from_str(&model.proof_kind).ok_or_else(make_error)?;
         Ok(RedeemedWikidotClaim {
             wikidot_user_id: i64::from(model.wikidot_user_id),
             proof_kind,
@@ -400,7 +409,8 @@ impl WikidotClaimService {
         proof_kind: WikidotProofKind,
         ip_address: IpAddr,
     ) -> Result<IssuedWikidotClaimToken> {
-        let wikidot_user = Self::load_claimable_wikidot_user(ctx, wikidot_user_id).await?;
+        let wikidot_user =
+            Self::load_claimable_wikidot_user(ctx, wikidot_user_id).await?;
         let wikidot_user_id_i32 = wikidot_user.user_id;
 
         Self::lock_issuance(ctx, wikidot_user_id).await?;
@@ -417,7 +427,8 @@ impl WikidotClaimService {
         let (challenge_nonce, verified_at) = match proof_kind {
             WikidotProofKind::StaffIssued => (None, Some(current_time)),
             WikidotProofKind::WikidotProfileChallenge => {
-                let nonce = format!("wikijump-verify:{}", Self::generate_random(NONCE_LENGTH));
+                let nonce =
+                    format!("wikijump-verify:{}", Self::generate_random(NONCE_LENGTH));
                 (Some(nonce), None)
             }
         };
@@ -458,7 +469,9 @@ impl WikidotClaimService {
     ) -> Result<WikidotUserModel> {
         let wikidot_user_id_i32 = i32::try_from(wikidot_user_id).map_err(|_| {
             Error::new(
-                format!("Wikidot user ID {wikidot_user_id} is outside the importable range"),
+                format!(
+                    "Wikidot user ID {wikidot_user_id} is outside the importable range"
+                ),
                 ErrorType::BadRequest,
             )
         })?;
@@ -476,12 +489,16 @@ impl WikidotClaimService {
         {
             Some(User::Wikijump(_)) => {
                 return Err(Error::new(
-                    format!("Wikidot user ID {wikidot_user_id} has already been activated"),
+                    format!(
+                        "Wikidot user ID {wikidot_user_id} has already been activated"
+                    ),
                     ErrorType::UserExists,
                 )
                 .into());
             }
-            Some(User::Wikidot(user)) if !user.is_deleted && user.name.is_some() && user.slug.is_some() => {
+            Some(User::Wikidot(user))
+                if !user.is_deleted && user.name.is_some() && user.slug.is_some() =>
+            {
                 Ok(*user)
             }
             Some(User::Wikidot(_)) => Err(Error::new(
