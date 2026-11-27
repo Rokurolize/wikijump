@@ -21,6 +21,7 @@
 use std::future::Future;
 use std::net::IpAddr;
 use std::pin::Pin;
+use std::str::FromStr;
 
 use rand::distr::{Alphanumeric, SampleString};
 use sea_orm::prelude::IpNetwork;
@@ -60,15 +61,21 @@ impl WikidotProofKind {
             WikidotProofKind::WikidotProfileChallenge => "wikidot_profile_challenge",
         }
     }
+}
 
-    pub fn from_str(value: &str) -> Option<Self> {
+impl FromStr for WikidotProofKind {
+    type Err = ();
+
+    fn from_str(value: &str) -> std::result::Result<Self, Self::Err> {
         match value {
-            "staff_issued" => Some(Self::StaffIssued),
-            "wikidot_profile_challenge" => Some(Self::WikidotProfileChallenge),
-            _ => None,
+            "staff_issued" => Ok(Self::StaffIssued),
+            "wikidot_profile_challenge" => Ok(Self::WikidotProfileChallenge),
+            _ => Err(()),
         }
     }
+}
 
+impl WikidotProofKind {
     pub fn ttl(self) -> Duration {
         match self {
             WikidotProofKind::StaffIssued => STAFF_CLAIM_TTL,
@@ -288,7 +295,7 @@ impl WikidotClaimService {
         };
 
         let proof_kind =
-            WikidotProofKind::from_str(&model.proof_kind).ok_or_else(make_error)?;
+            WikidotProofKind::from_str(&model.proof_kind).map_err(|_| make_error())?;
         if model.verified_at.is_some() {
             return Ok(proof_kind);
         }
@@ -372,7 +379,7 @@ impl WikidotClaimService {
         };
 
         let proof_kind =
-            WikidotProofKind::from_str(&model.proof_kind).ok_or_else(make_error)?;
+            WikidotProofKind::from_str(&model.proof_kind).map_err(|_| make_error())?;
         Ok(RedeemedWikidotClaim {
             wikidot_user_id: i64::from(model.wikidot_user_id),
             proof_kind,
@@ -487,15 +494,11 @@ impl WikidotClaimService {
             .await
             .or_raise(make_error)?
         {
-            Some(User::Wikijump(_)) => {
-                return Err(Error::new(
-                    format!(
-                        "Wikidot user ID {wikidot_user_id} has already been activated"
-                    ),
-                    ErrorType::UserExists,
-                )
-                .into());
-            }
+            Some(User::Wikijump(_)) => Err(Error::new(
+                format!("Wikidot user ID {wikidot_user_id} has already been activated"),
+                ErrorType::UserExists,
+            )
+            .into()),
             Some(User::Wikidot(user))
                 if !user.is_deleted && user.name.is_some() && user.slug.is_some() =>
             {
