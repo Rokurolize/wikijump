@@ -590,6 +590,189 @@ async fn expired_holder_commits_with_recreation_until_rival_saves() {
 }
 
 #[tokio::test]
+async fn expired_section_lease_rejects_current_presented_base_after_section_save() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, page_id, revision_id) = setup_page(
+        &mut runner,
+        "edit-lock-expired-section-overwrite",
+        "+ One\nalpha\n+ Two\nbeta\n",
+    )
+    .await;
+
+    let a = grant(
+        &acquire(
+            &runner,
+            site_id,
+            page_id,
+            USER_A,
+            PageEditLockMode::Section,
+            Some(0),
+        )
+        .await,
+    );
+    assert_eq!(a.base_revision_id, Some(revision_id));
+    expire_leases(&runner, page_id).await;
+
+    let b = grant(
+        &acquire(
+            &runner,
+            site_id,
+            page_id,
+            USER_B,
+            PageEditLockMode::Section,
+            Some(0),
+        )
+        .await,
+    );
+    let competitor = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_B,
+        revision_id,
+        text_body("+ One\nB COMMIT"),
+        Some(section_lease_of(&b, 0)),
+    )
+    .await
+    .expect("competitor section save should commit")
+    .expect("competitor section save should create a revision");
+    assert_ne!(competitor.revision_id, revision_id);
+
+    let current = latest_revision_id(&runner, site_id, page_id).await;
+    assert_eq!(current, competitor.revision_id);
+    let stale = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_A,
+        current,
+        text_body("+ One\nA STALE"),
+        Some(section_lease_of(&a, 0)),
+    )
+    .await;
+    let error = stale.expect_err(
+        "an expired section lease must not use the current head to hide an intervening section save",
+    );
+    assert_contains_error!(error, ErrorType::NotLatestRevisionId);
+    assert_eq!(latest_revision_id(&runner, site_id, page_id).await, current);
+    assert_eq!(
+        latest_wikitext(&runner, site_id, page_id).await,
+        "+ One\nB COMMIT\n+ Two\nbeta\n",
+    );
+}
+
+#[tokio::test]
+async fn expired_page_lease_rejects_current_presented_base_after_intervening_save() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, page_id, revision_id) =
+        setup_page(&mut runner, "edit-lock-expired-page-overwrite", "v0").await;
+
+    let a = grant(
+        &acquire(
+            &runner,
+            site_id,
+            page_id,
+            USER_A,
+            PageEditLockMode::Page,
+            None,
+        )
+        .await,
+    );
+    assert_eq!(a.base_revision_id, Some(revision_id));
+    expire_leases(&runner, page_id).await;
+
+    let b = grant(
+        &acquire(
+            &runner,
+            site_id,
+            page_id,
+            USER_B,
+            PageEditLockMode::Page,
+            None,
+        )
+        .await,
+    );
+    let competitor = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_B,
+        revision_id,
+        text_body("b intervening"),
+        Some(lease_of(&b, PageEditLockMode::Page)),
+    )
+    .await
+    .expect("competitor page save should commit")
+    .expect("competitor page save should create a revision");
+    assert_ne!(competitor.revision_id, revision_id);
+
+    let current = latest_revision_id(&runner, site_id, page_id).await;
+    assert_eq!(current, competitor.revision_id);
+    let stale = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_A,
+        current,
+        text_body("a stale overwrite"),
+        Some(lease_of(&a, PageEditLockMode::Page)),
+    )
+    .await;
+    let error = stale.expect_err(
+        "an expired page lease must not use the current head to hide an intervening save",
+    );
+    assert_contains_error!(error, ErrorType::NotLatestRevisionId);
+    assert_eq!(latest_revision_id(&runner, site_id, page_id).await, current);
+    assert_eq!(
+        latest_wikitext(&runner, site_id, page_id).await,
+        "b intervening"
+    );
+}
+
+#[tokio::test]
+async fn expired_section_lease_allows_unmoved_save_with_recreation() {
+    let mut runner = TestRunner::setup().await;
+    let (site_id, page_id, revision_id) = setup_page(
+        &mut runner,
+        "edit-lock-expired-section-unmoved",
+        "+ One\nalpha\n+ Two\nbeta\n",
+    )
+    .await;
+
+    let a = grant(
+        &acquire(
+            &runner,
+            site_id,
+            page_id,
+            USER_A,
+            PageEditLockMode::Section,
+            Some(0),
+        )
+        .await,
+    );
+    assert_eq!(a.base_revision_id, Some(revision_id));
+    expire_leases(&runner, page_id).await;
+
+    let output = edit(
+        &runner,
+        site_id,
+        page_id,
+        USER_A,
+        revision_id,
+        text_body("+ One\nALPHA"),
+        Some(section_lease_of(&a, 0)),
+    )
+    .await
+    .expect("expired section lease with an unmoved section should commit")
+    .expect("expired section save should create a revision");
+    assert!(output.lock_recreated);
+    assert_eq!(
+        latest_wikitext(&runner, site_id, page_id).await,
+        "+ One\nALPHA\n+ Two\nbeta\n",
+    );
+}
+
+#[tokio::test]
 async fn renew_recreates_expired_and_rejects_superseded() {
     let mut runner = TestRunner::setup().await;
     let (site_id, page_id, revision_id) =
