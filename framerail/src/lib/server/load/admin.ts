@@ -242,9 +242,7 @@ export async function loadAdminPage(
     response.data.is_platform_staff &&
     Boolean(adminContext)
   const platformSettings =
-    isPlatformStaff && adminContext
-      ? await platformSettingsGet(adminContext)
-      : null
+    isPlatformStaff && adminContext ? await platformSettingsGet(adminContext) : null
 
   const viewData = {
     view: response.type,
@@ -1528,15 +1526,13 @@ export async function platformSettingUpdateAction({
 
   const formData = await request.formData()
   const mode = String(formData.get("allowRegistrationMode") ?? "default")
-  const allowRegistration =
-    mode === "open" ? true : mode === "closed" ? false : null
+  const allowRegistration = mode === "open" ? true : mode === "closed" ? false : null
 
   try {
-    const settings = await platformSettingUpdate(
-      allowRegistration,
-      getClientAddress(),
-      { sessionToken, siteId }
-    )
+    const settings = await platformSettingUpdate(allowRegistration, getClientAddress(), {
+      sessionToken,
+      siteId
+    })
     return { settings }
   } catch (err) {
     return failForActionError(err, {})

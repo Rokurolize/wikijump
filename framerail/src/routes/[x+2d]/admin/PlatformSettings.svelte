@@ -6,10 +6,8 @@
 
   import type { ActionData, PageProps } from "./$types"
 
-  let {
-    data,
-    actionData
-  }: { data: PageProps["data"]; actionData?: ActionData } = $props()
+  let { data, actionData }: { data: PageProps["data"]; actionData?: ActionData } =
+    $props()
 
   let platformSettings = $derived(data.platformSettings)
   let selectedMode = $state<"default" | "open" | "closed">("default")
@@ -62,8 +60,7 @@
         allow_registration = {platformSettings.settings.allow_registration_config
           ? "true"
           : "false"}
-      </code>,
-      active passcodes: {platformSettings.settings.active_passcode_count}).
+      </code>, active passcodes: {platformSettings.settings.active_passcode_count}).
     </p>
 
     <form
@@ -172,7 +169,8 @@
       </div>
 
       <div class="form-group">
-        <label for="passcode-max-uses">Max uses (blank = unlimited, 1 = single-use)</label>
+        <label for="passcode-max-uses">Max uses (blank = unlimited, 1 = single-use)</label
+        >
         <input
           id="passcode-max-uses"
           name="maxUses"
@@ -184,7 +182,9 @@
       </div>
 
       <div class="form-group">
-        <label for="passcode-custom">Custom passcode (optional, auto-generated if blank)</label>
+        <label for="passcode-custom"
+          >Custom passcode (optional, auto-generated if blank)</label
+        >
         <input
           id="passcode-custom"
           name="passcode"
@@ -217,7 +217,9 @@
             <tr>
               <td>#{item.passcode_id}</td>
               <td>{item.label ?? "—"}</td>
-              <td>{item.use_count}{item.max_uses !== null ? ` / ${item.max_uses}` : ""}</td>
+              <td
+                >{item.use_count}{item.max_uses !== null ? ` / ${item.max_uses}` : ""}</td
+              >
               <td>{item.expires_at}</td>
               <td>{passcodeStatus(item)}</td>
               <td>

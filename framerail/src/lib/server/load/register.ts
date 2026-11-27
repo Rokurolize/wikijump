@@ -86,8 +86,7 @@ export async function loadRegisterPage(request: Request, preloadData: PreloadDat
   const registerForm = await superValidate(valibot(registerSchema))
 
   const { registration_open, registration_mode } = await info()
-  const registrationMode =
-    registration_mode ?? (registration_open ? "open" : "closed")
+  const registrationMode = registration_mode ?? (registration_open ? "open" : "closed")
 
   return {
     isLoggedIn,
@@ -119,8 +118,7 @@ export async function registerAction({ request, getClientAddress }: RequestEvent
   }
 
   const { registration_open, registration_mode } = await info()
-  const registrationMode =
-    registration_mode ?? (registration_open ? "open" : "closed")
+  const registrationMode = registration_mode ?? (registration_open ? "open" : "closed")
   if (registrationMode === "closed") {
     return fail(
       403,
