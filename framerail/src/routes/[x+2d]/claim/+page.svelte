@@ -59,8 +59,8 @@
 
 {#if isClaimed}
   <p role="status" class="claim-success">
-    Your imported Wikidot account has been activated. Check your email to verify your address,
-    then
+    Your imported Wikidot account has been activated. Check your email to verify your
+    address, then
     <a href={resolve("-/login")}>{data.internationalization?.login ?? "log in"}</a>.
   </p>
 {:else}
@@ -88,7 +88,8 @@
     {#if challengeNonce && challengeToken}
       <div class="challenge-instructions">
         <p>
-          Add this verification code to your Wikidot profile biography or website, then click
+          Add this verification code to your Wikidot profile biography or website, then
+          click
           <strong>Verify profile</strong>:
         </p>
         <pre><code>{challengeNonce}</code></pre>
