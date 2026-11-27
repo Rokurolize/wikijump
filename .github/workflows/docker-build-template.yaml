@@ -34,7 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
 
       - name: Build image
         run: docker build --tag ${{ inputs.image-repository }}:${{ inputs.tier }} -f install/${{ inputs.tier }}/${{ inputs.image-name }}/Dockerfile .
@@ -43,7 +43,7 @@ jobs:
 
       - name: Push image to ECR
         if: ${{ inputs.push }}
-        uses: jwalton/gh-ecr-push@9e900e7c9fd963ecb9f340b1a869016709c5d329 # v2
+        uses: jwalton/gh-ecr-push@79b418c8e7c1940802b6314002715209ab6bcf0f # v2
         with:
           access-key-id: ${{ secrets.aws-access-key }}
           secret-access-key: ${{ secrets.aws-secret-key }}
