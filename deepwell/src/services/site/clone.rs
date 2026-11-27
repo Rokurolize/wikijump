@@ -266,6 +266,7 @@ impl SiteCloneService {
         site.educational_organization = Set(source.educational_organization);
         site.educational_purpose = Set(source.educational_purpose);
         site.update(txn).await.or_raise(make_error)?;
+        ctx.invalidate_site_read_cache(site_id);
 
         let source_site_user_id =
             RelationService::get_site_user_id_for_site(ctx, source_site_id)
@@ -310,7 +311,9 @@ impl SiteCloneService {
         let revision_count =
             Self::clone_revisions(txn, source_site_id, site_id, &mut maps).await?;
         Self::finalize_categories(txn, &maps).await?;
+        ctx.invalidate_category_read_cache(site_id);
         Self::finalize_roles(txn, &maps).await?;
+        ctx.invalidate_permission_read_cache(site_id);
         let file_count =
             Self::clone_files(txn, source_site_id, site_id, &mut maps).await?;
         Self::clone_forum(txn, source_site_id, site_id, &mut maps).await?;
@@ -324,6 +327,7 @@ impl SiteCloneService {
             &maps,
         )
         .await?;
+        ctx.invalidate_permission_read_cache(site_id);
         Self::clone_site_details(txn, source_site_id, site_id).await?;
 
         let page_count = maps.pages.len();

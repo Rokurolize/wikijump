@@ -37,6 +37,7 @@ use deepwell::services::permission::PermissionService;
 use deepwell::services::role::{
     GrantUserRoleInput, InternalCreateRoleInput, RoleService, UpdateRolePermissionsInput,
 };
+use deepwell::services::site::SiteService;
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::types::{Action, AliasType, Permission, Reference, Resource, UserType};
 use sea_orm::{ActiveModelTrait, ColumnTrait, EntityTrait, QueryFilter, Set};
@@ -156,6 +157,58 @@ fn set_actor(runner: &mut TestRunner, user_id: i64) {
         user_id: Some(user_id),
         ..Default::default()
     });
+}
+
+#[tokio::test]
+async fn site_delete_rereads_mutated_row_in_same_transaction() {
+    let mut runner = TestRunner::setup().await;
+    let n = next_n();
+    let slug = format!("site-delete-read-your-write-{n}");
+    let actor_user_id = create_actor(&runner, n).await;
+    set_actor(&mut runner, actor_user_id);
+
+    let site = run_endpoint!(
+        runner,
+        site_create,
+        json!({
+            "slug": slug,
+            "name": format!("Site delete read-your-write {n}"),
+            "tagline": "",
+            "description": "Site deletion cache fixture",
+            "default_page": null,
+            "layout": "wikidot",
+            "license": "cc-by-sa-4.0",
+            "locale": "en",
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    let site_id = site.site_id;
+
+    let warmed = SiteService::get(runner.context(), Reference::Id(site_id))
+        .await
+        .expect("site read should succeed");
+    assert!(warmed.deleted_at.is_none());
+
+    let deleted = SiteService::delete(
+        runner.context(),
+        Reference::Id(site_id),
+        actor_user_id,
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("site deletion should succeed");
+    assert!(
+        deleted.deleted_at.is_some(),
+        "delete returns the mutated row"
+    );
+
+    let reread = SiteService::get(runner.context(), Reference::Id(site_id))
+        .await
+        .expect("post-delete site read should succeed");
+    assert!(
+        reread.deleted_at.is_some(),
+        "post-delete read observes the same-transaction mutation"
+    );
 }
 
 #[tokio::test]

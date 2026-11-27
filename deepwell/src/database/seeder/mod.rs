@@ -251,6 +251,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
             ))
             .await
             .or_raise(make_error)?;
+            ctx.invalidate_site_read_cache(site_id);
         }
 
         for site_alias in site.aliases {

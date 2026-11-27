@@ -281,6 +281,7 @@ impl super::service::SiteService {
             model.updated_at = Set(Some(now()));
             model.settings_revision = Set(site.settings_revision + 1);
             model.update(txn).await.or_raise(make_error)?;
+            ctx.invalidate_site_read_cache(site.site_id);
         } else if bytes_changed {
             let model = site::ActiveModel {
                 site_id: Set(site.site_id),
@@ -289,6 +290,7 @@ impl super::service::SiteService {
                 ..Default::default()
             };
             model.update(txn).await.or_raise(make_error)?;
+            ctx.invalidate_site_read_cache(site.site_id);
         }
 
         ctx.defer_public_content_cache_invalidate_site(site.site_id)

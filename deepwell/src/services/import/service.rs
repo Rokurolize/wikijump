@@ -718,6 +718,7 @@ impl ImportService {
             ..Default::default()
         };
         Site::insert(site).exec(txn).await.or_raise(make_error)?;
+        ctx.invalidate_site_read_cache(site_id);
 
         Self::record_meta_tags(ctx, site_id, 0, true, &meta_tags, &make_error).await?;
 
@@ -1003,10 +1004,12 @@ impl ImportService {
                 let mut model = site.into_active_model();
                 model.master_admin_user_id = Set(Some(master_admin_id));
                 model.update(txn).await.or_raise(make_error)?;
+                ctx.invalidate_site_read_cache(site_id);
                 output.master_admin_set = true;
             }
         }
 
+        ctx.invalidate_permission_read_cache(site_id);
         AuditService::log(
             ctx,
             ip_address,
