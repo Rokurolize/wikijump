@@ -726,6 +726,7 @@ pub(in crate::services::render) struct ListPagesPageContext<'a> {
 
 #[derive(Debug, Default)]
 pub(in crate::services::render) struct ListPagesContentCache {
+    pub(in crate::services::render) viewer_safe_preview_renders: usize,
     pub(in crate::services::render) wikitext: BTreeMap<(i64, i64), Option<String>>,
     pub(in crate::services::render) compiled_body_html:
         BTreeMap<(i64, i64), Option<String>>,

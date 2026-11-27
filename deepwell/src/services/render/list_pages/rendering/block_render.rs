@@ -49,8 +49,13 @@ use super::{
     wikidot_content_section,
 };
 use crate::hash::k12_hash;
-use crate::services::render::wikitext_has_visibility_sensitive_module;
-use crate::services::view::viewer_safe_compiled_body;
+use crate::services::blueprint::BlueprintPageService;
+use crate::services::render::wikitext_may_compose_visibility_sensitive_module;
+use crate::services::view::{
+    VIEWER_SAFE_TIMEOUT_FALLBACK_HTML, viewer_safe_compiled_body,
+};
+
+const MAX_VIEWER_SAFE_PREVIEW_RERENDERS: usize = 8;
 
 fn list_pages_total_query<'a>(
     query: &PageQuery<'a>,
@@ -755,7 +760,69 @@ impl RenderService {
                 );
             }
         }
+        let category_ids = pages
+            .iter()
+            .filter_map(|page| page.page_category_id)
+            .collect::<BTreeSet<_>>();
+        let category_cache_key = format!("{listing_cache_key}|{category_ids:?}");
+        let categories =
+            if let Some(categories) = listing_cache.categories(&category_cache_key) {
+                categories
+            } else if category_ids.is_empty() {
+                Vec::new()
+            } else {
+                let categories = PageCategory::find()
+                    .filter(page_category::Column::CategoryId.is_in(category_ids))
+                    .all(ctx.transaction())
+                    .await
+                    .or_raise(|| {
+                        Error::new(
+                            "failed to load ListPages page categories",
+                            ErrorType::Render,
+                        )
+                    })?;
+                listing_cache.cache_categories(category_cache_key, categories.clone());
+                categories
+            };
+        let category_slugs = categories
+            .iter()
+            .map(|category| (category.category_id, category.slug.clone()))
+            .collect::<BTreeMap<_, _>>();
         if wants_preview {
+            let page_template_keys = pages
+                .iter()
+                .map(|page| {
+                    (
+                        page.page_id,
+                        (
+                            page.site_id,
+                            page.page_category_id
+                                .and_then(|category_id| category_slugs.get(&category_id))
+                                .cloned(),
+                        ),
+                    )
+                })
+                .collect::<BTreeMap<_, _>>();
+            let mut template_unsafe = BTreeMap::new();
+            for (site_id, category) in page_template_keys.values() {
+                let key = (*site_id, category.clone());
+                if template_unsafe.contains_key(&key) {
+                    continue;
+                }
+                let template = BlueprintPageService::get_page_template(
+                    ctx,
+                    key.0,
+                    key.1.as_deref(),
+                    "",
+                )
+                .await?;
+                let template_is_unsafe = template.is_some_and(|wikitext| {
+                    wikitext_may_compose_visibility_sensitive_module(&wikitext)
+                });
+                template_unsafe.insert(key, template_is_unsafe);
+            }
+            let mut rerenders_left = MAX_VIEWER_SAFE_PREVIEW_RERENDERS
+                .saturating_sub(content_cache.viewer_safe_preview_renders);
             let mut missing_by_site = BTreeMap::<i64, Vec<i64>>::new();
             for page in &pages {
                 let cache_key = (page.site_id, page.page_id);
@@ -772,10 +839,18 @@ impl RenderService {
                 )
                 .await?;
                 for (page_id, (compiled_html, wikitext)) in loaded {
-                    let safe_html = match (compiled_html, wikitext) {
-                        (Some(stored_body), Some(wikitext))
-                            if wikitext_has_visibility_sensitive_module(&wikitext) =>
-                        {
+                    let template_key = page_template_keys.get(&page_id);
+                    let composition_unsafe = wikitext
+                        .as_deref()
+                        .is_some_and(wikitext_may_compose_visibility_sensitive_module)
+                        || template_key
+                            .and_then(|key| template_unsafe.get(key))
+                            .copied()
+                            .unwrap_or(false);
+                    let safe_html = match (compiled_html, composition_unsafe) {
+                        (Some(stored_body), true) if rerenders_left > 0 => {
+                            rerenders_left -= 1;
+                            content_cache.viewer_safe_preview_renders += 1;
                             let page_revision =
                                 PageRevisionService::get_latest(ctx, site_id, page_id)
                                     .await?;
@@ -785,12 +860,15 @@ impl RenderService {
                                     site_id,
                                     page_id,
                                     &page_revision,
-                                    Some(&wikitext),
+                                    wikitext.as_deref(),
                                     viewer_user_id,
                                     stored_body,
                                 )
                                 .await?,
                             )
+                        }
+                        (Some(_), true) => {
+                            Some(VIEWER_SAFE_TIMEOUT_FALLBACK_HTML.to_owned())
                         }
                         (compiled_html, _) => compiled_html,
                     };
@@ -836,34 +914,6 @@ impl RenderService {
                 ));
             }
         }
-        let category_ids = pages
-            .iter()
-            .filter_map(|page| page.page_category_id)
-            .collect::<BTreeSet<_>>();
-        let category_cache_key = format!("{listing_cache_key}|{category_ids:?}");
-        let categories =
-            if let Some(categories) = listing_cache.categories(&category_cache_key) {
-                categories
-            } else if category_ids.is_empty() {
-                Vec::new()
-            } else {
-                let categories = PageCategory::find()
-                    .filter(page_category::Column::CategoryId.is_in(category_ids))
-                    .all(ctx.transaction())
-                    .await
-                    .or_raise(|| {
-                        Error::new(
-                            "failed to load ListPages page categories",
-                            ErrorType::Render,
-                        )
-                    })?;
-                listing_cache.cache_categories(category_cache_key, categories.clone());
-                categories
-            };
-        let category_slugs = categories
-            .iter()
-            .map(|category| (category.category_id, category.slug.clone()))
-            .collect::<BTreeMap<_, _>>();
         let data_form_definitions = if wants_data_form_values {
             load_list_pages_data_form_definitions(ctx, &categories).await?
         } else {

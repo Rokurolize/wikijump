@@ -152,6 +152,7 @@ pub use self::structs::{
 };
 pub use self::url_arguments::{
     UrlArgumentPair, UrlArguments, wikitext_has_visibility_sensitive_module,
-    wikitext_reads_url_arguments, wikitext_requires_runtime_render,
+    wikitext_may_compose_visibility_sensitive_module, wikitext_reads_url_arguments,
+    wikitext_requires_runtime_render,
 };
 pub use self::user_directory::WikidotMembersListModuleResponse;

@@ -120,6 +120,31 @@ async fn create_page(
     .page_id
 }
 
+async fn attach_leaky_snapshot(
+    runner: &TestRunner,
+    site_id: i64,
+    page_id: i64,
+    snapshot: &str,
+) {
+    let revision = PageRevisionService::get_latest(runner.context(), site_id, page_id)
+        .await
+        .expect("revision should exist");
+    let hash = TextService::create(runner.context(), snapshot.to_owned())
+        .await
+        .expect("leaky snapshot should be stored as text");
+    let stored_revision = PageRevisionTable::find_by_id(revision.revision_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("revision lookup should not fail")
+        .expect("revision should exist");
+    let mut stored_revision = stored_revision.into_active_model();
+    stored_revision.compiled_body_html_hash = Set(hash.to_vec());
+    stored_revision
+        .update(runner.context().transaction())
+        .await
+        .expect("leaky compiled snapshot should be attached");
+}
+
 async fn site_can_view(
     ctx: &ServiceContext<'_>,
     viewer_user_id: Option<i64>,
@@ -504,5 +529,136 @@ async fn stored_snapshot_never_serves_rows_the_viewer_cannot_see() {
     assert!(
         plain_preview.contains(&plain_body),
         "plain ListPages %%preview%% must preserve viewer-independent preview text: {plain_preview}",
+    );
+
+    let component_slug = format!("component:activity-{n}");
+    create_page(
+        runner.context(),
+        holder_site_id,
+        &component_slug,
+        "Activity component",
+        "[[module PlatformActivity]]",
+    )
+    .await;
+    let indirect_leaky_snapshot = format!(
+        "<ul class=\"platform-recent-activity\">{}</ul>",
+        row.repeat(10)
+    );
+
+    let include_holder_slug = format!("snapshot-gate-include-holder-{n}");
+    let include_holder_id = create_page(
+        runner.context(),
+        holder_site_id,
+        &include_holder_slug,
+        "Include holder",
+        &format!("[[include {component_slug}]]"),
+    )
+    .await;
+    attach_leaky_snapshot(
+        &runner,
+        holder_site_id,
+        include_holder_id,
+        &indirect_leaky_snapshot,
+    )
+    .await;
+    let include_preview_wikitext = format!(
+        "[[module ListPages name=\"{include_holder_slug}\"]]\n%%preview%%\n[[/module]]",
+    );
+    let anonymous_include_preview = list_pages_preview(None, include_preview_wikitext)
+        .await
+        .expect("anonymous include-indirect preview should render")
+        .html_output
+        .body;
+    let anonymous_include_count = anonymous_include_preview.matches(&marker).count();
+    println!("anonymous include-indirect preview markers: {anonymous_include_count}");
+    assert_eq!(
+        anonymous_include_count, 0,
+        "anonymous preview must not serve rows baked via an include: {anonymous_include_preview}",
+    );
+    let authorized_include_live = RenderService::render_page_for_viewer(
+        runner.context(),
+        format!("[[include {component_slug}]]"),
+        &page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id: holder_site_id,
+            category_id: holder_page.page_category_id,
+            page_id: include_holder_id,
+        },
+        Some(ADMIN_USER_ID),
+        UrlArguments::default(),
+    )
+    .await
+    .expect("authorized include-indirect live render should succeed")
+    .html_output
+    .body;
+    let authorized_include_count = authorized_include_live.matches(&marker).count();
+    println!("authorized include-indirect live markers: {authorized_include_count}");
+    assert!(
+        authorized_include_count >= 1,
+        "authorized live render must still include gated rows introduced by an include: {authorized_include_live}",
+    );
+
+    let template_category = format!("snapshot-gate-template-{n}");
+    create_page(
+        runner.context(),
+        holder_site_id,
+        &format!("{template_category}:_template"),
+        "Activity template",
+        &format!("[[include {component_slug}]]"),
+    )
+    .await;
+    let template_holder_slug = format!("{template_category}:holder");
+    let template_holder_id = create_page(
+        runner.context(),
+        holder_site_id,
+        &template_holder_slug,
+        "Template holder",
+        "template holder body",
+    )
+    .await;
+    attach_leaky_snapshot(
+        &runner,
+        holder_site_id,
+        template_holder_id,
+        &indirect_leaky_snapshot,
+    )
+    .await;
+    let template_preview_wikitext = format!(
+        "[[module ListPages name=\"{template_holder_slug}\"]]\n%%preview%%\n[[/module]]",
+    );
+    let anonymous_template_preview = list_pages_preview(None, template_preview_wikitext)
+        .await
+        .expect("anonymous template-indirect preview should render")
+        .html_output
+        .body;
+    let anonymous_template_count = anonymous_template_preview.matches(&marker).count();
+    println!("anonymous template-indirect preview markers: {anonymous_template_count}");
+    assert_eq!(
+        anonymous_template_count, 0,
+        "anonymous preview must not serve rows baked via a template: {anonymous_template_preview}",
+    );
+    let authorized_template_live = RenderService::render_page_for_viewer(
+        runner.context(),
+        format!("[[include {component_slug}]]"),
+        &page_info,
+        Layout::Wikidot,
+        PageId {
+            site_id: holder_site_id,
+            category_id: holder_page.page_category_id,
+            page_id: template_holder_id,
+        },
+        Some(ADMIN_USER_ID),
+        UrlArguments::default(),
+    )
+    .await
+    .expect("authorized template-indirect live render should succeed")
+    .html_output
+    .body;
+    let authorized_template_count = authorized_template_live.matches(&marker).count();
+    println!("authorized template-indirect live markers: {authorized_template_count}");
+    assert!(
+        authorized_template_count >= 1,
+        "authorized live render must still include gated rows introduced by a template: {authorized_template_live}",
     );
 }
