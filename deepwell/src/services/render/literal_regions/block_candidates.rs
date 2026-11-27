@@ -231,17 +231,14 @@ fn parse_block_opener(
                 (name_end, false)
             }
         }
-        BlockFamily::Html => match heads.map_head_end[name_end] {
-            NO_OFFSET => (name_end, false),
-            end => {
-                let end = expanded_offset(end);
-                let head = &bytes[name_end..end - 2];
-                let head_is_whitespace =
-                    expanded_offset(heads.whitespace_end[name_end]) >= end - 2;
-                let exact = head_is_whitespace || head_has_argument(head);
-                (end, exact)
+        BlockFamily::Html => {
+            let close = heads.next_wikidot_right_block[name_end];
+            if close != NO_OFFSET {
+                (expanded_offset(close) + 2, true)
+            } else {
+                (name_end, false)
             }
-        },
+        }
         BlockFamily::Raw => match bytes.get(name_end) {
             Some(_) if expanded_offset(heads.whitespace_end[name_end]) > name_end => {
                 (name_end, true)
@@ -450,23 +447,6 @@ fn skip_horizontal_whitespace(bytes: &[u8], mut cursor: usize) -> usize {
     cursor
 }
 
-fn head_has_argument(head: &[u8]) -> bool {
-    let mut index = 0;
-    while index < head.len() {
-        if head[index] == b'=' {
-            let value = skip_horizontal_whitespace(head, index + 1);
-            if matches!(head.get(value), Some(b'"' | b'\'')) {
-                let quote = head[value];
-                if head[value + 1..].contains(&quote) {
-                    return true;
-                }
-            }
-        }
-        index += 1;
-    }
-    false
-}
-
 fn utf8_character_len(source: &str, cursor: usize) -> usize {
     source[cursor..]
         .chars()
@@ -626,21 +606,43 @@ mod tests {
             assert!(pinned_tree(source).code_blocks.is_empty(), "{source:?}");
         }
 
-        for html in ["[[html]]x[[/html]]", "[[html class=\"a\"]]x[[/html]]"] {
+        for html in [
+            "[[html]]x[[/html]]",
+            "[[html class=\"a\"]]x[[/html]]",
+            "[[html garbage]]x[[/html]]",
+            "[[html x]]y[[/html]]",
+            "[[html stray]]\nX\n[[/html]]",
+            "[[html class=a]]y[[/html]]",
+            "[[html class='a']]y[[/html]]",
+            "[[html ]]y[[/html]]",
+            "[[html  ]]y[[/html]]",
+            "[[html x ]]y[[/html]]",
+            "[[html style=\"color:red\"]]y[[/html]]",
+            "[[html data-x=\"a\"]]y[[/html]]",
+            "[[html class=\"a\" stray]]y[[/html]]",
+            "[[html stray class=\"a\"]]y[[/html]]",
+            "[[html class=\"a\" style=color:red]]y[[/html]]",
+            "[[html style=color:red class=\"a\"]]y[[/html]]",
+            "[[html data-x=\"a\" class=\"c\"]]y[[/html]]",
+            "[[html CLASS=\"a\"]]y[[/html]]",
+            "[[html style='color:red' class=\"a\"]]y[[/html]]",
+            "[[html class=\"\"]]y[[/html]]",
+            "[[html class=\"a]]y[[/html]]",
+            "[[html class = \"a\"]]y[[/html]]",
+            "[[html\n]]x[[/html]]",
+            "[[html foo]]x[[/html]]",
+            "[[html =]]x[[/html]]",
+        ] {
+            let candidates = candidates(html);
+            assert_eq!(candidates.len(), 1, "{html:?}");
             assert_eq!(
-                candidates(html)[0].provenance,
+                candidates[0].provenance,
                 BaseCandidateProvenance::ClosedOwner,
-                "{html:?}",
+                "{html:?}: {:?}",
+                candidates[0],
             );
             assert!(!pinned_tree(html).html_blocks.is_empty(), "{html:?}");
         }
-
-        let html = "[[html garbage]]x[[/html]]";
-        assert_eq!(
-            candidates(html)[0].provenance,
-            BaseCandidateProvenance::FailClosedProtection,
-        );
-        assert!(pinned_tree(html).html_blocks.is_empty());
     }
 
     #[test]
