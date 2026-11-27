@@ -86,10 +86,10 @@ impl CategoryService {
             )
         };
 
-        if let Reference::Id(id) = reference {
-            if let Some(cached) = ctx.cached_category_by_id(site_id, id) {
-                return Ok(cached);
-            }
+        if let Reference::Id(id) = reference
+            && let Some(cached) = ctx.cached_category_by_id(site_id, id)
+        {
+            return Ok(cached);
         }
 
         let txn = ctx.transaction();
