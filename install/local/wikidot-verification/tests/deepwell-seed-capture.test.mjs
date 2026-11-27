@@ -6,7 +6,12 @@ import {tmpdir} from "node:os";
 import {join} from "node:path";
 import test from "node:test";
 
-import {prepareShardSeedCapture} from "../src/deepwell-integration-stack.mjs";
+import {
+  defaultSeedCaptureRoot,
+  installVerifiedSeedCapture,
+  prepareShardSeedCapture,
+  prepareSingleSeedCapture,
+} from "../src/deepwell-integration-stack.mjs";
 import {
   SEED_CAPTURE_FORMAT,
   SEED_CAPTURE_MANIFEST,
@@ -129,6 +134,28 @@ test("a capture is accepted only when its key, sizes, and checksums all match", 
   }
 });
 
+test("installing a verified capture never replaces a valid concurrent install", async () => {
+  const root = await mkdtemp(join(tmpdir(), "seed-capture-install-"));
+  try {
+    const staging = join(root, "staging");
+    const target = join(root, "target");
+    await writeCapture(staging, "k1", {"postgres.dump": "first", "minio.tar": "minio", "valkey.json": "[]"});
+    assert.equal(await installVerifiedSeedCapture(staging, target, "k1"), "installed");
+    assert.equal(await readFile(join(target, "postgres.dump"), "utf8"), "first");
+
+    await writeCapture(staging, "k1", {"postgres.dump": "second", "minio.tar": "minio", "valkey.json": "[]"});
+    assert.equal(await installVerifiedSeedCapture(staging, target, "k1"), "existing");
+    assert.equal(await readFile(join(target, "postgres.dump"), "utf8"), "first", "the valid installed capture wins the race");
+
+    await writeFile(join(target, SEED_CAPTURE_MANIFEST), "{not json");
+    assert.equal(await installVerifiedSeedCapture(staging, target, "k1"), "installed");
+    assert.equal(await readFile(join(target, "postgres.dump"), "utf8"), "second", "an invalid capture is replaced atomically enough for the next installer");
+    await verifySeedCapture(target, "k1");
+  } finally {
+    await rm(root, {recursive: true, force: true});
+  }
+});
+
 test("restoring a damaged capture fails before touching any container", async () => {
   const directory = await mkdtemp(join(tmpdir(), "seed-capture-restore-"));
   try {
@@ -220,6 +247,29 @@ test("shard capture preparation names, disables, builds, or degrades loudly", as
   assert.equal(failed.directory, null);
   assert.match(logs.join("\n"), /could not be prepared; every shard will seed its own stack: seeder exploded/u);
   await assert.rejects(readFile(join(ensureCalls.at(-1).captureRoot, "marker")), /ENOENT/u, "the failed attempt's root is removed too");
+});
+
+test("single-run capture preparation defaults to the persistent cache root and keeps the escape hatch", async () => {
+  const logs = [];
+  const log = (message) => logs.push(message);
+  const ensureCalls = [];
+  const ensure = async (options) => { ensureCalls.push(options); return {directory: join(options.captureRoot, "key"), key: "key"}; };
+
+  const defaulted = await prepareSingleSeedCapture({XDG_CACHE_HOME: "/cache-home"}, {ensure, log});
+  assert.equal(defaulted.directory, "/cache-home/wikijump/deepwell-seed-captures/key");
+  assert.equal(ensureCalls.at(-1).captureRoot, "/cache-home/wikijump/deepwell-seed-captures");
+  assert.equal(defaultSeedCaptureRoot({XDG_CACHE_HOME: "/cache-home"}), "/cache-home/wikijump/deepwell-seed-captures");
+
+  const explicit = await prepareSingleSeedCapture({WIKIJUMP_DEEPWELL_SEED_CAPTURE_ROOT: "/kept"}, {ensure, log});
+  assert.equal(explicit.directory, "/kept/key");
+  assert.equal(ensureCalls.at(-1).captureRoot, "/kept");
+
+  const beforeEscapeHatches = ensureCalls.length;
+  const off = await prepareSingleSeedCapture({WIKIJUMP_DEEPWELL_SEED_CAPTURE: "off"}, {ensure, log});
+  assert.equal(off.directory, null);
+  const named = await prepareSingleSeedCapture({WIKIJUMP_DEEPWELL_SEED_CAPTURE: "/some/capture"}, {ensure, log});
+  assert.equal(named.directory, "/some/capture");
+  assert.equal(ensureCalls.length, beforeEscapeHatches);
 });
 
 test("RESP replies parse across arrays, binary bulks, nulls, and partial input", () => {

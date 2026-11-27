@@ -1,6 +1,6 @@
 import {spawn} from "node:child_process";
 import {mkdir, mkdtemp, rename, rm, stat} from "node:fs/promises";
-import {tmpdir} from "node:os";
+import {homedir, tmpdir} from "node:os";
 import {dirname, join, resolve} from "node:path";
 import process from "node:process";
 import {fileURLToPath} from "node:url";
@@ -322,6 +322,30 @@ function staticSeedEnvironment() {
   return rest;
 }
 
+export async function installVerifiedSeedCapture(staging, directory, key) {
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      await rename(staging, directory);
+      return "installed";
+    } catch (error) {
+      if (error?.code !== "EEXIST" && error?.code !== "ENOTEMPTY") throw error;
+    }
+    try {
+      await verifySeedCapture(directory, key);
+      return "existing";
+    } catch {
+      const replaced = `${directory}.replaced-${process.pid}-${Date.now()}-${attempt}`;
+      try {
+        await rename(directory, replaced);
+        await rm(replaced, {recursive: true, force: true});
+      } catch (error) {
+        if (error?.code !== "ENOENT") throw error;
+      }
+    }
+  }
+  throw new Error(`seed capture ${directory} remained unavailable through concurrent replacement`);
+}
+
 export async function ensureDeepwellSeedCapture({
   env: baseEnv = process.env,
   cargo = baseEnv.WIKIJUMP_OFFLINE_CARGO?.trim() || "cargo",
@@ -373,8 +397,7 @@ export async function ensureDeepwellSeedCapture({
       });
     }, {env: baseEnv, cargo, seedCapture: null});
     await verifySeedCapture(staging, key);
-    await rm(directory, {recursive: true, force: true});
-    await rename(staging, directory);
+    await installVerifiedSeedCapture(staging, directory, key);
     log(`Deepwell seed capture ${key.slice(0, 12)} built in ${Date.now() - started} ms`);
     return {directory, key, reused: false};
   } finally {
@@ -385,6 +408,17 @@ export async function ensureDeepwellSeedCapture({
 export async function temporarySeedCaptureRoot() {
   const directory = await mkdtemp(join(tmpdir(), "wikijump-deepwell-seed-"));
   return {directory, dispose: () => rm(directory, {recursive: true, force: true})};
+}
+
+export function defaultSeedCaptureRoot(env = process.env) {
+  const cacheHome = env.XDG_CACHE_HOME?.trim() || join(homedir(), ".cache");
+  return join(cacheHome, "wikijump", "deepwell-seed-captures");
+}
+
+export async function prepareSingleSeedCapture(env = process.env, options = {}) {
+  if (env[SEED_CAPTURE_ENV]?.trim()) return prepareShardSeedCapture(env, options);
+  const persistent = env[SEED_CAPTURE_ROOT_ENV]?.trim() || defaultSeedCaptureRoot(env);
+  return prepareShardSeedCapture({...env, [SEED_CAPTURE_ROOT_ENV]: persistent}, options);
 }
 
 export async function prepareShardSeedCapture(env = process.env, {

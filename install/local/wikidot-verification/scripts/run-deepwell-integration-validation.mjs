@@ -10,6 +10,7 @@ import {
   deepwellTestShards,
   deepwellTestThreads,
   prepareShardSeedCapture,
+  prepareSingleSeedCapture,
   runValidationCommand,
   withProvisionedDeepwellStack,
 } from "../src/deepwell-integration-stack.mjs";
@@ -116,9 +117,11 @@ async function run() {
         "Set WIKIJUMP_DEEPWELL_TEST_THREADS=1..16 to select task-owned integration-test concurrency.",
         "Set WIKIJUMP_DEEPWELL_NEXTEST_PARTITION=hash:I/N to run one independently provisioned",
         "nextest shard; each shard still defaults to one active test so task-owned state is isolated.",
-        "Set WIKIJUMP_DEEPWELL_TEST_SHARDS=N to run N such shards side by side. The shards then seed once and",
-        "restore that capture into their own stacks; WIKIJUMP_DEEPWELL_SEED_CAPTURE=off makes each shard run the",
-        "seeder instead, and WIKIJUMP_DEEPWELL_SEED_CAPTURE_ROOT=<dir> keeps captures between runs, keyed by their inputs.",
+        "Single runs prepare a keyed seed capture and restore it into the task-owned stack; sharded runs prepare",
+        "one capture and restore it into every shard. WIKIJUMP_DEEPWELL_SEED_CAPTURE=off runs migrations and the",
+        "seeder in each stack instead. Captures persist under WIKIJUMP_DEEPWELL_SEED_CAPTURE_ROOT=<dir>, which",
+        "defaults to the user's cache directory.",
+        "Set WIKIJUMP_DEEPWELL_TEST_SHARDS=N to run N such shards side by side.",
         "When sharded nextest runs fail solely due to TIMEOUT tests, one unloaded single-stack retry is run automatically",
         "unless WIKIJUMP_DEEPWELL_TIMEOUT_RETRY=0 is set.",
         "",
@@ -143,26 +146,35 @@ async function run() {
     return;
   }
 
-  await withProvisionedDeepwellStack(async ({env, cargo}) => {
-    const partition = deepwellNextestPartition(env);
-    if (partition || filterset) {
-      await runValidationCommand(cargo, [
-        "nextest", "run", "--offline", "--locked",
-        "--manifest-path", "deepwell/Cargo.toml",
-        ...withPreflightProfile(cargoTestArgs),
-        ...(partition ? ["--partition", partition] : []),
-        ...(filterset ? ["--no-tests", "fail", "-E", filterset] : []),
-        "--test-threads", deepwellTestThreads(env),
-        ...(harnessArgs.length ? ["--", ...harnessArgs] : []),
-      ], {env});
-    } else {
-      await runValidationCommand(cargo, [
-        "test", "--offline", "--locked",
-        "--manifest-path", "deepwell/Cargo.toml", ...cargoTestArgs,
-        "--", "--test-threads", deepwellTestThreads(env), ...harnessArgs,
-      ], {env});
-    }
-  });
+  const coordinatedPartition = deepwellNextestPartition(process.env);
+  const configuredCapture = process.env[SEED_CAPTURE_ENV]?.trim();
+  const capture = coordinatedPartition
+    ? {directory: !configuredCapture || configuredCapture === "off" ? null : configuredCapture, dispose: async () => {}}
+    : await prepareSingleSeedCapture(process.env);
+  try {
+    await withProvisionedDeepwellStack(async ({env, cargo}) => {
+      const partition = deepwellNextestPartition(env);
+      if (partition || filterset) {
+        await runValidationCommand(cargo, [
+          "nextest", "run", "--offline", "--locked",
+          "--manifest-path", "deepwell/Cargo.toml",
+          ...withPreflightProfile(cargoTestArgs),
+          ...(partition ? ["--partition", partition] : []),
+          ...(filterset ? ["--no-tests", "fail", "-E", filterset] : []),
+          "--test-threads", deepwellTestThreads(env),
+          ...(harnessArgs.length ? ["--", ...harnessArgs] : []),
+        ], {env});
+      } else {
+        await runValidationCommand(cargo, [
+          "test", "--offline", "--locked",
+          "--manifest-path", "deepwell/Cargo.toml", ...cargoTestArgs,
+          "--", "--test-threads", deepwellTestThreads(env), ...harnessArgs,
+        ], {env});
+      }
+    }, {seedCapture: capture.directory});
+  } finally {
+    await capture.dispose();
+  }
 }
 
 run().catch((error) => {
