@@ -107,6 +107,8 @@ services:
 
   caddy:
     image: 575596218155.dkr.ecr.us-east-2.amazonaws.com/wikijump/caddy:dev
+    # Bare publication preserves the deployment posture; whether these ports
+    # also bind IPv6 depends on the Docker daemon's ipv6 and ip6tables settings.
     ports:
       - "80:80"
       - "443:443"
@@ -126,6 +128,13 @@ services:
       - caddy:/data/caddy
     extra_hosts:
       - host.docker.internal:host-gateway
+
+networks:
+  default:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: "fd7a:4f2c:9100:2::/64"
 
 volumes:
   caddy:

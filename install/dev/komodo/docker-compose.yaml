@@ -44,6 +44,8 @@ services:
       - ferretdb
     links:
       - ferretdb
+    # Bare publication preserves the deployment posture; whether this port
+    # also binds IPv6 depends on the Docker daemon's ipv6 and ip6tables settings.
     ports:
       - 9120:9120
     env_file: ./compose.env
@@ -83,6 +85,13 @@ services:
       ## Specify the Periphery agent root directory
       # Must be the same inside and outside the container.
       - /etc/komodo:/etc/komodo
+
+networks:
+  default:
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: "fd7a:4f2c:9100:3::/64"
 
 volumes:
   ferretdb-postgres:

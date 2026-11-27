@@ -14,5 +14,6 @@ test("local PostgreSQL is private to the Compose network and has no read-only se
   const databaseService = compose.slice(compose.indexOf("  database:"), compose.indexOf("\n  files:"));
   assert.doesNotMatch(databaseService, /^\s+ports:/mu);
   assert.doesNotMatch(databaseService, /5432:5432/u);
+  assert.match(hba, /^host\s+all\s+all\s+fd7a:4f2c:9100:4::\/64\s+scram-sha-256$/mu);
   assert.doesNotMatch(`${hba}\n${seed}`, /wikijump_ro/u);
 });
