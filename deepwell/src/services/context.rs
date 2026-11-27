@@ -21,7 +21,9 @@
 use crate::config::Config;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::locales::Localizations;
+use crate::models::page_category::Model as PageCategoryModel;
 use crate::models::session::Model as SessionModel;
+use crate::models::site::Model as SiteModel;
 use crate::runtime::ServerState;
 use crate::services::blob::MimeAnalyzer;
 use crate::services::email::EmailMailer;
@@ -31,13 +33,13 @@ use crate::services::permission::{PermissionCache, PermissionService};
 use crate::services::public_cache::PublicContentCache;
 use crate::services::render::CascadePageQueryCache;
 use crate::services::text_block::cleanup_uploaded_text_blocks;
-use crate::types::{PageId, Permission, Reference, RerenderDepth};
+use crate::types::{Action, PageId, Permission, Reference, RerenderDepth, Resource};
 use exn::ErrorExt;
 use redis::aio::MultiplexedConnection as RedisMultiplexedConnection;
 use rsmq_async::Rsmq;
 use s3::bucket::Bucket;
 use sea_orm::{DatabaseTransaction, TransactionTrait};
-use std::collections::{HashSet, VecDeque};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::OnceCell;
@@ -86,6 +88,16 @@ impl RequestContext {
     }
 }
 
+#[derive(Debug, Default)]
+struct TransactionReadCache {
+    sites_by_id: HashMap<i64, SiteModel>,
+    categories_by_id: HashMap<(i64, i64), PageCategoryModel>,
+    user_permissions_without_page_roles:
+        HashMap<(Option<i64>, i64), HashSet<Permission<'static>>>,
+    category_scoped_permissions: HashMap<(i64, Resource, i64, Action), bool>,
+    site_allows_view: HashMap<(Option<i64>, i64), bool>,
+}
+
 #[derive(Debug)]
 pub struct ServiceContext<'txn> {
     state: ServerState,
@@ -97,6 +109,7 @@ pub struct ServiceContext<'txn> {
     commit_authentication_rejection: AtomicBool,
     link_graph_read: AtomicBool,
     cascade_page_query_cache: Option<Arc<Mutex<CascadePageQueryCache>>>,
+    read_cache: Mutex<TransactionReadCache>,
 }
 
 #[derive(Debug)]
@@ -162,6 +175,7 @@ impl<'txn> ServiceContext<'txn> {
             commit_authentication_rejection: AtomicBool::new(false),
             link_graph_read: AtomicBool::new(false),
             cascade_page_query_cache: None,
+            read_cache: Mutex::new(TransactionReadCache::default()),
         }
     }
 
@@ -255,11 +269,151 @@ impl<'txn> ServiceContext<'txn> {
         self.link_graph_read.load(Ordering::Relaxed)
     }
 
+    pub(crate) fn cached_site_by_id(&self, site_id: i64) -> Option<SiteModel> {
+        self.read_cache
+            .lock()
+            .ok()
+            .and_then(|cache| cache.sites_by_id.get(&site_id).cloned())
+    }
+
+    pub(crate) fn cache_site_by_id(&self, site_id: i64, site: &SiteModel) {
+        if let Ok(mut cache) = self.read_cache.lock() {
+            cache.sites_by_id.insert(site_id, site.clone());
+        }
+    }
+
+    pub(crate) fn invalidate_site_read_cache(&self, site_id: i64) {
+        if let Ok(mut cache) = self.read_cache.lock() {
+            cache.sites_by_id.remove(&site_id);
+            cache.site_allows_view.retain(|(_, s), _| *s != site_id);
+        }
+    }
+
+    pub(crate) fn cached_category_by_id(
+        &self,
+        site_id: i64,
+        category_id: i64,
+    ) -> Option<PageCategoryModel> {
+        self.read_cache.lock().ok().and_then(|cache| {
+            cache.categories_by_id.get(&(site_id, category_id)).cloned()
+        })
+    }
+
+    pub(crate) fn cache_category_by_id(
+        &self,
+        site_id: i64,
+        category_id: i64,
+        category: &PageCategoryModel,
+    ) {
+        if let Ok(mut cache) = self.read_cache.lock() {
+            cache
+                .categories_by_id
+                .insert((site_id, category_id), category.clone());
+        }
+    }
+
+    pub(crate) fn invalidate_category_read_cache(&self, site_id: i64) {
+        if let Ok(mut cache) = self.read_cache.lock() {
+            cache.categories_by_id.retain(|(s, _), _| *s != site_id);
+        }
+    }
+
+    pub(crate) fn cached_user_permissions_without_page_roles(
+        &self,
+        user_id: Option<i64>,
+        site_id: i64,
+    ) -> Option<HashSet<Permission<'static>>> {
+        self.read_cache.lock().ok().and_then(|cache| {
+            cache
+                .user_permissions_without_page_roles
+                .get(&(user_id, site_id))
+                .cloned()
+        })
+    }
+
+    pub(crate) fn cache_user_permissions_without_page_roles(
+        &self,
+        user_id: Option<i64>,
+        site_id: i64,
+        permissions: &HashSet<Permission<'static>>,
+    ) {
+        if let Ok(mut cache) = self.read_cache.lock() {
+            cache
+                .user_permissions_without_page_roles
+                .insert((user_id, site_id), permissions.clone());
+        }
+    }
+
+    pub(crate) fn cached_category_scoped_permission(
+        &self,
+        site_id: i64,
+        resource: Resource,
+        category_id: i64,
+        action: Action,
+    ) -> Option<bool> {
+        self.read_cache.lock().ok().and_then(|cache| {
+            cache
+                .category_scoped_permissions
+                .get(&(site_id, resource, category_id, action))
+                .copied()
+        })
+    }
+
+    pub(crate) fn cache_category_scoped_permission(
+        &self,
+        site_id: i64,
+        resource: Resource,
+        category_id: i64,
+        action: Action,
+        has_scoped: bool,
+    ) {
+        if let Ok(mut cache) = self.read_cache.lock() {
+            cache
+                .category_scoped_permissions
+                .insert((site_id, resource, category_id, action), has_scoped);
+        }
+    }
+
+    pub(crate) fn cached_site_allows_view(
+        &self,
+        user_id: Option<i64>,
+        site_id: i64,
+    ) -> Option<bool> {
+        self.read_cache
+            .lock()
+            .ok()
+            .and_then(|cache| cache.site_allows_view.get(&(user_id, site_id)).copied())
+    }
+
+    pub(crate) fn cache_site_allows_view(
+        &self,
+        user_id: Option<i64>,
+        site_id: i64,
+        allows: bool,
+    ) {
+        if let Ok(mut cache) = self.read_cache.lock() {
+            cache.site_allows_view.insert((user_id, site_id), allows);
+        }
+    }
+
+    pub(crate) fn invalidate_permission_read_cache(&self, site_id: i64) {
+        if let Ok(mut cache) = self.read_cache.lock() {
+            cache
+                .user_permissions_without_page_roles
+                .retain(|(_, s), _| *s != site_id);
+            cache
+                .category_scoped_permissions
+                .retain(|(s, _, _, _), _| *s != site_id);
+            cache.site_allows_view.retain(|(_, s), _| *s != site_id);
+        }
+    }
+
     pub fn defer_permission_cache_invalidate_user(
         &self,
         site_id: i64,
         user_id: i64,
     ) -> Result<()> {
+        self.invalidate_permission_read_cache(site_id);
         let mut actions = self.post_commit_actions.lock().map_err(|_| {
             Error::new(
                 "failed to queue permission cache invalidation",
@@ -272,6 +426,7 @@ impl<'txn> ServiceContext<'txn> {
     }
 
     pub fn defer_permission_cache_invalidate_site(&self, site_id: i64) -> Result<()> {
+        self.invalidate_permission_read_cache(site_id);
         let mut actions = self.post_commit_actions.lock().map_err(|_| {
             Error::new(
                 "failed to queue permission cache invalidation",
@@ -460,6 +615,7 @@ impl<'txn> ServiceContext<'txn> {
             commit_authentication_rejection: AtomicBool::new(false),
             link_graph_read: AtomicBool::new(false),
             cascade_page_query_cache: self.cascade_page_query_cache.clone(),
+            read_cache: Mutex::new(TransactionReadCache::default()),
         }
     }
 

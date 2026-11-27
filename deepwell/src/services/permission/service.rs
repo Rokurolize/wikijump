@@ -132,14 +132,43 @@ impl PermissionService {
         user_id: Option<i64>,
         site_id: i64,
     ) -> Result<bool> {
-        let site = SiteService::get(ctx, Reference::Id(site_id))
-            .await
-            .or_raise(|| Error::new("failed to get site", ErrorType::Site))?;
+        Self::site_allows_view_inner(ctx, user_id, site_id, true).await
+    }
 
-        match site.access_policy {
-            AccessPolicy::Open | AccessPolicy::Closed => Ok(true),
+    async fn site_allows_view_bypassing_read_cache(
+        ctx: &ServiceContext<'_>,
+        user_id: Option<i64>,
+        site_id: i64,
+    ) -> Result<bool> {
+        Self::site_allows_view_inner(ctx, user_id, site_id, false).await
+    }
+
+    async fn site_allows_view_inner(
+        ctx: &ServiceContext<'_>,
+        user_id: Option<i64>,
+        site_id: i64,
+        use_read_cache: bool,
+    ) -> Result<bool> {
+        if use_read_cache
+            && let Some(allows) = ctx.cached_site_allows_view(user_id, site_id)
+        {
+            return Ok(allows);
+        }
+
+        let site = if use_read_cache {
+            SiteService::get(ctx, Reference::Id(site_id)).await
+        } else {
+            SiteService::get_bypassing_read_cache(ctx, Reference::Id(site_id)).await
+        }
+        .or_raise(|| Error::new("failed to get site", ErrorType::Site))?;
+
+        let allows = match site.access_policy {
+            AccessPolicy::Open | AccessPolicy::Closed => true,
             AccessPolicy::Private => {
                 let Some(user_id) = user_id else {
+                    if use_read_cache {
+                        ctx.cache_site_allows_view(None, site_id, false);
+                    }
                     return Ok(false);
                 };
                 let membership = RelationService::get_optional_site_member(
@@ -150,9 +179,13 @@ impl PermissionService {
                 .or_raise(|| {
                     Error::new("failed to check site membership", ErrorType::Permission)
                 })?;
-                Ok(membership.is_some())
+                membership.is_some()
             }
+        };
+        if use_read_cache {
+            ctx.cache_site_allows_view(user_id, site_id, allows);
         }
+        Ok(allows)
     }
 
     pub async fn update_permissions_for_role(
@@ -621,7 +654,7 @@ impl PermissionService {
         let make_error =
             || Error::new("failed to check permission", ErrorType::Permission);
 
-        if !Self::site_allows_view(ctx, user_id, site_id)
+        if !Self::site_allows_view_bypassing_read_cache(ctx, user_id, site_id)
             .await
             .or_raise(make_error)?
         {
@@ -684,6 +717,17 @@ impl PermissionService {
         }
 
         let has_scoped_permissions = match resource_category_id {
+            Some(category_id) if cache_fence.is_some() => {
+                Self::check_category_scoped_bypassing_read_cache(
+                    ctx,
+                    site_id,
+                    resource,
+                    category_id,
+                    action,
+                )
+                .await
+                .or_raise(make_error)?
+            }
             Some(category_id) => {
                 Self::check_category_scoped(ctx, site_id, resource, category_id, action)
                     .await
@@ -694,9 +738,11 @@ impl PermissionService {
 
         let reloaded;
         let user_permissions = if cache_fence.is_some() {
-            reloaded = Self::get_permissions_for_user(ctx, user_id, site_id, None)
-                .await
-                .or_raise(make_error)?;
+            reloaded = Self::get_permissions_for_user_bypassing_read_cache(
+                ctx, user_id, site_id,
+            )
+            .await
+            .or_raise(make_error)?;
             &reloaded
         } else {
             user_permissions
@@ -805,12 +851,22 @@ impl PermissionService {
             return Ok(vec![false; page_category_ids.len()]);
         }
 
-        let mut uncached_category_ids = page_category_ids
-            .iter()
-            .flatten()
-            .copied()
-            .filter(|id| !category_scoped_cache.contains_key(&(site_id, Some(*id))))
-            .collect::<Vec<_>>();
+        let mut uncached_category_ids = Vec::new();
+        for id in page_category_ids.iter().flatten().copied() {
+            if category_scoped_cache.contains_key(&(site_id, Some(id))) {
+                continue;
+            }
+            if let Some(has_scoped) = ctx.cached_category_scoped_permission(
+                site_id,
+                Resource::Page,
+                id,
+                Action::View,
+            ) {
+                category_scoped_cache.insert((site_id, Some(id)), has_scoped);
+            } else {
+                uncached_category_ids.push(id);
+            }
+        }
         uncached_category_ids.sort_unstable();
         uncached_category_ids.dedup();
 
@@ -837,9 +893,16 @@ impl PermissionService {
             }
 
             for category_id in chunk {
-                category_scoped_cache
+                let has_scoped = *category_scoped_cache
                     .entry((site_id, Some(*category_id)))
                     .or_insert(false);
+                ctx.cache_category_scoped_permission(
+                    site_id,
+                    Resource::Page,
+                    *category_id,
+                    Action::View,
+                    has_scoped,
+                );
             }
         }
 
@@ -920,6 +983,37 @@ impl PermissionService {
         site_id: i64,
         page_reference: Option<Reference<'_>>,
     ) -> Result<HashSet<Permission<'static>>> {
+        if page_reference.is_none()
+            && let Some(cached) =
+                ctx.cached_user_permissions_without_page_roles(user_id, site_id)
+        {
+            return Ok(cached);
+        }
+
+        let cacheable = page_reference.is_none();
+        let permissions =
+            Self::load_permissions_for_user(ctx, user_id, site_id, page_reference)
+                .await?;
+        if cacheable {
+            ctx.cache_user_permissions_without_page_roles(user_id, site_id, &permissions);
+        }
+        Ok(permissions)
+    }
+
+    async fn get_permissions_for_user_bypassing_read_cache(
+        ctx: &ServiceContext<'_>,
+        user_id: Option<i64>,
+        site_id: i64,
+    ) -> Result<HashSet<Permission<'static>>> {
+        Self::load_permissions_for_user(ctx, user_id, site_id, None).await
+    }
+
+    async fn load_permissions_for_user(
+        ctx: &ServiceContext<'_>,
+        user_id: Option<i64>,
+        site_id: i64,
+        page_reference: Option<Reference<'_>>,
+    ) -> Result<HashSet<Permission<'static>>> {
         let txn = ctx.transaction();
         let make_error = || {
             Error::new(
@@ -960,6 +1054,40 @@ impl PermissionService {
     }
 
     async fn check_category_scoped(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        resource: Resource,
+        resource_category_id: i64,
+        action: Action,
+    ) -> Result<bool> {
+        if let Some(cached) = ctx.cached_category_scoped_permission(
+            site_id,
+            resource,
+            resource_category_id,
+            action,
+        ) {
+            return Ok(cached);
+        }
+
+        let has_scoped = Self::check_category_scoped_bypassing_read_cache(
+            ctx,
+            site_id,
+            resource,
+            resource_category_id,
+            action,
+        )
+        .await?;
+        ctx.cache_category_scoped_permission(
+            site_id,
+            resource,
+            resource_category_id,
+            action,
+            has_scoped,
+        );
+        Ok(has_scoped)
+    }
+
+    async fn check_category_scoped_bypassing_read_cache(
         ctx: &ServiceContext<'_>,
         site_id: i64,
         resource: Resource,

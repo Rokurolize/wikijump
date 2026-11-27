@@ -271,6 +271,7 @@ WHERE page.site_id = $1
             let mut category = category.into_active_model();
             category.autonumber_next = Set(next);
             category.update(txn).await.or_raise(make_error)?;
+            ctx.invalidate_category_read_cache(site_id);
         } else {
             Self::check_conflicts(ctx, site_id, &slug, "create")
                 .await

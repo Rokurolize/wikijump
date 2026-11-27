@@ -372,6 +372,7 @@ impl SiteService {
             ..Default::default()
         };
         let site = model.insert(txn).await.or_raise(make_error)?;
+        ctx.invalidate_site_read_cache(site.site_id);
 
         let user = UserService::create(
             ctx,
@@ -519,6 +520,7 @@ impl SiteService {
             .exec(txn)
             .await
             .or_raise(make_error)?;
+        ctx.invalidate_site_read_cache(site_id);
 
         if deletion.rows_affected != 1 {
             return Err(Error::new(
@@ -979,6 +981,7 @@ impl SiteService {
         model.updated_at = Set(Some(now()));
         model.settings_revision = Set(site.settings_revision + 1);
         let new_site = model.update(txn).await.or_raise(make_error)?;
+        ctx.invalidate_site_read_cache(new_site.site_id);
 
         if preferred_domain_changed || site.slug != new_site.slug {
             DomainService::invalidate_site_domain_cache(ctx, site.site_id)
@@ -1145,7 +1148,22 @@ impl SiteService {
 
     pub async fn get_optional(
         ctx: &ServiceContext<'_>,
+        reference: Reference<'_>,
+    ) -> Result<Option<SiteModel>> {
+        Self::get_optional_inner(ctx, reference, true).await
+    }
+
+    pub(crate) async fn get_optional_bypassing_read_cache(
+        ctx: &ServiceContext<'_>,
+        reference: Reference<'_>,
+    ) -> Result<Option<SiteModel>> {
+        Self::get_optional_inner(ctx, reference, false).await
+    }
+
+    async fn get_optional_inner(
+        ctx: &ServiceContext<'_>,
         mut reference: Reference<'_>,
+        use_read_cache: bool,
     ) -> Result<Option<SiteModel>> {
         let txn = ctx.transaction();
 
@@ -1161,7 +1179,15 @@ impl SiteService {
 
         let site = match reference {
             Reference::Id(id) => {
-                Site::find_by_id(id).one(txn).await.or_raise(make_error)?
+                if use_read_cache && let Some(cached) = ctx.cached_site_by_id(id) {
+                    return Ok(Some(cached));
+                }
+
+                let site = Site::find_by_id(id).one(txn).await.or_raise(make_error)?;
+                if use_read_cache && let Some(site) = &site {
+                    ctx.cache_site_by_id(id, site);
+                }
+                site
             }
             Reference::Slug(slug) => Site::find()
                 .filter(
@@ -1183,6 +1209,17 @@ impl SiteService {
         reference: Reference<'_>,
     ) -> Result<SiteModel> {
         find_or_error!(Self::get_optional(ctx, reference), "site", Site)
+    }
+
+    pub(crate) async fn get_bypassing_read_cache(
+        ctx: &ServiceContext<'_>,
+        reference: Reference<'_>,
+    ) -> Result<SiteModel> {
+        find_or_error!(
+            Self::get_optional_bypassing_read_cache(ctx, reference),
+            "site",
+            Site,
+        )
     }
 
     pub(super) async fn get_for_update(
