@@ -376,6 +376,12 @@ export interface Locales {
   "wiki-page-module-search-all-query": string
   "wiki-page-revision": string
   "wiki-page-last-edit": string
+  "wiki-page-attributions": string
+  "wiki-page-attribution-kind": string
+  "wiki-page-attribution-kind.author": string
+  "wiki-page-attribution-kind.rewrite": string
+  "wiki-page-attribution-kind.translator": string
+  "wiki-page-attribution-kind.maintainer": string
   "wiki-page-source": string
   "wiki-page-view-source": string
   "wiki-page-action-append": string

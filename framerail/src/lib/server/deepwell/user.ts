@@ -25,6 +25,24 @@ export interface UserViewMissing {
   data?: never
 }
 export type UserViewResult = UserViewFound | UserViewMissing
+
+export interface UserGetOutput {
+  user_id: number
+  user_type: UserType | "wikidot"
+  name: Nullable<string>
+  slug: Nullable<string>
+  deleted_at?: Nullable<string>
+  is_deleted?: boolean
+  karma?: number
+}
+
+export async function userGet(
+  userId: number,
+  requestContext: RequestContext = {}
+): Promise<Nullable<UserGetOutput>> {
+  return client.request("user_get", { user: userId }, requestContext)
+}
+
 export async function userView(
   siteId: number,
   locales: string[],

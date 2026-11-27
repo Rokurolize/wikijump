@@ -85,6 +85,13 @@ wiki-page-last-edit = 最終更新: { $date } ({ $days ->
   *[other] { $days }日前
 })
 
+wiki-page-attributions = 帰属
+wiki-page-attribution-kind =
+  .author = 著者
+  .rewrite = リライト者
+  .translator = 翻訳者
+  .maintainer = 維持者
+
 wiki-page-source = ページソース
 
 wiki-page-no-render = コンテンツは表示されません。

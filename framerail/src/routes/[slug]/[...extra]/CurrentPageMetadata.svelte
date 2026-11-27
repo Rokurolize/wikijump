@@ -3,6 +3,8 @@
   import type { Optional } from "$lib/types"
   import type { PageProps } from "./$types"
 
+  import PageAttributions from "./PageAttributions.svelte"
+
   let {
     data,
     revision,
@@ -37,4 +39,9 @@
   <div class="page-meta-info info-last-edit">
     {data.internationalization?.["wiki-page-last-edit"]}
   </div>
+  <PageAttributions
+    attributions={data.attribution_displays ?? []}
+    internationalization={data.internationalization}
+    locales={data.locales ?? [data.site.locale]}
+  />
 </div>

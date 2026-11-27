@@ -80,6 +80,11 @@ const foundPageTranslateKeys = (
       date: new Date(updatedAt).toLocaleString(toIntlLocales(locales)),
       days: daysDiff
     },
+    "wiki-page-attributions": {},
+    "wiki-page-attribution-kind.author": {},
+    "wiki-page-attribution-kind.rewrite": {},
+    "wiki-page-attribution-kind.translator": {},
+    "wiki-page-attribution-kind.maintainer": {},
     "wiki-page-revision-history": {},
     "wiki-page-revision-diff": {},
     "wiki-page-revision-diff.from": {},
