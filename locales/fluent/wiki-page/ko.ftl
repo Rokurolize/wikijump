@@ -19,6 +19,13 @@ wiki-page-last-edit = 마지막 편집: { $date } ({ $days ->
   *[other] { $days }일 전
 })
 
+wiki-page-attributions = 저작자 표시
+wiki-page-attribution-kind =
+  .author = 작성자
+  .rewrite = 다시 쓴 사람
+  .translator = 번역자
+  .maintainer = 유지 관리자
+
 wiki-page-revision-history = 페이지 리비전 기록
 
 wiki-page-revision-diff = 리비전 비교

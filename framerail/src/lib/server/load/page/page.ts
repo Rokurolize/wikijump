@@ -13,6 +13,7 @@ import {
   pageScore
 } from "$lib/server/deepwell/page"
 import { pageErrorStatus } from "$lib/server/load/page/page-error-status"
+import { resolvePageAttributionDisplays } from "$lib/server/load/page/page-attributions"
 import { translate } from "$lib/server/deepwell/translate"
 import { articleView } from "$lib/server/deepwell/views"
 import { buildPageLoadData } from "$lib/server/load/page-data"
@@ -191,13 +192,19 @@ export async function loadPage(
         )
       : undefined
 
+  const attributionDisplays = await resolvePageAttributionDisplays(
+    response.data.attributions,
+    locals ? getRequestContext(locals) : undefined
+  )
+
   const viewData = {
     ...response.data,
     ...(metaTags !== undefined ? { meta_tags: metaTags } : {}),
     view: response.type,
     internationalization,
     ...presentation,
-    site_file_presence: siteFilePresence
+    site_file_presence: siteFilePresence,
+    attribution_displays: attributionDisplays
   }
   runRedirect(response.data, slug, extra, request.url)
 

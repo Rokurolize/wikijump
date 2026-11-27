@@ -10,6 +10,13 @@ wiki-page-last-edit = 最后编辑于: { $date } ({ $days ->
   *[other] { $days } 日前
 })
 
+wiki-page-attributions = 署名信息
+wiki-page-attribution-kind =
+  .author = 作者
+  .rewrite = 重写者
+  .translator = 译者
+  .maintainer = 维护者
+
 wiki-page-source = 页面源代码
 
 wiki-page-view-source = 检视源代码

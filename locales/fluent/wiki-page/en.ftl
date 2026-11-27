@@ -13,6 +13,13 @@ wiki-page-last-edit = last edited: { $date } ({ $days ->
   *[other] { $days } days ago
 })
 
+wiki-page-attributions = Attributions
+wiki-page-attribution-kind =
+  .author = Author
+  .rewrite = Rewriter
+  .translator = Translator
+  .maintainer = Maintainer
+
 wiki-page-source = Page source
 
 wiki-page-view-source = View Source
