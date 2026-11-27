@@ -34,6 +34,7 @@ local   all             postgres                                peer
 # Docker connections - You are encouraged to tighten this rule up as needed.
 # By default, the username, password, and db name are all wikijump.
 host    all             all             172.16.0.0/12           scram-sha-256
+host    all             all             fd7a:4f2c:9100:4::/64   scram-sha-256
 
 # "local" is for Unix domain socket connections only
 local   all             all                                     peer

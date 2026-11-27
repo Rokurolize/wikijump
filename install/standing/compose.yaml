@@ -256,8 +256,11 @@ services:
       GOMEMLIMIT: "128MiB"
     ports:
       - "127.0.0.1:80:80"
+      - "[::1]:80:80"
       - "127.0.0.1:443:443"
+      - "[::1]:443:443"
       - "127.0.0.1:443:443/udp"
+      - "[::1]:443:443/udp"
     volumes:
       - type: bind
         source: ./caddy/request.json
@@ -279,6 +282,10 @@ services:
 networks:
   default:
     name: ${STANDING_NETWORK_NAME:?STANDING_NETWORK_NAME is required}
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: "fd7a:4f2c:9100:4::/64"
 
 volumes:
   wikijump-standing-postgres-data:

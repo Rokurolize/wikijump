@@ -119,7 +119,7 @@ test("known local Compose runtime definitions trigger runtime, workflow and veri
   ])
   for (const [file, services] of known) {
     const source = read(file)
-    const serviceSection = source.split(/^volumes:\s*$/mu, 1)[0]
+    const serviceSection = source.split(/^(?:networks|volumes):\s*$/mu, 1)[0]
     assert.deepEqual(
       [...serviceSection.matchAll(/^  ([\w-]+):\s*$/gmu)].map((match) => match[1]),
       services,
