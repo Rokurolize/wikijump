@@ -172,3 +172,23 @@ test("promotion source identity ignores unrelated operator overlays but rejects 
     /promotion candidate tracked source must be clean/u,
   );
 });
+
+test("promotion Dockerfiles defer commit-specific layers until after dependency and static copies", async () => {
+  const framerailDockerfile = await fs.readFile(path.join(repositoryRoot, "install/prod/framerail/Dockerfile"), "utf8");
+  const pnpmInstallIndex = framerailDockerfile.search(/^\s+pnpm install --frozen-lockfile/mu);
+  const copyFramerailIndex = framerailDockerfile.search(/^COPY framerail\/ \.\//mu);
+  const gitCommitArgIndex = framerailDockerfile.search(/^ARG WIKIJUMP_GIT_COMMIT=/mu);
+  const pnpmBuildIndex = framerailDockerfile.search(/^\s+pnpm build\b/mu);
+  assert.ok(pnpmInstallIndex !== -1 && copyFramerailIndex !== -1 && gitCommitArgIndex !== -1 && pnpmBuildIndex !== -1);
+  assert.ok(pnpmInstallIndex < copyFramerailIndex);
+  assert.ok(copyFramerailIndex < gitCommitArgIndex);
+  assert.ok(gitCommitArgIndex < pnpmBuildIndex);
+
+  const deepwellDockerfile = await fs.readFile(path.join(repositoryRoot, "install/prod/deepwell/Dockerfile"), "utf8");
+  const copySqlxIndex = deepwellDockerfile.indexOf("COPY --from=rust /tmp/sqlx-root/bin/sqlx /usr/local/bin/sqlx");
+  const copyLocalesIndex = deepwellDockerfile.indexOf("COPY ./locales/fluent /opt/locales/fluent");
+  const copyDeepwellIndex = deepwellDockerfile.indexOf("COPY --from=rust /out/deepwell /usr/local/bin/deepwell");
+  assert.ok(copySqlxIndex !== -1 && copyLocalesIndex !== -1 && copyDeepwellIndex !== -1);
+  assert.ok(copySqlxIndex < copyLocalesIndex);
+  assert.ok(copyLocalesIndex < copyDeepwellIndex);
+});

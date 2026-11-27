@@ -71,7 +71,6 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates curl libmagic1 libmagic-mgc && \
     update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
-COPY --from=rust /out/deepwell /usr/local/bin/deepwell
 COPY --from=rust /tmp/sqlx-root/bin/sqlx /usr/local/bin/sqlx
 COPY ./deepwell/migrations /opt/deepwell/migrations
 COPY ./deepwell/seeder /opt/deepwell/seeder
@@ -79,6 +78,9 @@ COPY ./install/prod/deepwell/deepwell-start /usr/local/bin/wikijump-deepwell-sta
 COPY ./install/prod/deepwell/health-check.sh /bin/wikijump-health-check
 COPY ./install/prod/deepwell/config.toml /etc/deepwell.toml
 COPY ./locales/fluent /opt/locales/fluent
+# Copy the compiled server binary last so source/commit changes reuse all
+# earlier runtime COPY layers.
+COPY --from=rust /out/deepwell /usr/local/bin/deepwell
 
 USER daemon
 ENV PORT=2747
