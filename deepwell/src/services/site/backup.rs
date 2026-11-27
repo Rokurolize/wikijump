@@ -1534,7 +1534,7 @@ impl TarReader {
     fn parse(bytes: &[u8]) -> Result<BTreeMap<String, Vec<u8>>> {
         if bytes.is_empty()
             || bytes.len() > MAX_ARCHIVE_BYTES
-            || bytes.len() % BLOCK_SIZE != 0
+            || !bytes.len().is_multiple_of(BLOCK_SIZE)
         {
             bail!(Error::new(
                 "invalid backup TAR archive size",
