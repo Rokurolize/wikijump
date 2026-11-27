@@ -178,6 +178,7 @@ pub(super) fn seal_list_pages_delayed_output_with_modes(
     list_settings.list_pages_inline = list_pages_inline;
     let (mut sealed_body, sealed_html_blocks) = if delayed_occurrences.is_empty()
         && runtime_text_ranges.is_empty()
+        && !(output.is_empty() && !delayed_html_fragments.is_empty())
     {
         seal_non_delayed_list_output(&output, page_info, &list_settings, page_existence)
     } else {
@@ -547,6 +548,55 @@ mod tests {
     use super::*;
     use ftml::layout::Layout;
     use std::borrow::Cow;
+
+    #[test]
+    fn empty_output_sealing_depends_on_the_fragment_registry() {
+        let page_info = PageInfo {
+            page: Cow::Borrowed("test-page"),
+            category: None,
+            site: Cow::Borrowed("pentest"),
+            title: Cow::Borrowed("Test"),
+            alt_title: None,
+            score: ftml::data::ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
+        let mut compat_html = CompatHtmlFragments::new("");
+
+        let empty_seal = seal_list_pages_delayed_output(
+            String::new(),
+            Vec::new(),
+            Vec::new(),
+            Vec::new(),
+            &page_info,
+            &settings,
+            &mut compat_html,
+        )
+        .expect("empty output without a fragment registry should seal empty");
+        assert_eq!(empty_seal, "");
+
+        let mut pending_fragments = CompatHtmlFragments::new("");
+        pending_fragments.push_html("<span>protected</span>".to_owned());
+        let error = seal_list_pages_delayed_output(
+            String::new(),
+            Vec::new(),
+            Vec::new(),
+            vec![pending_fragments],
+            &page_info,
+            &settings,
+            &mut compat_html,
+        )
+        .expect_err("empty output with a pending fragment registry must fail closed");
+        assert_eq!(error.error_type, ErrorType::Render);
+        assert!(
+            error
+                .message
+                .contains("invalid typed ListPages stream: InvalidSegments"),
+            "unexpected error: {}",
+            error.message,
+        );
+    }
 
     #[test]
     fn non_delayed_fast_path_matches_delayed_path_byte_for_byte() {
