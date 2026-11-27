@@ -23,6 +23,10 @@ export function isTrustedProxyPeer(peer: string): boolean {
   }
   if (kind === 6) {
     const lower = peer.toLowerCase()
+    if (lower.startsWith("::ffff:")) {
+      const embedded = peer.slice("::ffff:".length)
+      if (isIP(embedded) === 4) return isTrustedProxyPeer(embedded)
+    }
     if (lower === "::1") return true
     return lower.startsWith("fc") || lower.startsWith("fd") || lower.startsWith("fe80:")
   }

@@ -82,13 +82,15 @@ export const createFramerailServerRuntime = ({
   return { ...lifecycle, cacheStores, fenceCache }
 }
 
+export const resolveFramerailListenHost = (host: string | undefined) => host ?? "::"
+
 export const startFramerailServer = async () => {
   const handlerSpecifier: string = "./build/handler.js"
   const { handler } = (await import(handlerSpecifier)) as {
     handler: FastPathFallbackHandler
   }
   const path = process.env.SOCKET_PATH
-  const host = process.env.HOST ?? "0.0.0.0"
+  const host = resolveFramerailListenHost(process.env.HOST)
   const port = process.env.PORT ?? "3000"
   const readiness =
     process.env.WIKIJUMP_STARTUP_READINESS === "true"
