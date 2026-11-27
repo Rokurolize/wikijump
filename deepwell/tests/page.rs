@@ -48,6 +48,9 @@ mod page_move;
 #[path = "page/page_query.rs"]
 mod page_query;
 
+#[path = "page/list_pages_sharing_experiment.rs"]
+mod list_pages_sharing_experiment;
+
 use self::common::TestRunner;
 use deepwell::services::PageEditLockService;
 use deepwell::services::page_edit_lock::AcquirePageEditLock;

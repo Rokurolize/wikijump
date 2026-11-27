@@ -530,12 +530,10 @@ impl RenderService {
             || current_page_only
             || prefetched_pages.is_some()
             || link_to_has_no_viewable_targets;
-        let exact_total_from_scan = if template.uses_total()
-            && !rows_are_complete_without_query
-        {
+        let exact_total_from_scan = if template.uses_total() {
             if let Some(total) = listing_cache.exact_total(&total_match_key) {
                 Some(total)
-            } else {
+            } else if !rows_are_complete_without_query {
                 let total = {
                     let total_query = list_pages_total_query(&query, exact_visible_tags);
                     let target_count = MAX_LISTPAGES_RENDER_SCAN_ROWS as usize;
@@ -575,6 +573,8 @@ impl RenderService {
                 };
                 listing_cache.cache_exact_total(total_match_key.clone(), total);
                 Some(total)
+            } else {
+                None
             }
         } else {
             None
