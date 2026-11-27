@@ -15,21 +15,21 @@ test("builds ordered head styles for multiple generated CSS modules", () => {
 
   assert.equal(
     html,
-    '<style type="text/css" data-wikidot-generated-css="0">.first { color: red; }</style><style type="text/css" data-wikidot-generated-css="1">.second { color: blue; }</style>'
+    "<style>.first { color: red; }</style><style>.second { color: blue; }</style>"
   )
   assert(!html.includes("data-wikijump-"))
 })
 
 test("keeps CSS in raw-text context when content attempts to close or forge a style", () => {
   const html = buildGeneratedPageStylesHead([
-    '</style><meta name="injected"><style data-wikidot-generated-css="99">'
+    '</style><meta name="injected"><style data-forged="99">'
   ])
 
   assert.equal(html.match(/<style/g)?.length, 1)
   assert.equal(html.match(/<\/style>/g)?.length, 1)
   assert(!html.includes('<meta name="injected">'))
   assert(html.includes('\\3C /style>\\3C meta name="injected">'))
-  assert(html.includes('\\3C style data-wikidot-generated-css="99">'))
+  assert(html.includes('\\3C style data-forged="99">'))
 })
 
 test("preloads the CJK font selected by the document locale when rendered content needs it", () => {

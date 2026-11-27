@@ -12,9 +12,9 @@
   const generatedRow = tabView.parentElement?.classList.contains("list-pages-item")
 
   const activate = () => {
-    const generatedStyles = [
-      ...document.querySelectorAll("style[data-wikidot-generated-css]")
-    ]
+    const generatedStyles = [...document.querySelectorAll("head style")].filter(
+      (node) => node.attributes.length === 0
+    )
     const needsTrailingGeneratedCss = generatedStyles.some((node) =>
       /\.yui-navset\.yui-navset-top[^{]*\{[^}]*display:\s*grid/u.test(
         node.textContent ?? ""

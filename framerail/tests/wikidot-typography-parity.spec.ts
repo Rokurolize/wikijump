@@ -18,6 +18,13 @@ const SITE_HEADERS = {
   "X-Wikijump-Site-Slug": "scp-wiki"
 }
 
+const bareHeadStyleCount = (page: import("@playwright/test").Page) =>
+  page
+    .locator("head style")
+    .evaluateAll(
+      (styles) => styles.filter((style) => style.attributes.length === 0).length
+    )
+
 type TypographyParityCase = Readonly<{
   slug: string
   bodyText: string
@@ -72,9 +79,9 @@ for (const typographyCase of TYPOGRAPHY_PARITY_CASES) {
     })
     expect(response?.status()).toBe(200)
     await expect(page.locator("#page-content p")).toHaveText(typographyCase.bodyText)
-    await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(
-      typographyCase.generatedStyleCount
-    )
+    await expect
+      .poll(() => bareHeadStyleCount(page))
+      .toBe(typographyCase.generatedStyleCount)
 
     const actual = await readTypographySnapshot(page)
     const relationMismatches = typographyRelationMismatches(

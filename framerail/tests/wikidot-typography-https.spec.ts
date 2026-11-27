@@ -5,6 +5,13 @@ const SITE_HEADERS = {
   "X-Wikijump-Site-Slug": "scp-wiki"
 }
 
+const bareHeadStyleCount = (page: import("@playwright/test").Page) =>
+  page
+    .locator("head style")
+    .evaluateAll(
+      (styles) => styles.filter((style) => style.attributes.length === 0).length
+    )
+
 test("imported Wikidot typography CSS survives HTTPS across browser engines", async ({
   page
 }, testInfo) => {
@@ -27,7 +34,7 @@ test("imported Wikidot typography CSS survives HTTPS across browser engines", as
   })
   expect(response?.status()).toBe(200)
   await expect(page.locator("#page-content p")).toHaveText("XML-RPC theme body marker.")
-  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(2)
+  await expect.poll(() => bareHeadStyleCount(page)).toBe(2)
 
   const styles = await page.evaluate(() => {
     const fontSize = (selector: string, property = "font-size") => {

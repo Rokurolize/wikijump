@@ -5,15 +5,23 @@ const SITE_HEADERS = {
   "X-Wikijump-Site-Slug": "scp-wiki"
 }
 
-const generatedCss = (page: import("@playwright/test").Page) =>
+const bareGeneratedStyleSnapshots = (page: import("@playwright/test").Page) =>
   page
-    .locator("head style[data-wikidot-generated-css]")
-    .evaluateAll((styles) => styles.map((style) => style.textContent))
+    .locator("head style")
+    .evaluateAll((styles) =>
+      styles
+        .filter((style) => style.attributes.length === 0)
+        .map((style) => ({ outerHTML: style.outerHTML, textContent: style.textContent }))
+    )
 
-const generatedCssClones = (page: import("@playwright/test").Page) =>
-  page
-    .locator("head style[data-wikidot-generated-css-clone]")
-    .evaluateAll((styles) => styles.map((style) => style.textContent))
+const generatedCss = async (page: import("@playwright/test").Page) =>
+  (await bareGeneratedStyleSnapshots(page)).map((style) => style.textContent)
+
+const generatedCssOuterHtml = async (page: import("@playwright/test").Page) =>
+  (await bareGeneratedStyleSnapshots(page)).map((style) => style.outerHTML)
+
+const generatedCssCount = async (page: import("@playwright/test").Page) =>
+  (await generatedCss(page)).length
 
 test("page CSS keeps its cascade position when it imports a styleFrame theme", async ({
   page
@@ -70,6 +78,9 @@ test("Wikidot page links use document navigation and keep styleFrame CSS out of 
   expect(pageErrors).toEqual([])
   await expect(page.locator("#skrollr-body")).toHaveAttribute("data-sveltekit-reload", "")
   expect(await generatedCss(page)).toEqual([".generated-style-a { color: red; }"])
+  expect(await generatedCssOuterHtml(page)).toEqual([
+    "<style>.generated-style-a { color: red; }</style>"
+  ])
 
   await page.evaluate(() => {
     ;(
@@ -87,7 +98,7 @@ test("Wikidot page links use document navigation and keep styleFrame CSS out of 
   await expect(page.locator("#side-bar")).not.toHaveCSS("display", "none")
   expect(themeRequests).toEqual([])
   await expect(page).toHaveURL(/\/navigation-style-b$/u)
-  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(2)
+  await expect.poll(() => generatedCssCount(page)).toBe(2)
   expect(
     await page.evaluate(
       () =>
@@ -112,18 +123,13 @@ test("Wikidot page links use document navigation and keep styleFrame CSS out of 
     ".generated-style-b-one { color: blue; }",
     ".generated-style-b-two { color: green; }"
   ])
-  expect(await generatedCssClones(page)).toEqual([])
 
   await page.goto("/navigation-style-b")
-  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(2)
-  await expect(page.locator("head style[data-wikidot-generated-css-clone]")).toHaveCount(
-    0
-  )
+  await expect.poll(() => generatedCssCount(page)).toBe(2)
   expect(await generatedCss(page)).toEqual(clickedStyleB)
-  expect(await generatedCssClones(page)).toEqual([])
 
   await page.goto("/navigation-style-c")
-  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(2)
+  await expect.poll(() => generatedCssCount(page)).toBe(2)
   await page.evaluate(() => {
     ;(
       window as Window & {
@@ -133,7 +139,7 @@ test("Wikidot page links use document navigation and keep styleFrame CSS out of 
   })
   await page.locator("#navigate-style-d").click()
   await expect(page).toHaveURL(/\/navigation-style-d$/u)
-  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(1)
+  await expect.poll(() => generatedCssCount(page)).toBe(1)
   expect(
     await page.evaluate(
       () =>
@@ -154,12 +160,7 @@ test("Wikidot page links use document navigation and keep styleFrame CSS out of 
 
   const clickedStyleD = await generatedCss(page)
   expect(clickedStyleD).toEqual([".generated-style-d { color: black; }"])
-  expect(await generatedCssClones(page)).toEqual([])
   await page.goto("/navigation-style-d")
-  await expect(page.locator("head style[data-wikidot-generated-css]")).toHaveCount(1)
-  await expect(page.locator("head style[data-wikidot-generated-css-clone]")).toHaveCount(
-    0
-  )
+  await expect.poll(() => generatedCssCount(page)).toBe(1)
   expect(await generatedCss(page)).toEqual(clickedStyleD)
-  expect(await generatedCssClones(page)).toEqual([])
 })
