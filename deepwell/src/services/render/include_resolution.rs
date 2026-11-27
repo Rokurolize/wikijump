@@ -9,6 +9,7 @@ use ftml::prelude::Includer;
 use regex::{Regex, RegexBuilder};
 use std::borrow::Cow;
 use std::collections::{HashMap, VecDeque};
+use std::fmt::Write as _;
 use std::sync::LazyLock;
 
 static EMPTY_INCLUDE_TARGET_REGEX: LazyLock<Regex> =
@@ -47,11 +48,32 @@ fn spaced_empty_separator_missing_include_source(
     format!("{opener}\n{message}")
 }
 
+fn escape_missing_include_component(value: &str) -> String {
+    let mut escaped = String::with_capacity(value.len());
+    for character in value.chars() {
+        match character {
+            '"' => escaped.push_str("&#34;"),
+            '<' => escaped.push_str("&lt;"),
+            '>' => escaped.push_str("&gt;"),
+            '[' => escaped.push_str("&#91;"),
+            ']' => escaped.push_str("&#93;"),
+            character if character.is_control() => {
+                write!(escaped, "&#{};", character as u32)
+                    .expect("String write cannot fail");
+            }
+            character => escaped.push(character),
+        }
+    }
+    escaped
+}
+
 fn missing_include_message(page: &str, site: Option<&str>, language: &str) -> String {
     let edit_url = match site {
         Some(site) => format!("http://{site}.wikidot.com/{page}/edit/true"),
         None => format!("/{page}/edit/true"),
     };
+    let page = escape_missing_include_component(page);
+    let edit_url = escape_missing_include_component(&edit_url);
     if locale_is_japanese(language) {
         // Wikidot's Japanese rendering of this message, as served by
         // Japanese-language sites: the page name follows the topic
@@ -692,6 +714,90 @@ mod tests {
                 "language {language} must keep the English message",
             );
         }
+    }
+
+    #[test]
+    fn missing_include_message_leaves_ordinary_names_byte_for_byte() {
+        assert_eq!(
+            escape_missing_include_component("component:sigma-plus"),
+            "component:sigma-plus",
+        );
+        assert_eq!(
+            escape_missing_include_component("theme:plant"),
+            "theme:plant",
+        );
+        assert_eq!(
+            missing_include_message("theme:plant", None, "en"),
+            "Included page \"theme:plant\" does not exist ([[a href=\"/theme:plant/edit/true\"]]create it now[[/a]])",
+        );
+        assert_eq!(
+            missing_include_source("theme:plant", None, "ja"),
+            "[[div class=\"error-block\"]]\nインクルードを行おうとしたページ、 theme:plantは存在しません([[a href=\"/theme:plant/edit/true\"]]ページを作成する[[/a]])\n[[/div]]",
+        );
+        assert_eq!(
+            missing_include_message("component:sigma-plus", Some("scp-jp"), "en"),
+            "Included page \"component:sigma-plus\" does not exist ([[a href=\"http://scp-jp.wikidot.com/component:sigma-plus/edit/true\"]]create it now[[/a]])",
+        );
+    }
+
+    #[test]
+    fn missing_include_message_escapes_quote_bearing_target() {
+        assert_eq!(
+            missing_include_message("x\"y", None, "en"),
+            "Included page \"x&#34;y\" does not exist ([[a href=\"/x&#34;y/edit/true\"]]create it now[[/a]])",
+        );
+        assert_eq!(
+            missing_include_message("x\"y", None, "ja"),
+            "インクルードを行おうとしたページ、 x&#34;yは存在しません([[a href=\"/x&#34;y/edit/true\"]]ページを作成する[[/a]])",
+        );
+        assert_eq!(
+            missing_include_message("page", Some("x\"y"), "en"),
+            "Included page \"page\" does not exist ([[a href=\"http://x&#34;y.wikidot.com/page/edit/true\"]]create it now[[/a]])",
+        );
+    }
+
+    #[test]
+    fn missing_include_message_escapes_angle_bracket_target() {
+        let message = missing_include_message("x<svg/onload=alert(1)>", None, "en");
+        assert_eq!(
+            message,
+            "Included page \"x&lt;svg/onload=alert(1)&gt;\" does not exist ([[a href=\"/x&lt;svg/onload=alert(1)&gt;/edit/true\"]]create it now[[/a]])",
+        );
+        assert!(!message.contains("<svg"));
+        assert!(!message.contains('>'));
+    }
+
+    #[test]
+    fn missing_include_message_escapes_control_character_target() {
+        let message = missing_include_message("x\u{0000}y\u{001f}z", None, "en");
+        assert_eq!(
+            message,
+            "Included page \"x&#0;y&#31;z\" does not exist ([[a href=\"/x&#0;y&#31;z/edit/true\"]]create it now[[/a]])",
+        );
+        assert!(message.chars().all(|character| !character.is_control()));
+    }
+
+    #[test]
+    fn missing_include_message_cannot_form_a_directive_from_target_bytes() {
+        let message = missing_include_message("[[module ListPages]]", None, "en");
+        assert_eq!(
+            message,
+            "Included page \"&#91;&#91;module ListPages&#93;&#93;\" does not exist ([[a href=\"/&#91;&#91;module ListPages&#93;&#93;/edit/true\"]]create it now[[/a]])",
+        );
+        assert!(!message.contains("[[module"));
+        assert!(!message.contains("[[/module"));
+    }
+
+    #[test]
+    fn empty_site_include_with_quote_cannot_break_the_edit_link() {
+        let mut source = "[[include ::x\"y]]".to_owned();
+        expand_malformed_include_targets(&mut source, "en");
+        assert!(
+            source.contains("Included page \"x&#34;y\" does not exist"),
+            "{source}"
+        );
+        assert!(source.contains("href=\"/x&#34;y/edit/true\""), "{source}");
+        assert!(!source.contains("/x\"y/"), "{source}");
     }
 
     #[test]
