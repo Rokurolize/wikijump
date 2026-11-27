@@ -654,8 +654,9 @@ pub(super) static WIKIJUMP_TAB_BUTTON_REGEX: LazyLock<Regex> = LazyLock::new(|| 
 });
 pub(super) static WIKIJUMP_TAB_PANEL_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"(?is)<div class="wj-tabs-panel"[^>]*>"#).unwrap());
-pub(super) static WIKIDOT_TABVIEW_PANEL_ID_REGEX: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r#"<div id="wiki-tab-0-(?P<index>[0-9]+)">"#).unwrap());
+pub(super) static WIKIDOT_TABVIEW_PANEL_ID_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r#"<div id="wiki-tab-(?P<view>[0-9]+)-(?P<index>[0-9]+)">"#).unwrap()
+});
 static WIKIDOT_IMAGE_BLOCK_INCLUDE_START_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(concat!(
         r#"(?is)\[\[include(?:[ \t\r\n]+|\[!--.*?--\])+"#,
