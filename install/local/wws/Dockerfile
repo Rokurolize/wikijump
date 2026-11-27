@@ -13,6 +13,11 @@ FROM rustlang/rust:nightly@sha256:b3d2bf816722790f1d34c5e6e06f42520ea745b5aaae6e
 ENV CARGO_BUILD_JOBS=2 \
     CARGO_INCREMENTAL=1
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
 # Install helpers
 RUN cargo install cargo-watch --version 8.5.3 --locked
 

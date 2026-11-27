@@ -96,7 +96,17 @@ test("all Deepwell and WWS image variants refresh OS roots in builder and runtim
     const builder = stages[0];
     assert.match(builder, /apt-get install -y --no-install-recommends ca-certificates/u, `${relative}: builder refreshes roots`);
     assert.match(builder, /update-ca-certificates/u, `${relative}: builder activates the updated roots`);
-    assert.ok(builder.indexOf("RUN apt-get update &&") < builder.indexOf("rustup-init"), `${relative}: CA refresh precedes the rustup download`);
+    const builderCommands = builder.split("\n").filter((line) => !line.trimStart().startsWith("#")).join("\n");
+    const networkUse = Math.min(
+      ...["cargo install", "cargo vendor", "cargo build", "rustup target add"]
+        .map((command) => builderCommands.indexOf(command))
+        .filter((index) => index >= 0),
+    );
+    const caInstall = builderCommands.indexOf("apt-get install -y --no-install-recommends ca-certificates");
+    const caRefresh = builderCommands.indexOf("update-ca-certificates");
+    assert.ok(Number.isFinite(networkUse), `${relative}: builder network use is present`);
+    assert.ok(caInstall < caRefresh, `${relative}: CA installation precedes activation`);
+    assert.ok(caRefresh < networkUse, `${relative}: CA refresh precedes the first builder network use`);
     for (const stage of stages.slice(1)) {
       assert.match(stage, /apt-get install -y --no-install-recommends ca-certificates/u, `${relative}: final stage refreshes roots`);
       assert.match(stage, /update-ca-certificates/u, `${relative}: final stage activates the updated roots`);
