@@ -21,9 +21,7 @@
 use crate::config::Config;
 use crate::error::prelude::{Error, ErrorType, OptionExt, Result, ResultExt};
 use crate::locales::Localizations;
-use crate::models::page_category::Model as PageCategoryModel;
 use crate::models::session::Model as SessionModel;
-use crate::models::site::Model as SiteModel;
 use crate::runtime::ServerState;
 use crate::services::blob::MimeAnalyzer;
 use crate::services::email::EmailMailer;
@@ -33,13 +31,13 @@ use crate::services::permission::{PermissionCache, PermissionService};
 use crate::services::public_cache::PublicContentCache;
 use crate::services::render::CascadePageQueryCache;
 use crate::services::text_block::cleanup_uploaded_text_blocks;
-use crate::types::{Action, PageId, Permission, Reference, RerenderDepth, Resource};
+use crate::types::{PageId, Permission, Reference, RerenderDepth};
 use exn::ErrorExt;
 use redis::aio::MultiplexedConnection as RedisMultiplexedConnection;
 use rsmq_async::Rsmq;
 use s3::bucket::Bucket;
 use sea_orm::{DatabaseTransaction, TransactionTrait};
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashSet, VecDeque};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tokio::sync::OnceCell;
@@ -88,17 +86,6 @@ impl RequestContext {
     }
 }
 
-#[derive(Debug, Default)]
-struct TransactionReadCache {
-    sites_by_id: HashMap<i64, Option<SiteModel>>,
-    categories_by_id: HashMap<(i64, i64), Option<PageCategoryModel>>,
-    active_categories_by_site: HashMap<i64, Vec<PageCategoryModel>>,
-    user_permissions_without_page_roles:
-        HashMap<(Option<i64>, i64), HashSet<Permission<'static>>>,
-    category_scoped_permissions: HashMap<(i64, Resource, i64, Action), bool>,
-    site_allows_view: HashMap<(Option<i64>, i64), bool>,
-}
-
 #[derive(Debug)]
 pub struct ServiceContext<'txn> {
     state: ServerState,
@@ -110,7 +97,6 @@ pub struct ServiceContext<'txn> {
     commit_authentication_rejection: AtomicBool,
     link_graph_read: AtomicBool,
     cascade_page_query_cache: Option<Arc<Mutex<CascadePageQueryCache>>>,
-    read_cache: Mutex<TransactionReadCache>,
 }
 
 #[derive(Debug)]
@@ -176,7 +162,6 @@ impl<'txn> ServiceContext<'txn> {
             commit_authentication_rejection: AtomicBool::new(false),
             link_graph_read: AtomicBool::new(false),
             cascade_page_query_cache: None,
-            read_cache: Mutex::new(TransactionReadCache::default()),
         }
     }
 
@@ -270,172 +255,11 @@ impl<'txn> ServiceContext<'txn> {
         self.link_graph_read.load(Ordering::Relaxed)
     }
 
-    pub(crate) fn cached_site_by_id(&self, site_id: i64) -> Option<Option<SiteModel>> {
-        self.read_cache
-            .lock()
-            .ok()
-            .and_then(|cache| cache.sites_by_id.get(&site_id).cloned())
-    }
-
-    pub(crate) fn cache_site_by_id(&self, site_id: i64, site: Option<SiteModel>) {
-        if let Ok(mut cache) = self.read_cache.lock() {
-            cache.sites_by_id.insert(site_id, site);
-        }
-    }
-
-    pub(crate) fn invalidate_site_read_cache(&self, site_id: i64) {
-        if let Ok(mut cache) = self.read_cache.lock() {
-            cache.sites_by_id.remove(&site_id);
-            cache.site_allows_view.retain(|(_, s), _| *s != site_id);
-        }
-    }
-
-    pub(crate) fn cached_category_by_id(
-        &self,
-        site_id: i64,
-        category_id: i64,
-    ) -> Option<Option<PageCategoryModel>> {
-        self.read_cache.lock().ok().and_then(|cache| {
-            cache.categories_by_id.get(&(site_id, category_id)).cloned()
-        })
-    }
-
-    pub(crate) fn cache_category_by_id(
-        &self,
-        site_id: i64,
-        category_id: i64,
-        category: Option<PageCategoryModel>,
-    ) {
-        if let Ok(mut cache) = self.read_cache.lock() {
-            cache
-                .categories_by_id
-                .insert((site_id, category_id), category);
-        }
-    }
-
-    pub(crate) fn cached_active_categories(
-        &self,
-        site_id: i64,
-    ) -> Option<Vec<PageCategoryModel>> {
-        self.read_cache
-            .lock()
-            .ok()
-            .and_then(|cache| cache.active_categories_by_site.get(&site_id).cloned())
-    }
-
-    pub(crate) fn cache_active_categories(
-        &self,
-        site_id: i64,
-        categories: Vec<PageCategoryModel>,
-    ) {
-        if let Ok(mut cache) = self.read_cache.lock() {
-            cache.active_categories_by_site.insert(site_id, categories);
-        }
-    }
-
-    pub(crate) fn invalidate_category_read_cache(&self, site_id: i64) {
-        if let Ok(mut cache) = self.read_cache.lock() {
-            cache.categories_by_id.retain(|(s, _), _| *s != site_id);
-            cache.active_categories_by_site.remove(&site_id);
-        }
-    }
-
-    pub(crate) fn cached_user_permissions_without_page_roles(
-        &self,
-        user_id: Option<i64>,
-        site_id: i64,
-    ) -> Option<HashSet<Permission<'static>>> {
-        self.read_cache.lock().ok().and_then(|cache| {
-            cache
-                .user_permissions_without_page_roles
-                .get(&(user_id, site_id))
-                .cloned()
-        })
-    }
-
-    pub(crate) fn cache_user_permissions_without_page_roles(
-        &self,
-        user_id: Option<i64>,
-        site_id: i64,
-        permissions: HashSet<Permission<'static>>,
-    ) {
-        if let Ok(mut cache) = self.read_cache.lock() {
-            cache
-                .user_permissions_without_page_roles
-                .insert((user_id, site_id), permissions);
-        }
-    }
-
-    pub(crate) fn cached_category_scoped_permission(
-        &self,
-        site_id: i64,
-        resource: Resource,
-        category_id: i64,
-        action: Action,
-    ) -> Option<bool> {
-        self.read_cache.lock().ok().and_then(|cache| {
-            cache
-                .category_scoped_permissions
-                .get(&(site_id, resource, category_id, action))
-                .copied()
-        })
-    }
-
-    pub(crate) fn cache_category_scoped_permission(
-        &self,
-        site_id: i64,
-        resource: Resource,
-        category_id: i64,
-        action: Action,
-        has_scoped: bool,
-    ) {
-        if let Ok(mut cache) = self.read_cache.lock() {
-            cache
-                .category_scoped_permissions
-                .insert((site_id, resource, category_id, action), has_scoped);
-        }
-    }
-
-    pub(crate) fn cached_site_allows_view(
-        &self,
-        user_id: Option<i64>,
-        site_id: i64,
-    ) -> Option<bool> {
-        self.read_cache
-            .lock()
-            .ok()
-            .and_then(|cache| cache.site_allows_view.get(&(user_id, site_id)).copied())
-    }
-
-    pub(crate) fn cache_site_allows_view(
-        &self,
-        user_id: Option<i64>,
-        site_id: i64,
-        allows: bool,
-    ) {
-        if let Ok(mut cache) = self.read_cache.lock() {
-            cache.site_allows_view.insert((user_id, site_id), allows);
-        }
-    }
-
-    pub(crate) fn invalidate_permission_read_cache(&self, site_id: i64) {
-        if let Ok(mut cache) = self.read_cache.lock() {
-            cache
-                .user_permissions_without_page_roles
-                .retain(|(_, s), _| *s != site_id);
-            cache
-                .category_scoped_permissions
-                .retain(|(s, _, _, _), _| *s != site_id);
-            cache.site_allows_view.retain(|(_, s), _| *s != site_id);
-        }
-    }
-
     pub fn defer_permission_cache_invalidate_user(
         &self,
         site_id: i64,
         user_id: i64,
     ) -> Result<()> {
-        self.invalidate_permission_read_cache(site_id);
         let mut actions = self.post_commit_actions.lock().map_err(|_| {
             Error::new(
                 "failed to queue permission cache invalidation",
@@ -448,7 +272,6 @@ impl<'txn> ServiceContext<'txn> {
     }
 
     pub fn defer_permission_cache_invalidate_site(&self, site_id: i64) -> Result<()> {
-        self.invalidate_permission_read_cache(site_id);
         let mut actions = self.post_commit_actions.lock().map_err(|_| {
             Error::new(
                 "failed to queue permission cache invalidation",
@@ -637,7 +460,6 @@ impl<'txn> ServiceContext<'txn> {
             commit_authentication_rejection: AtomicBool::new(false),
             link_graph_read: AtomicBool::new(false),
             cascade_page_query_cache: self.cascade_page_query_cache.clone(),
-            read_cache: Mutex::new(TransactionReadCache::default()),
         }
     }
 
@@ -899,57 +721,5 @@ mod tests {
         let action = PostCommitAction::delete_text_block_objects(Vec::new());
 
         assert!(action.is_none());
-    }
-
-    #[test]
-    fn transaction_read_cache_stores_and_invalidates_by_site() {
-        let mut cache = TransactionReadCache::default();
-        cache.site_allows_view.insert((None, 10), true);
-        cache.site_allows_view.insert((None, 20), false);
-        cache
-            .category_scoped_permissions
-            .insert((10, Resource::Page, 101, Action::View), true);
-        cache
-            .category_scoped_permissions
-            .insert((20, Resource::Page, 201, Action::View), false);
-        cache.user_permissions_without_page_roles.insert(
-            (None, 10),
-            HashSet::from([Permission {
-                resource_type: Resource::Page,
-                resource_category: None,
-                action: Action::View,
-            }]),
-        );
-
-        cache
-            .user_permissions_without_page_roles
-            .retain(|(_, s), _| *s != 10);
-        cache
-            .category_scoped_permissions
-            .retain(|(s, _, _, _), _| *s != 10);
-        cache.site_allows_view.retain(|(_, s), _| *s != 10);
-
-        assert!(!cache.site_allows_view.contains_key(&(None, 10)));
-        assert_eq!(cache.site_allows_view.get(&(None, 20)), Some(&false));
-        assert!(!cache.category_scoped_permissions.contains_key(&(
-            10,
-            Resource::Page,
-            101,
-            Action::View
-        )));
-        assert_eq!(
-            cache.category_scoped_permissions.get(&(
-                20,
-                Resource::Page,
-                201,
-                Action::View
-            )),
-            Some(&false)
-        );
-        assert!(
-            !cache
-                .user_permissions_without_page_roles
-                .contains_key(&(None, 10))
-        );
     }
 }
