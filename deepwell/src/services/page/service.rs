@@ -851,13 +851,11 @@ WHERE page.site_id = $1
             });
         }
 
-        let authenticated_expired = named.is_some_and(|row| {
+        let Some(row) = named.filter(|row| {
             row.lock_secret == lease.lock_secret
                 && row.user_id == user_id
                 && !page_edit_lock::is_live(row, now)
-        });
-
-        if !authenticated_expired {
+        }) else {
             bail!(Error::new(
                 format!(
                     "page edit lock {} is not an expired lock held by user ID {} on page ID {}",
@@ -865,7 +863,7 @@ WHERE page.site_id = $1
                 ),
                 ErrorType::PageEditLockConflict,
             ));
-        }
+        };
 
         let moved =
             Self::source_moved_after(ctx, page_id, Some(presented_revision_id)).await?;
@@ -876,6 +874,27 @@ WHERE page.site_id = $1
                     "last revision verification failed, actual last revision ID {}, \
                      but user passed in ID {}",
                     last_revision.revision_id, presented_revision_id,
+                ),
+                ErrorType::NotLatestRevisionId,
+            ));
+        }
+
+        let lease_moved = Self::lease_base_moved(
+            ctx,
+            page_id,
+            row.base_revision_id,
+            row.mode,
+            row.section_index,
+            last_revision,
+        )
+        .await?;
+
+        if lease_moved {
+            bail!(Error::new(
+                format!(
+                    "last revision verification failed, the source changed after \
+                     edit lock {} took its base at revision ID {:?}",
+                    lease.lock_id, row.base_revision_id,
                 ),
                 ErrorType::NotLatestRevisionId,
             ));
