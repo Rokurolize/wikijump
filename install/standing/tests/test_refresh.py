@@ -624,6 +624,27 @@ class RefreshStandingTest(unittest.TestCase):
             compose,
         )
 
+    def test_standing_interior_uses_ipv6_only_where_clients_accept_it(self) -> None:
+        compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")
+        self.assertEqual(compose.count("REDIS_URL: redis://[::1]:6379"), 3)
+        self.assertEqual(compose.count("S3_CUSTOM_ENDPOINT: http://[::1]:9000"), 2)
+        self.assertIn("DEEPWELL_URL: http://[::1]:2747", compose)
+        for service in ("deepwell", "framerail", "wws"):
+            self.assertIn(f'"{service}=::1"', compose)
+        self.assertIn("net.connect(3393,'::1'", compose)
+        self.assertIn("@127.0.0.1:5432/wikijump", compose)
+        self.assertIn("DEEPWELL_HOST: 127.0.0.1", compose)
+        self.assertNotRegex(compose, r"\n\s+HOST:\s*[\"']?0\.0\.0\.0")
+        for publication in (
+            "127.0.0.1:80:80",
+            "[::1]:80:80",
+            "127.0.0.1:443:443",
+            "[::1]:443:443",
+            "127.0.0.1:443:443/udp",
+            "[::1]:443:443/udp",
+        ):
+            self.assertIn(publication, compose)
+
     def test_compose_restart_is_fixed_to_app_services_without_volume_flags(
         self,
     ) -> None:
