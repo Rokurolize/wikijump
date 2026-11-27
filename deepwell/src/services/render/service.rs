@@ -1649,7 +1649,6 @@ impl RenderService {
                 settings,
                 current_site_id,
                 backlinks_page_id,
-                module_query_cache.category_view_permissions(),
                 &mut wikidot_compat_html,
             )
             .await

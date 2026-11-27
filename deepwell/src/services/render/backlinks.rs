@@ -79,7 +79,6 @@ impl RenderService {
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
         current_page_id: Option<i64>,
-        category_view_permissions: &mut BTreeMap<(i64, Option<i64>), bool>,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         if !settings.enable_page_syntax || !BACKLINKS_MODULE_REGEX.is_match(&wikitext) {
@@ -115,7 +114,6 @@ impl RenderService {
                                 ctx,
                                 current_site_id,
                                 current_page_id,
-                                category_view_permissions,
                             )
                             .await?,
                         );
@@ -145,7 +143,6 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
         current_page_id: i64,
-        category_view_permissions: &mut BTreeMap<(i64, Option<i64>), bool>,
     ) -> Result<Option<Vec<BacklinksModulePage>>> {
         let make_error = || {
             Error::new(
@@ -192,7 +189,7 @@ impl RenderService {
                 None,
                 current_site_id,
                 &category_ids,
-                category_view_permissions,
+                &mut BTreeMap::new(),
             )
             .await
             .or_raise(make_error)?;

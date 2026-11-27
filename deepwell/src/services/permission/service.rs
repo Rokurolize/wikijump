@@ -132,19 +132,14 @@ impl PermissionService {
         user_id: Option<i64>,
         site_id: i64,
     ) -> Result<bool> {
-        if let Some(allows) = ctx.cached_site_allows_view(user_id, site_id) {
-            return Ok(allows);
-        }
-
         let site = SiteService::get(ctx, Reference::Id(site_id))
             .await
             .or_raise(|| Error::new("failed to get site", ErrorType::Site))?;
 
-        let allows = match site.access_policy {
-            AccessPolicy::Open | AccessPolicy::Closed => true,
+        match site.access_policy {
+            AccessPolicy::Open | AccessPolicy::Closed => Ok(true),
             AccessPolicy::Private => {
                 let Some(user_id) = user_id else {
-                    ctx.cache_site_allows_view(None, site_id, false);
                     return Ok(false);
                 };
                 let membership = RelationService::get_optional_site_member(
@@ -155,11 +150,9 @@ impl PermissionService {
                 .or_raise(|| {
                     Error::new("failed to check site membership", ErrorType::Permission)
                 })?;
-                membership.is_some()
+                Ok(membership.is_some())
             }
-        };
-        ctx.cache_site_allows_view(user_id, site_id, allows);
-        Ok(allows)
+        }
     }
 
     pub async fn update_permissions_for_role(
@@ -812,22 +805,12 @@ impl PermissionService {
             return Ok(vec![false; page_category_ids.len()]);
         }
 
-        let mut uncached_category_ids = Vec::new();
-        for id in page_category_ids.iter().flatten().copied() {
-            if category_scoped_cache.contains_key(&(site_id, Some(id))) {
-                continue;
-            }
-            if let Some(has_scoped) = ctx.cached_category_scoped_permission(
-                site_id,
-                Resource::Page,
-                id,
-                Action::View,
-            ) {
-                category_scoped_cache.insert((site_id, Some(id)), has_scoped);
-            } else {
-                uncached_category_ids.push(id);
-            }
-        }
+        let mut uncached_category_ids = page_category_ids
+            .iter()
+            .flatten()
+            .copied()
+            .filter(|id| !category_scoped_cache.contains_key(&(site_id, Some(*id))))
+            .collect::<Vec<_>>();
         uncached_category_ids.sort_unstable();
         uncached_category_ids.dedup();
 
@@ -854,16 +837,9 @@ impl PermissionService {
             }
 
             for category_id in chunk {
-                let has_scoped = *category_scoped_cache
+                category_scoped_cache
                     .entry((site_id, Some(*category_id)))
                     .or_insert(false);
-                ctx.cache_category_scoped_permission(
-                    site_id,
-                    Resource::Page,
-                    *category_id,
-                    Action::View,
-                    has_scoped,
-                );
             }
         }
 
@@ -944,13 +920,6 @@ impl PermissionService {
         site_id: i64,
         page_reference: Option<Reference<'_>>,
     ) -> Result<HashSet<Permission<'static>>> {
-        if page_reference.is_none()
-            && let Some(cached) =
-                ctx.cached_user_permissions_without_page_roles(user_id, site_id)
-        {
-            return Ok(cached);
-        }
-
         let txn = ctx.transaction();
         let make_error = || {
             Error::new(
@@ -962,7 +931,6 @@ impl PermissionService {
             )
         };
 
-        let has_page_reference = page_reference.is_some();
         let role_ids: Vec<i64> = RoleService::get_all_roles_for_user_and_site(
             ctx,
             GetUserRolesInput {
@@ -977,7 +945,7 @@ impl PermissionService {
         .map(|r| r.role_id)
         .collect();
 
-        let permissions: HashSet<Permission<'static>> = RolePermission::find()
+        Ok(RolePermission::find()
             .filter(role_permission::Column::RoleId.is_in(role_ids))
             .all(txn)
             .await
@@ -988,17 +956,7 @@ impl PermissionService {
                 resource_category: p.resource_category_id.map(Reference::Id),
                 action: p.action,
             })
-            .collect();
-
-        if !has_page_reference {
-            ctx.cache_user_permissions_without_page_roles(
-                user_id,
-                site_id,
-                permissions.clone(),
-            );
-        }
-
-        Ok(permissions)
+            .collect())
     }
 
     async fn check_category_scoped(
@@ -1008,17 +966,8 @@ impl PermissionService {
         resource_category_id: i64,
         action: Action,
     ) -> Result<bool> {
-        if let Some(cached) = ctx.cached_category_scoped_permission(
-            site_id,
-            resource,
-            resource_category_id,
-            action,
-        ) {
-            return Ok(cached);
-        }
-
         let txn = ctx.transaction();
-        let has_scoped = RolePermission::find()
+        Ok(RolePermission::find()
             .filter(
                 Condition::all()
                     .add(role_permission::Column::SiteId.eq(site_id))
@@ -1031,17 +980,10 @@ impl PermissionService {
             )
             .one(txn)
             .await
-            .or_raise(|| Error::new("error querying permissions", ErrorType::Permission))?
-            .is_some();
-
-        ctx.cache_category_scoped_permission(
-            site_id,
-            resource,
-            resource_category_id,
-            action,
-            has_scoped,
-        );
-        Ok(has_scoped)
+            .or_raise(|| {
+                Error::new("error querying permissions", ErrorType::Permission)
+            })?)
+        .map(|p| p.is_some())
     }
 
     async fn cascade_permission_removals(
