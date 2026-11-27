@@ -157,6 +157,7 @@ pub async fn seed(state: &ServerState) -> Result<()> {
                 bypass_filter: true,
                 bypass_email_verification: true,
                 override_user_id: Some(user.id),
+                passcode: None,
                 ip_address: SEED_IP_ADDRESS,
             },
         )

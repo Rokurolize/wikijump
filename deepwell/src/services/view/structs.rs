@@ -234,6 +234,7 @@ pub enum GetAdminViewOutput {
         categories: Vec<PageCategoryModel>,
         page_templates: Vec<PageTemplateSummary>,
         is_master_admin: bool,
+        is_platform_staff: bool,
     },
 
     AdminPermissions {

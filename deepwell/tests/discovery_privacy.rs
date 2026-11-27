@@ -73,6 +73,7 @@ async fn create_user(ctx: &ServiceContext<'_>, fixture_n: u64, label: &str) -> i
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )

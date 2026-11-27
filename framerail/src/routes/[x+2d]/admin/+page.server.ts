@@ -17,7 +17,10 @@ import {
   membershipAction,
   membershipReviewAction,
   navigationAction,
+  platformSettingUpdateAction,
   ratingAction,
+  registrationPasscodeIssueAction,
+  registrationPasscodeRevokeAction,
   roleCreateAction,
   roleDeleteAction,
   rolePermissionsUpdateAction,
@@ -56,5 +59,8 @@ export const actions = {
   rolePermissions: rolePermissionsUpdateAction,
   blockLookup: blockLookupAction,
   blockSet: blockSetAction,
-  blockRemove: blockRemoveAction
+  blockRemove: blockRemoveAction,
+  platformSettingUpdate: platformSettingUpdateAction,
+  registrationPasscodeIssue: registrationPasscodeIssueAction,
+  registrationPasscodeRevoke: registrationPasscodeRevokeAction
 }

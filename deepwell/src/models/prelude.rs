@@ -32,6 +32,8 @@ pub use super::page_meta_tag::Entity as PageMetaTag;
 pub use super::page_parent::Entity as PageParent;
 pub use super::page_revision::Entity as PageRevision;
 pub use super::page_vote::Entity as PageVote;
+pub use super::platform_setting::Entity as PlatformSetting;
+pub use super::registration_passcode::Entity as RegistrationPasscode;
 pub use super::relation::Entity as Relation;
 pub use super::role::Entity as Role;
 pub use super::role_permission::Entity as RolePermission;

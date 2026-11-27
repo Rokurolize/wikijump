@@ -33,6 +33,7 @@ use super::structs::{
     PageTemplateSummary, PromotedSiteView, UserSession, Viewer, ViewerLicenseKind,
     WikidotPageBreadcrumbView, WikidotPageSnapshotView, is_reserved_admin_slug,
 };
+use crate::constants::ADMIN_USER_ID;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::license::WikidotLicense;
 use crate::models::page::Model as PageModel;
@@ -2150,6 +2151,7 @@ ORDER BY breadcrumb_chain.depth ASC
                 categories,
                 page_templates,
                 is_master_admin: site.master_admin_user_id == user_id,
+                is_platform_staff: user_id == Some(ADMIN_USER_ID),
             }
         } else {
             warn!("User doesn't have admin access, returning permission page");

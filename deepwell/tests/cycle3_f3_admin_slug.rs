@@ -53,6 +53,7 @@ async fn create_member(runner: &TestRunner, site_id: i64, tag: &str) -> i64 {
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )

@@ -61,6 +61,8 @@ export async function ping(): Promise<void> {
   await client.request("ping", {})
 }
 
+export type RegistrationMode = "open" | "passcode" | "closed"
+
 interface Info {
   package: PackageInfo
   compile_info: CompileInfo
@@ -69,6 +71,7 @@ interface Info {
   hostname: string
   config_path: string
   registration_open: boolean
+  registration_mode: RegistrationMode
 }
 
 interface PackageInfo {

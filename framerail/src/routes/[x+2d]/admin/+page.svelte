@@ -13,6 +13,7 @@
   import LayoutSettings from "./LayoutSettings.svelte"
   import MembershipSettings from "./MembershipSettings.svelte"
   import NavigationSettings from "./NavigationSettings.svelte"
+  import PlatformSettings from "./PlatformSettings.svelte"
   import RatingSettings from "./RatingSettings.svelte"
   import SiteIconSettings from "./SiteIconSettings.svelte"
   import SiteSettings from "./SiteSettings.svelte"
@@ -45,6 +46,7 @@
 <CustomDomainSettings {data} />
 <PermissionsSettings {data} actionData={form} />
 <BlocksSettings {data} />
+<PlatformSettings {data} actionData={form} />
 
 <style global lang="scss">
   .site-info {

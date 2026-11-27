@@ -479,6 +479,12 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     // Server Information
     register!("info", server_info);
 
+    // Platform Settings & Registration Passcodes
+    register!("platform_settings_get", platform_settings_get);
+    register!("platform_setting_update", platform_setting_update);
+    register!("registration_passcode_issue", registration_passcode_issue);
+    register!("registration_passcode_revoke", registration_passcode_revoke);
+
     // Localization
     register!("locale", locale_info);
     register!("translate", translate_strings);

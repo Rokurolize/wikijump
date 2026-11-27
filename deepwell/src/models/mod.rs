@@ -35,6 +35,8 @@ pub mod page_meta_tag;
 pub mod page_parent;
 pub mod page_revision;
 pub mod page_vote;
+pub mod platform_setting;
+pub mod registration_passcode;
 pub mod relation;
 pub mod role;
 pub mod role_permission;

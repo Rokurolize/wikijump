@@ -35,7 +35,7 @@ use crate::services::user::{
 };
 use crate::services::{
     AuthenticationAttemptService, AuthenticationService, MutationAuthorization,
-    PasswordService, SessionService,
+    PasswordService, PlatformSettingsService, SessionService,
 };
 
 const REGISTER_IP_WINDOW_SECONDS: i64 = 3600;
@@ -59,15 +59,30 @@ pub async fn user_create(
     if privileged_creation {
         MutationAuthorization::require_platform_staff(ctx, "privileged user creation")?;
     } else {
-        if !ctx.config().allow_registration {
-            return Err(Error::new(
-                "user registration is disabled on this instance",
-                ErrorType::PermissionDenied,
-            )
-            .into());
-        }
-
         check_registration_rate_limit(ctx, &input.ip_address.to_string()).await?;
+
+        if !PlatformSettingsService::effective_allow_registration(ctx).await? {
+            let consumed = match input
+                .passcode
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+            {
+                Some(passcode) => {
+                    PlatformSettingsService::consume_passcode(ctx, passcode).await?
+                }
+                None => None,
+            };
+
+            if consumed.is_none() {
+                ctx.commit_expected_authentication_rejection();
+                return Err(Error::new(
+                    "user registration is disabled on this instance",
+                    ErrorType::PermissionDenied,
+                )
+                .into());
+            }
+        }
     }
 
     UserService::create(ctx, input)

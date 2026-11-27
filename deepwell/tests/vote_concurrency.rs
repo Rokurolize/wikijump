@@ -207,6 +207,7 @@ impl VoteContentionFixture {
                     bypass_filter: true,
                     bypass_email_verification: true,
                     override_user_id: None,
+                    passcode: None,
                     ip_address: TEST_IP,
                 },
             )

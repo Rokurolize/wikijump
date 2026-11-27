@@ -278,6 +278,21 @@ pub enum AuditEvent<'a> {
         file_id: i64,
         file_name: &'a str,
     },
+    PlatformSettingUpdate {
+        user_id: i64,
+        key: &'a str,
+        previous_value: Option<&'a str>,
+        new_value: Option<&'a str>,
+    },
+    RegistrationPasscodeIssue {
+        user_id: i64,
+        passcode_id: i64,
+        label: Option<&'a str>,
+    },
+    RegistrationPasscodeRevoke {
+        user_id: i64,
+        passcode_id: i64,
+    },
 }
 
 impl<'a> AuditEvent<'a> {
@@ -1064,6 +1079,57 @@ impl<'a> AuditEvent<'a> {
                 extra_id_1: Some(file_id),
                 extra_id_2: None,
                 extra_string_1: Some(Cow::Owned(str!(file_name))),
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::PlatformSettingUpdate {
+                user_id,
+                key,
+                previous_value,
+                new_value,
+            } => RawAuditEvent {
+                event_type: "platform-setting.update",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: None,
+                page_id: None,
+                extra_id_1: None,
+                extra_id_2: None,
+                extra_string_1: Some(Cow::Owned(format!(
+                    "{key}:{}",
+                    previous_value.unwrap_or("default")
+                ))),
+                extra_string_2: Some(Cow::Owned(str!(new_value.unwrap_or("default")))),
+                extra_number: None,
+            },
+            AuditEvent::RegistrationPasscodeIssue {
+                user_id,
+                passcode_id,
+                label,
+            } => RawAuditEvent {
+                event_type: "registration-passcode.issue",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: None,
+                page_id: None,
+                extra_id_1: Some(passcode_id),
+                extra_id_2: None,
+                extra_string_1: label.map(|s| Cow::Owned(str!(s))),
+                extra_string_2: None,
+                extra_number: None,
+            },
+            AuditEvent::RegistrationPasscodeRevoke {
+                user_id,
+                passcode_id,
+            } => RawAuditEvent {
+                event_type: "registration-passcode.revoke",
+                ip_address,
+                user_id: Some(user_id),
+                site_id: None,
+                page_id: None,
+                extra_id_1: Some(passcode_id),
+                extra_id_2: None,
+                extra_string_1: None,
                 extra_string_2: None,
                 extra_number: None,
             },

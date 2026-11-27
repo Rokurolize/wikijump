@@ -152,6 +152,7 @@ async fn setup_fixture_site(runner: &mut TestRunner) -> (i64, String) {
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )

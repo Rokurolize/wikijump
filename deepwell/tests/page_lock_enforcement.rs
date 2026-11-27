@@ -74,6 +74,7 @@ async fn create_plain_member(runner: &TestRunner, site_id: i64, label: &str) -> 
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )
