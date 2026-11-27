@@ -186,6 +186,8 @@ fn list_pages_argument_key<'a>(
 
 static LIST_PAGES_MODULE_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?is)\[\[\s*module\s+listpages\b").unwrap());
+static INCLUDE_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"(?is)\[\[\s*include\b").unwrap());
 static WWW_SPECIAL_RUNTIME_MODULE_REGEX: LazyLock<Regex> = LazyLock::new(|| {
     Regex::new(
         r"(?is)\[\[\s*module\s+(?:createaccount|deleteaccount|frontspecialmini|newsite|sitestagcloud)\b",
@@ -220,6 +222,19 @@ pub fn wikitext_has_visibility_sensitive_module(wikitext: &str) -> bool {
     PLATFORM_DIRECTORY_MODULE_REGEX.is_match(wikitext)
         || LEGACY_PLATFORM_DIRECTORY_MODULE_REGEX.is_match(wikitext)
         || ACTOR_SENSITIVE_SITE_CHANGES_MODULE_REGEX.is_match(wikitext)
+}
+
+pub fn wikitext_may_compose_visibility_sensitive_module(wikitext: &str) -> bool {
+    if wikitext_has_visibility_sensitive_module(wikitext) {
+        return true;
+    }
+    let literals = LiteralRegionIndex::new_wikidot_module_recognition(wikitext);
+    INCLUDE_REGEX
+        .find_iter(wikitext)
+        .any(|module| !literals.contains(module.start()))
+        || LIST_PAGES_MODULE_REGEX
+            .find_iter(wikitext)
+            .any(|module| !literals.contains(module.start()))
 }
 
 pub fn wikitext_requires_runtime_render(wikitext: &str) -> bool {
@@ -293,8 +308,8 @@ fn wikitext_has_bare_pages_module(wikitext: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::{
-        UrlArgumentPair, UrlArguments, wikitext_reads_url_arguments,
-        wikitext_requires_runtime_render,
+        UrlArgumentPair, UrlArguments, wikitext_may_compose_visibility_sensitive_module,
+        wikitext_reads_url_arguments, wikitext_requires_runtime_render,
     };
 
     #[test]
@@ -575,6 +590,25 @@ mod tests {
             assert!(wikitext_requires_runtime_render(source));
             assert!(!wikitext_reads_url_arguments(source));
         }
+    }
+
+    #[test]
+    fn indirect_composition_is_treated_as_visibility_sensitive() {
+        assert!(wikitext_may_compose_visibility_sensitive_module(
+            "[[module PlatformActivity]]",
+        ));
+        assert!(wikitext_may_compose_visibility_sensitive_module(
+            "[[include component:activity]]",
+        ));
+        assert!(wikitext_may_compose_visibility_sensitive_module(
+            "[[module ListPages name=\"x\"]]\n%%preview%%\n[[/module]]",
+        ));
+        assert!(!wikitext_may_compose_visibility_sensitive_module(
+            "plain viewer-independent body",
+        ));
+        assert!(!wikitext_may_compose_visibility_sensitive_module(
+            "[[code]][[include component:activity]][[/code]]",
+        ));
     }
 
     #[test]

@@ -30,7 +30,9 @@ mod site_tools;
 mod structs;
 
 pub use self::backlinks::{GetPageBacklinksView, PageBacklinkView};
-pub(crate) use self::module_render::viewer_safe_compiled_body;
+pub(crate) use self::module_render::{
+    VIEWER_SAFE_TIMEOUT_FALLBACK_HTML, viewer_safe_compiled_body,
+};
 pub use self::service::ViewService;
 pub use self::site_tools::{
     GetSiteToolsPages, SiteToolsPageView, SiteToolsWantedPageView,

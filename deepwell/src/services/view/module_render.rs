@@ -26,7 +26,7 @@ use crate::models::page_revision::Model as PageRevisionModel;
 use crate::models::site::Model as SiteModel;
 use crate::services::blueprint::BlueprintPageService;
 use crate::services::render::{
-    RenderService, UrlArguments, wikitext_has_visibility_sensitive_module,
+    RenderService, UrlArguments, wikitext_may_compose_visibility_sensitive_module,
     wikitext_reads_url_arguments, wikitext_requires_runtime_render,
 };
 use crate::services::score::ScoreService;
@@ -72,9 +72,14 @@ pub(super) async fn render_body_for_module_arguments(
         wikitext.to_owned(),
     )
     .await?;
+    let is_visibility_sensitive =
+        wikitext_may_compose_visibility_sensitive_module(&wikitext);
     let reads_request_arguments =
         !module_arguments.is_empty() && wikitext_reads_url_arguments(&wikitext);
-    if !reads_request_arguments && !wikitext_requires_runtime_render(&wikitext) {
+    if !is_visibility_sensitive
+        && !reads_request_arguments
+        && !wikitext_requires_runtime_render(&wikitext)
+    {
         return Ok(stored_body_html);
     }
 
@@ -121,11 +126,21 @@ pub(super) async fn render_body_for_module_arguments(
     match output {
         Ok(output) => Ok(output.html_output.body),
         Err(error) if saved_render_answers_failed_render(module_arguments, &error) => {
-            warn!(
-                "Serving the saved render of page ID {} after the live render timed out",
-                page.page_id,
-            );
-            Ok(stored_body_html)
+            if is_visibility_sensitive {
+                warn!(
+                    "Serving a viewer-safe timeout fallback for page ID {} after the live render timed out",
+                    page.page_id,
+                );
+            } else {
+                warn!(
+                    "Serving the saved render of page ID {} after the live render timed out",
+                    page.page_id,
+                );
+            }
+            Ok(timeout_fallback_body(
+                is_visibility_sensitive,
+                stored_body_html,
+            ))
         }
         Err(error) => Err(error),
     }
@@ -153,10 +168,6 @@ pub(crate) async fn viewer_safe_compiled_body(
                 })?,
         ),
     };
-    if !wikitext_has_visibility_sensitive_module(&wikitext) {
-        return Ok(stored_body);
-    }
-
     let (page, site) = tokio::try_join!(
         PageService::get(ctx, site_id, Reference::Id(page_id)),
         SiteService::get(ctx, Reference::Id(site_id)),
@@ -175,6 +186,19 @@ pub(crate) async fn viewer_safe_compiled_body(
         stored_body_html: stored_body,
     })
     .await
+}
+
+pub(crate) const VIEWER_SAFE_TIMEOUT_FALLBACK_HTML: &str = r#"<div class="wikidot-runtime-module" data-wikidot-module="visibility-sensitive-timeout"></div>"#;
+
+fn timeout_fallback_body(
+    is_visibility_sensitive: bool,
+    stored_body_html: String,
+) -> String {
+    if is_visibility_sensitive {
+        VIEWER_SAFE_TIMEOUT_FALLBACK_HTML.to_owned()
+    } else {
+        stored_body_html
+    }
 }
 
 fn saved_render_answers_failed_render(
@@ -219,5 +243,33 @@ mod tests {
             &paged,
             &failed_render(ErrorType::RenderTimeout),
         ));
+    }
+
+    #[test]
+    fn timeout_fallback_preserves_plain_and_gates_sensitive_pages() {
+        let plain_html = String::from("<p>Plain body</p>");
+        assert_eq!(
+            timeout_fallback_body(
+                wikitext_may_compose_visibility_sensitive_module("Plain body"),
+                plain_html.clone(),
+            ),
+            plain_html,
+        );
+
+        let leaky_html = String::from("<p>LEAKED_GATED_SITE</p>");
+        for wikitext in [
+            "[[module PlatformActivity]]",
+            "[[module PlatformSites]]",
+            "[[module SiteChanges]]",
+            "[[include component:activity]]",
+            "[[module ListPages name=\"x\"]]\n%%preview%%\n[[/module]]",
+        ] {
+            let fallback = timeout_fallback_body(
+                wikitext_may_compose_visibility_sensitive_module(wikitext),
+                leaky_html.clone(),
+            );
+            assert_eq!(fallback, VIEWER_SAFE_TIMEOUT_FALLBACK_HTML);
+            assert!(!fallback.contains("LEAKED_GATED_SITE"));
+        }
     }
 }
