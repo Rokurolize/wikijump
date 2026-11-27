@@ -15877,7 +15877,7 @@ async fn authenticated_site_utility_preview_renders_admin_manage_and_petition_re
  {
     const MANAGE_SITE_SOURCE: &str = "[[module ManageSite]]";
     const MANAGE_SITE_BODY_SHA256: &str =
-        "7daaec8dc6eca01b2bec08d9959dff6d0ed562c404cd20e1d5b156bc26da0b57";
+        "161fb251ed6159135fc48cba9c9ea386521e48bae9fbc4cecd81ed5202bea7e3";
     const PETITION_ADMIN_SOURCE: &str = "[[module PetitionAdmin]]";
     const PETITION_ADMIN_BODY_SHA256: &str =
         "b80d4331c4edc47c4129f08701a14e031c07f7f302b1384614eedb38ced2124c";
