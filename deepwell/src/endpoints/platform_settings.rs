@@ -19,11 +19,11 @@
  */
 
 use super::prelude::*;
+use crate::services::MutationAuthorization;
 use crate::services::platform_settings::{
     IssueRegistrationPasscode, IssuedRegistrationPasscode, PlatformSettingsService,
     PlatformSettingsSnapshot, RegistrationPasscodeSummary,
 };
-use crate::services::MutationAuthorization;
 use std::net::IpAddr;
 
 #[derive(Serialize, Debug, Clone)]
@@ -94,8 +94,10 @@ pub async fn registration_passcode_issue(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<IssuedRegistrationPasscode> {
-    let actor_user_id =
-        MutationAuthorization::require_platform_staff(ctx, "issue registration passcode")?;
+    let actor_user_id = MutationAuthorization::require_platform_staff(
+        ctx,
+        "issue registration passcode",
+    )?;
     let input: RegistrationPasscodeIssueInput = parse!(params, User);
 
     PlatformSettingsService::issue_passcode(

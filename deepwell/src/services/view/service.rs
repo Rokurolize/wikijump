@@ -19,7 +19,6 @@
  */
 
 use super::article_cache::{ArticlePageCache, ArticlePageCacheMetadataInput};
-use crate::constants::ADMIN_USER_ID;
 use super::module_arguments::PageModuleArguments;
 use super::module_render::{
     RenderBodyForModuleArgumentsInput, render_body_for_module_arguments,
@@ -34,6 +33,7 @@ use super::structs::{
     PageTemplateSummary, PromotedSiteView, UserSession, Viewer, ViewerLicenseKind,
     WikidotPageBreadcrumbView, WikidotPageSnapshotView, is_reserved_admin_slug,
 };
+use crate::constants::ADMIN_USER_ID;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::license::WikidotLicense;
 use crate::models::page::Model as PageModel;

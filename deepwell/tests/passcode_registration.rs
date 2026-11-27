@@ -97,7 +97,8 @@ async fn staff_only_gates_protect_platform_settings_and_passcodes() {
 }
 
 #[tokio::test]
-async fn passcode_lifecycle_expiry_revocation_and_runtime_override_work_without_restart() {
+async fn passcode_lifecycle_expiry_revocation_and_runtime_override_work_without_restart()
+{
     let mut runner = TestRunner::setup_with_config(closed_registration_config()).await;
 
     // 1. Closed by default when allow_registration = false and no passcodes exist.
@@ -105,7 +106,8 @@ async fn passcode_lifecycle_expiry_revocation_and_runtime_override_work_without_
     assert!(!info.registration_open);
     assert_eq!(info.registration_mode, RegistrationMode::Closed);
 
-    let closed_err = run_endpoint_err!(runner, user_create, create_user_payload("closed1", None));
+    let closed_err =
+        run_endpoint_err!(runner, user_create, create_user_payload("closed1", None));
     assert_contains_error!(closed_err, ErrorType::PermissionDenied);
 
     // 2. Staff issues a single-use passcode -> mode becomes Passcode without restart.
@@ -144,7 +146,10 @@ async fn passcode_lifecycle_expiry_revocation_and_runtime_override_work_without_
     assert_contains_error!(exhausted_err, ErrorType::PermissionDenied);
 
     let info_after_exhaust = run_endpoint!(runner, server_info, json!({}));
-    assert_eq!(info_after_exhaust.registration_mode, RegistrationMode::Closed);
+    assert_eq!(
+        info_after_exhaust.registration_mode,
+        RegistrationMode::Closed
+    );
 
     // 4. Expiry without restart: issue a passcode, backdate expires_at in DB, verify rejection & mode.
     runner.set_request_context(staff_context());
@@ -178,7 +183,10 @@ async fn passcode_lifecycle_expiry_revocation_and_runtime_override_work_without_
     assert_contains_error!(expired_err, ErrorType::PermissionDenied);
 
     let info_after_expiry = run_endpoint!(runner, server_info, json!({}));
-    assert_eq!(info_after_expiry.registration_mode, RegistrationMode::Closed);
+    assert_eq!(
+        info_after_expiry.registration_mode,
+        RegistrationMode::Closed
+    );
 
     // 5. Revocation without restart: issue a passcode, revoke it, verify rejection & audit log.
     runner.set_request_context(staff_context());
@@ -210,7 +218,10 @@ async fn passcode_lifecycle_expiry_revocation_and_runtime_override_work_without_
     assert_contains_error!(revoked_err, ErrorType::PermissionDenied);
 
     let info_after_revoke = run_endpoint!(runner, server_info, json!({}));
-    assert_eq!(info_after_revoke.registration_mode, RegistrationMode::Closed);
+    assert_eq!(
+        info_after_revoke.registration_mode,
+        RegistrationMode::Closed
+    );
 
     // 6. Runtime platform_setting_update overrides config.allow_registration=false and reverts on null.
     runner.set_request_context(staff_context());
@@ -227,11 +238,8 @@ async fn passcode_lifecycle_expiry_revocation_and_runtime_override_work_without_
     assert!(info_open.registration_open);
     assert_eq!(info_open.registration_mode, RegistrationMode::Open);
 
-    let created_open = run_endpoint!(
-        runner,
-        user_create,
-        create_user_payload(&cuid()[..8], None)
-    );
+    let created_open =
+        run_endpoint!(runner, user_create, create_user_payload(&cuid()[..8], None));
     assert!(created_open.user_id > 0);
 
     runner.set_request_context(staff_context());
@@ -245,26 +253,30 @@ async fn passcode_lifecycle_expiry_revocation_and_runtime_override_work_without_
 
     // Verify audit log entries were recorded.
     let audit_events = AuditLogTable::find()
-        .filter(
-            AuditLogColumn::EventType.is_in([
-                "platform-setting.update",
-                "registration-passcode.issue",
-                "registration-passcode.revoke",
-            ]),
-        )
+        .filter(AuditLogColumn::EventType.is_in([
+            "platform-setting.update",
+            "registration-passcode.issue",
+            "registration-passcode.revoke",
+        ]))
         .all(runner.context().transaction())
         .await
         .expect("audit log query should succeed");
     assert!(
-        audit_events.iter().any(|e| e.event_type == "platform-setting.update"),
+        audit_events
+            .iter()
+            .any(|e| e.event_type == "platform-setting.update"),
         "expected platform-setting.update audit event"
     );
     assert!(
-        audit_events.iter().any(|e| e.event_type == "registration-passcode.issue"),
+        audit_events
+            .iter()
+            .any(|e| e.event_type == "registration-passcode.issue"),
         "expected registration-passcode.issue audit event"
     );
     assert!(
-        audit_events.iter().any(|e| e.event_type == "registration-passcode.revoke"),
+        audit_events
+            .iter()
+            .any(|e| e.event_type == "registration-passcode.revoke"),
         "expected registration-passcode.revoke audit event"
     );
 }
