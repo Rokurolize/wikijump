@@ -183,6 +183,41 @@ fn restores_typed_wikidot_tabview_resource_requirements() {
 }
 
 #[test]
+fn preserves_document_global_panel_ids_in_typed_tabview_resources() {
+    let first = "wiki-tabview-0123456789abcdef0123456789abcdef".to_owned();
+    let second = "wiki-tabview-fedcba9876543210fedcba9876543210".to_owned();
+    let html = format!(
+        r#"<div id="{first}" class="yui-navset"><ul class="yui-nav"><li class="selected"><a href="javascript:;"><em>One</em></a></li><li><a href="javascript:;"><em>Two</em></a></li></ul><div class="yui-content"><div id="wiki-tab-0-0"><p>First</p></div><div id="wiki-tab-0-1"><p>Second</p></div></div></div><div id="{second}" class="yui-navset"><ul class="yui-nav"><li class="selected"><a href="javascript:;"><em>Three</em></a></li></ul><div class="yui-content"><div id="wiki-tab-1-0"><p>Third</p></div></div></div>"#
+    );
+
+    let restored =
+        RenderService::restore_wikidot_render_compatibility_for_context_with_resources(
+            &html,
+            None,
+            &Config::integration_testing(),
+            true,
+            &[first.clone(), second.clone()],
+        );
+
+    assert!(restored.contains(
+        r#"<div id="wiki-tab-0-0" style="display: block;"><p>First</p></div>"#
+    ));
+    assert!(
+        restored.contains(
+            r#"<div id="wiki-tab-0-1" style="display:none"><p>Second</p></div>"#
+        )
+    );
+    assert!(restored.contains(
+        r#"<div id="wiki-tab-1-0" style="display: block;"><p>Third</p></div>"#
+    ));
+    assert_eq!(
+        restored.matches("tabview-compat.js").count(),
+        2,
+        "{restored}"
+    );
+}
+
+#[test]
 fn initializes_resource_tabviews_during_parse_but_leaves_direct_tabviews_for_hydration() {
     let id = "wiki-tabview-0123456789abcdef0123456789abcdef".to_owned();
     let html = format!(

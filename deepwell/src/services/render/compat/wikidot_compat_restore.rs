@@ -209,13 +209,14 @@ impl RenderService {
                 );
             let root = WIKIDOT_TABVIEW_PANEL_ID_REGEX
                 .replace_all(&root, |captures: &regex::Captures<'_>| {
+                    let view = captures.name("view").map_or("", |value| value.as_str());
                     let index = captures.name("index").map_or("", |value| value.as_str());
                     if index == "0" {
                         format!(
-                            r#"<div id="wiki-tab-0-{index}" style="display: block;">"#
+                            r#"<div id="wiki-tab-{view}-{index}" style="display: block;">"#
                         )
                     } else {
-                        format!(r#"<div id="wiki-tab-0-{index}" style="display:none">"#)
+                        format!(r#"<div id="wiki-tab-{view}-{index}" style="display:none">"#)
                     }
                 })
                 .into_owned();
