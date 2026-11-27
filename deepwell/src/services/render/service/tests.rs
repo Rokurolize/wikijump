@@ -1255,6 +1255,44 @@ fn missing_include_message_renders_in_japanese_for_japanese_pages() {
 }
 
 #[test]
+fn missing_include_message_rendering_cannot_inject_attributes_or_directives() {
+    for target in [
+        "x\"class=\"evil",
+        "x\"target=\"_blank",
+        "x\"onclick=\"alert(1)",
+        "x<svg/onload=alert(1)>",
+        "x\u{0000}y",
+    ] {
+        let mut source = format!("[[include ::{target}]]");
+        super::super::include_resolution::expand_malformed_include_targets(
+            &mut source,
+            "en",
+        );
+        let rendered = render_wikidot_page_body_after_compat_restore(&source);
+        assert!(
+            rendered.contains("<div class=\"error-block\">"),
+            "{rendered}"
+        );
+        assert!(rendered.contains("<a href=\"/x"), "{rendered}");
+        assert!(!rendered.contains("class=\"evil"), "{rendered}");
+        assert!(!rendered.contains("target=\"_blank"), "{rendered}");
+        assert!(!rendered.contains(" onclick=\""), "{rendered}");
+        assert!(!rendered.contains("<svg"), "{rendered}");
+        assert!(rendered.contains(">create it now</a>"), "{rendered}");
+    }
+
+    let mut ordinary = "[[include ::page]]".to_owned();
+    super::super::include_resolution::expand_malformed_include_targets(
+        &mut ordinary,
+        "en",
+    );
+    assert_eq!(
+        render_wikidot_page_body_after_compat_restore(&ordinary),
+        r#"<div class="error-block"><p>Included page &quot;page&quot; does not exist (<a href="/page/edit/true">create it now</a>)</p></div>"#,
+    );
+}
+
+#[test]
 fn missing_cross_site_include_uses_raw_page_for_display_and_canonical_ref_for_lookup() {
     let settings = WikitextSettings::from_mode(WikitextMode::Page, Layout::Wikidot);
     let source = "[[include :scp-wiki:deleted:protected:component:magic]]";
