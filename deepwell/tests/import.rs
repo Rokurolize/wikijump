@@ -115,6 +115,7 @@ fn active_user(user_id: Option<i64>, fixture: &str, label: &str) -> CreateUser {
         bypass_filter: true,
         bypass_email_verification: true,
         override_user_id: user_id,
+        passcode: None,
         ip_address: common::IP_ADDRESS,
     }
 }
@@ -2076,6 +2077,7 @@ async fn promote_observation_colliding_with_local_account_fails() {
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: Some(i64::from(user_id)),
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )
@@ -2162,6 +2164,7 @@ async fn native_placeholder_slug_does_not_shadow_imported_identity() {
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: Some(-90_000_001),
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )
@@ -2209,6 +2212,7 @@ async fn native_regular_slug_keeps_precedence_over_imported_identity() {
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )

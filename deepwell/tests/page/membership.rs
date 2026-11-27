@@ -352,6 +352,7 @@ async fn membership_application_and_password_mutations_match_disposable_live_con
                 bypass_filter: true,
                 bypass_email_verification: true,
                 override_user_id: None,
+                passcode: None,
                 ip_address: common::IP_ADDRESS,
             },
         )
@@ -896,6 +897,7 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )
@@ -913,6 +915,7 @@ async fn membership_email_invitation_matches_hash_one_use_and_cancel_contract() 
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )
@@ -1387,6 +1390,7 @@ async fn membership_email_invitation_create_and_cancel_endpoints_enforce_site_au
                 bypass_filter: true,
                 bypass_email_verification: true,
                 override_user_id: None,
+                passcode: None,
                 ip_address: common::IP_ADDRESS,
             },
         )
@@ -1686,6 +1690,7 @@ async fn membership_password_submit_is_throttled_per_site_and_actor() {
                 bypass_filter: true,
                 bypass_email_verification: true,
                 override_user_id: None,
+                passcode: None,
                 ip_address: common::IP_ADDRESS,
             },
         )
@@ -2028,6 +2033,7 @@ async fn membership_email_invitation_list_reports_outstanding_invitations_to_sit
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )
@@ -2044,6 +2050,7 @@ async fn membership_email_invitation_list_reports_outstanding_invitations_to_sit
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )

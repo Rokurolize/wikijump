@@ -472,6 +472,7 @@ async fn create_test_user(runner: &TestRunner, n: u64, label: &str) -> i64 {
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )

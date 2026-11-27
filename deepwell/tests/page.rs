@@ -18570,6 +18570,7 @@ async fn forum_post_reads_on_admin_page_pin_page_view_permission_path() {
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )
@@ -18876,6 +18877,7 @@ async fn forum_visibility_divergence_admin_page_pins_render_and_compat_paths() {
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )

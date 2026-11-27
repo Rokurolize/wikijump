@@ -168,6 +168,7 @@ async fn create_regular_user(runner: &TestRunner, label: &str) -> i64 {
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )
@@ -646,6 +647,7 @@ async fn clone_requires_site_administration_permission() {
             bypass_filter: true,
             bypass_email_verification: true,
             override_user_id: None,
+            passcode: None,
             ip_address: common::IP_ADDRESS,
         },
     )
