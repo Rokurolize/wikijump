@@ -15,7 +15,8 @@ ENV CARGO_BUILD_JOBS=2 \
 
 # Install system dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends libmagic-dev && \
+    apt-get install -y --no-install-recommends ca-certificates libmagic-dev && \
+    update-ca-certificates && \
     rm -rf /var/lib/apt/lists/*
 
 # Install helpers

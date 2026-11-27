@@ -6,6 +6,11 @@
 # and ships rustup 1.29.3.
 FROM rustlang/rust:nightly@sha256:b3d2bf816722790f1d34c5e6e06f42520ea745b5aaae6e170787579cc979427e AS rust
 
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
 # Install system dependencies
 RUN apt update
 RUN apt install -y build-essential libmagic-dev pkg-config
