@@ -1349,7 +1349,23 @@ impl RenderService {
                 continue;
             }
 
-            let superset_complete = found.pages.pages.len() < target_usize;
+            let superset_scan_exhausted =
+                found.scan_complete && found.pages.pages.len() < target_usize;
+            let total_key_for = |c: &GroupCandidate<'_>| {
+                let c_args = &c.plan.arguments;
+                let mut c_query = superset_query.clone();
+                c_query.score = &c_args.score;
+                c_query.votes = &c_args.votes;
+                list_pages_total_match_key(
+                    viewer_user_id,
+                    &c_query,
+                    false,
+                    &BTreeSet::new(),
+                    None,
+                    current_page_id,
+                    c_args.exclude_current_page,
+                )
+            };
             let superset_ids: Vec<i64> =
                 found.pages.pages.iter().map(|r| r.page_id).collect();
             let exact_scores = if score_varies {
@@ -1384,11 +1400,11 @@ impl RenderService {
                     .collect();
 
                 let c_target = c.scan_target.min(usize::MAX as u64) as usize;
-                if superset_complete || matched_rows.len() >= c_target {
-                    if !superset_complete {
+                if superset_scan_exhausted || matched_rows.len() >= c_target {
+                    if !superset_scan_exhausted {
                         matched_rows.truncate(c_target);
                     }
-                    if superset_complete && c.plan.template.uses_total() {
+                    if superset_scan_exhausted && c.plan.template.uses_total() {
                         let total_count = matched_rows
                             .iter()
                             .filter(|r| {
@@ -1396,19 +1412,7 @@ impl RenderService {
                                     || r.page_id != current_page_id
                             })
                             .count();
-                        let mut c_query = superset_query.clone();
-                        c_query.score = &c_args.score;
-                        c_query.votes = &c_args.votes;
-                        let total_key = list_pages_total_match_key(
-                            viewer_user_id,
-                            &c_query,
-                            false,
-                            &BTreeSet::new(),
-                            None,
-                            current_page_id,
-                            c_args.exclude_current_page,
-                        );
-                        listing_cache.cache_exact_total(total_key, total_count);
+                        listing_cache.cache_exact_total(total_key_for(c), total_count);
                     }
                     prefetched.insert(
                         c.block_idx,
@@ -1419,7 +1423,7 @@ impl RenderService {
                 }
             }
 
-            if !superset_complete
+            if !superset_scan_exhausted
                 && candidates.iter().any(|c| c.plan.template.uses_total())
             {
                 let mut total_superset_query = superset_query.clone();
@@ -1472,20 +1476,17 @@ impl RenderService {
                                         }))
                             })
                             .count();
-                        let mut c_query = superset_query.clone();
-                        c_query.score = &c_args.score;
-                        c_query.votes = &c_args.votes;
-                        let total_key = list_pages_total_match_key(
-                            viewer_user_id,
-                            &c_query,
-                            false,
-                            &BTreeSet::new(),
-                            None,
-                            current_page_id,
-                            c_args.exclude_current_page,
-                        );
-                        listing_cache.cache_exact_total(total_key, count);
+                        listing_cache.cache_exact_total(total_key_for(c), count);
                     }
+                }
+            }
+
+            for c in &candidates {
+                if c.plan.template.uses_total()
+                    && prefetched.contains_key(&c.block_idx)
+                    && listing_cache.exact_total(&total_key_for(c)).is_none()
+                {
+                    prefetched.remove(&c.block_idx);
                 }
             }
         }

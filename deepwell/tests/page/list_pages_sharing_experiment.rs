@@ -923,3 +923,140 @@ async fn t11_boundary_fixture_truth_matrix_and_sharing_prototype() {
         );
     }
 }
+
+#[tokio::test]
+async fn t11_capped_shared_scan_total_matches_independent_render() {
+    const PAGE_COUNT: i32 = 50_100;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+    let tag = "t11-capped-shared-scan";
+    let slug_prefix = "t11-capped-row-";
+
+    let template_revision = create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "t11-capped-revision-template",
+        "T11 capped revision template",
+        "template",
+    )
+    .await;
+    let default_category_id =
+        CategoryService::get_or_create(runner.context(), site_id, "_default")
+            .await
+            .expect("default category should exist")
+            .category_id;
+    let txn = runner.context().transaction();
+    txn.execute_raw(Statement::from_sql_and_values(
+        txn.get_database_backend(),
+        "INSERT INTO page \
+         (created_at, updated_at, deleted_at, from_wikidot, site_id, \
+          latest_revision_id, page_category_id, slug, discussion_thread_id, layout) \
+         SELECT '2000-01-01 00:00:00+00'::timestamptz + (series * interval '1 second'), \
+                NULL, NULL, false, $1, NULL, $2, \
+                $4 || lpad(series::text, 9, '0'), NULL, 'wikidot' \
+         FROM generate_series(1, $3) AS series",
+        [
+            Value::from(site_id),
+            Value::from(default_category_id),
+            Value::from(PAGE_COUNT),
+            Value::from(slug_prefix),
+        ],
+    ))
+    .await
+    .expect("capped scan pages should insert");
+    txn.execute_raw(Statement::from_sql_and_values(
+        txn.get_database_backend(),
+        "WITH rev AS ( \
+            INSERT INTO page_revision (page_id, site_id, revision_type, revision_number, slug, title, tags, user_id, changes, wikitext_hash, compiled_body_html_hash, compiled_at, compiled_generator, comments) \
+            SELECT scanned.page_id, $1, 'create', 0, scanned.slug, scanned.slug, ARRAY[$3], $4, '{wikitext,title,alt_title,slug,tags}', sample.wikitext_hash, sample.compiled_body_html_hash, NOW(), sample.compiled_generator, '' \
+            FROM page scanned \
+            CROSS JOIN (SELECT wikitext_hash, compiled_body_html_hash, compiled_generator FROM page_revision WHERE revision_id = $5) sample \
+            WHERE scanned.site_id = $1 AND scanned.slug LIKE $2 || '%' \
+            RETURNING page_id, revision_id \
+        ) \
+        UPDATE page p SET latest_revision_id = rev.revision_id FROM rev WHERE p.page_id = rev.page_id",
+        [
+            Value::from(site_id),
+            Value::from(slug_prefix),
+            Value::from(tag),
+            Value::from(ADMIN_USER_ID),
+            Value::from(template_revision),
+        ],
+    ))
+    .await
+    .expect("capped scan revisions should insert");
+    txn.execute_raw(Statement::from_sql_and_values(
+        txn.get_database_backend(),
+        "INSERT INTO page_vote (from_wikidot, page_id, user_id, value, rating_system) \
+         SELECT false, scanned.page_id, $2, \
+                (CASE WHEN row_number() OVER (ORDER BY scanned.created_at, scanned.page_id) <= 300 THEN 1 ELSE -1 END)::smallint, \
+                'points' \
+         FROM page scanned \
+         WHERE scanned.site_id = $1 AND scanned.slug LIKE $3 || '%'",
+        [
+            Value::from(site_id),
+            Value::from(ADMIN_USER_ID),
+            Value::from(slug_prefix),
+        ],
+    ))
+    .await
+    .expect("capped scan votes should insert");
+
+    let module_source = |form: &str| {
+        format!(
+            "[[module ListPages tags=\"+{tag}\" rating=\"{form}\" order=\"created_at asc\" limit=\"1\" perPage=\"1\" separate=\"no\" wrapper=\"no\"]]\nTOT=%%total%% ROW=%%slug%%\n[[/module]]"
+        )
+    };
+    let forms = [">=1", "<>0"];
+    let section = |html: &str, idx: usize| {
+        let start = html
+            .find(&format!("S_{idx}_START"))
+            .expect("section start marker should render");
+        let end = html[start..]
+            .find(&format!("S_{idx}_END"))
+            .expect("section end marker should render")
+            + start;
+        html[start..end].to_owned()
+    };
+
+    let mut single_sections = Vec::new();
+    for (idx, form) in forms.iter().enumerate() {
+        let holder = format!("t11-capped-single-{idx}");
+        let body = format!("S_{idx}_START\n{}\nS_{idx}_END", module_source(form));
+        create_listpages_test_page(&mut runner, site_id, &holder, &holder, &body).await;
+        let html = load_listpages_test_compiled_html(&runner, site_id, &holder).await;
+        single_sections.push(section(&html, idx));
+    }
+    assert!(
+        single_sections[0].contains("TOT=300"),
+        "the independent selective render must establish its exact total:\n{}",
+        single_sections[0]
+    );
+
+    let stacked_body = forms
+        .iter()
+        .enumerate()
+        .map(|(idx, form)| format!("S_{idx}_START\n{}\nS_{idx}_END", module_source(form)))
+        .collect::<Vec<_>>()
+        .join("\n");
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        "t11-capped-stacked",
+        "t11-capped-stacked",
+        &stacked_body,
+    )
+    .await;
+    let stacked_html =
+        load_listpages_test_compiled_html(&runner, site_id, "t11-capped-stacked").await;
+    for (idx, expected) in single_sections.iter().enumerate() {
+        assert_eq!(
+            section(&stacked_html, idx),
+            *expected,
+            "stacked ListPages section {idx} must match the independent render"
+        );
+    }
+}
