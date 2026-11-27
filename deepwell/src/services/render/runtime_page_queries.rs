@@ -94,6 +94,7 @@ pub(in crate::services::render) struct ViewableListPagesRows {
     pub(in crate::services::render) pages: FoundPages,
     pub(in crate::services::render) metadata: PageQueryResultMetadata,
     pub(in crate::services::render) view_permission_filtering_applied: bool,
+    pub(in crate::services::render) scan_complete: bool,
 }
 
 #[derive(Debug, Default)]
@@ -169,10 +170,12 @@ pub(in crate::services::render) async fn find_viewable_list_pages_rows(
         ignore_order: false,
     })
     .await?;
+    let scan_complete = found.sample.is_complete();
     Ok(ViewableListPagesRows {
         pages: found.sample.into_pages(),
         metadata: found.metadata,
         view_permission_filtering_applied: found.view_permission_filtering_applied,
+        scan_complete,
     })
 }
 
@@ -197,10 +200,12 @@ pub(in crate::services::render) async fn find_viewable_list_pages_rows_with_batc
         ignore_order: false,
     })
     .await?;
+    let scan_complete = found.sample.is_complete();
     Ok(ViewableListPagesRows {
         pages: found.sample.into_pages(),
         metadata: found.metadata,
         view_permission_filtering_applied: found.view_permission_filtering_applied,
+        scan_complete,
     })
 }
 
