@@ -372,6 +372,7 @@ impl SiteService {
             ..Default::default()
         };
         let site = model.insert(txn).await.or_raise(make_error)?;
+        ctx.invalidate_site_read_cache(site.site_id);
 
         let user = UserService::create(
             ctx,
@@ -978,6 +979,7 @@ impl SiteService {
         model.updated_at = Set(Some(now()));
         model.settings_revision = Set(site.settings_revision + 1);
         let new_site = model.update(txn).await.or_raise(make_error)?;
+        ctx.invalidate_site_read_cache(new_site.site_id);
 
         if preferred_domain_changed || site.slug != new_site.slug {
             DomainService::invalidate_site_domain_cache(ctx, site.site_id)
@@ -1160,7 +1162,12 @@ impl SiteService {
 
         let site = match reference {
             Reference::Id(id) => {
-                Site::find_by_id(id).one(txn).await.or_raise(make_error)?
+                if let Some(cached) = ctx.cached_site_by_id(id) {
+                    return Ok(cached);
+                }
+                let site = Site::find_by_id(id).one(txn).await.or_raise(make_error)?;
+                ctx.cache_site_by_id(id, site.clone());
+                site
             }
             Reference::Slug(slug) => Site::find()
                 .filter(

@@ -67,6 +67,7 @@ impl CategoryService {
         };
 
         let category = model.insert(txn).await.or_raise(make_error)?;
+        ctx.invalidate_category_read_cache(site_id);
         Ok(category)
     }
 
@@ -85,6 +86,12 @@ impl CategoryService {
             )
         };
 
+        if let Reference::Id(id) = reference {
+            if let Some(cached) = ctx.cached_category_by_id(site_id, id) {
+                return Ok(cached);
+            }
+        }
+
         let txn = ctx.transaction();
         let condition = match reference.borrow() {
             Reference::Id(id) => page_category::Column::CategoryId.eq(id),
@@ -100,6 +107,10 @@ impl CategoryService {
             .one(txn)
             .await
             .or_raise(make_error)?;
+
+        if let Reference::Id(id) = reference {
+            ctx.cache_category_by_id(site_id, id, category.clone());
+        }
 
         Ok(category)
     }
@@ -485,6 +496,7 @@ impl CategoryService {
         ctx.defer_public_content_cache_invalidate_site(site_id)
             .or_raise(make_error)?;
         let category = model.update(ctx.transaction()).await.or_raise(make_error)?;
+        ctx.invalidate_category_read_cache(site_id);
 
         if navigation_changed {
             OutdateService::outdate_nav_category(
@@ -511,6 +523,10 @@ impl CategoryService {
             )
         };
 
+        if let Some(cached) = ctx.cached_active_categories(site_id) {
+            return Ok(cached);
+        }
+
         let txn = ctx.transaction();
         let categories = PageCategory::find()
             .filter(
@@ -534,6 +550,7 @@ impl CategoryService {
             .await
             .or_raise(make_error)?;
 
+        ctx.cache_active_categories(site_id, categories.clone());
         Ok(categories)
     }
 }
