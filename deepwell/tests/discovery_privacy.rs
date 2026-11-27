@@ -787,3 +787,358 @@ async fn open_and_closed_sites_keep_non_member_view_and_edit() {
         runner.set_request_context(RequestContext::default());
     }
 }
+
+struct CrossSiteIncludePrivacyFixture {
+    host_site_id: i64,
+    attack_host_slug: String,
+    control_host_slug: String,
+    private_canary: String,
+    public_canary: String,
+    attack_include: String,
+    control_include: String,
+}
+
+async fn setup_cross_site_include_privacy_fixture(
+    runner: &mut TestRunner,
+) -> CrossSiteIncludePrivacyFixture {
+    let ctx = runner.context();
+    let n = next_n();
+    let source_site_id = create_site(ctx, n, "xincsrc", AccessPolicy::Open).await;
+    let host_site_id = create_site(ctx, n, "xinchost", AccessPolicy::Open).await;
+    let source_site_slug = format!("cycle3-f2-xincsrc-{n}");
+    let category_slug = format!("xincpriv{n}");
+    let category_id = CategoryService::get_or_create(ctx, source_site_id, &category_slug)
+        .await
+        .expect("restricted include category should be created")
+        .category_id;
+    let root_role =
+        RoleService::get(ctx, source_site_id, Reference::Slug(Cow::Borrowed("root")))
+            .await
+            .expect("root role should exist");
+    role_permission::ActiveModel {
+        role_id: Set(root_role.role_id),
+        site_id: Set(source_site_id),
+        resource_type: Set(Resource::Page),
+        resource_category_id: Set(Some(category_id)),
+        action: Set(Action::View),
+        ..Default::default()
+    }
+    .insert(ctx.transaction())
+    .await
+    .expect("root-only category permission should be created");
+    grant_root_to_admin(ctx, source_site_id).await;
+    PermissionCache::invalidate_site(ctx, source_site_id)
+        .await
+        .expect("category permission change must be visible");
+
+    let public_slug = format!("xinc-public-{n}");
+    let private_slug = format!("{category_slug}:xinc-private-{n}");
+    let public_canary = format!("XINCPUBLICCANARY{n}");
+    let private_canary = format!("XINCPRIVATECANARY{n}");
+    create_page(
+        ctx,
+        source_site_id,
+        &public_slug,
+        "cross-site include public control",
+        &public_canary,
+    )
+    .await;
+    let private_page_id = create_page(
+        ctx,
+        source_site_id,
+        &private_slug,
+        "cross-site include restricted source",
+        &private_canary,
+    )
+    .await;
+    let private_page =
+        PageService::get(ctx, source_site_id, Reference::Id(private_page_id))
+            .await
+            .expect("restricted source page should load");
+    assert!(
+        !PermissionService::check_user_can_view_page(ctx, None, &private_page)
+            .await
+            .expect("anonymous restricted-source view check should resolve"),
+        "the category-scoped fixture must deny anonymous view before any render surface is tested",
+    );
+    assert!(
+        PermissionService::check_user_can_view_page(
+            ctx,
+            Some(ADMIN_USER_ID),
+            &private_page,
+        )
+        .await
+        .expect("admin restricted-source view check should resolve"),
+        "the category-scoped fixture must remain viewable to the root-granted admin",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: None,
+        site_id: Some(source_site_id),
+        page_reference: Some(Reference::Slug(Cow::Owned(private_slug.clone()))),
+        ..Default::default()
+    });
+    let direct_private = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": source_site_id,
+            "page": private_slug,
+            "details": {"wikitext": true, "compiled_html": true},
+        }),
+    );
+    assert!(
+        direct_private.is_none(),
+        "anonymous direct page_get must deny the category-restricted source",
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: None,
+        site_id: Some(source_site_id),
+        page_reference: Some(Reference::Slug(Cow::Owned(public_slug.clone()))),
+        ..Default::default()
+    });
+    let direct_public = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": source_site_id,
+            "page": public_slug,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("anonymous direct page_get should still read the public control");
+    assert!(
+        direct_public
+            .compiled_body_html
+            .as_deref()
+            .is_some_and(|html| html.contains(&public_canary)),
+        "the public control page must be directly readable in the open source site",
+    );
+    runner.set_request_context(RequestContext::default());
+
+    let attack_include = format!("[[include :{source_site_slug}:{private_slug}]]");
+    let control_include = format!("[[include :{source_site_slug}:{public_slug}]]");
+    let attack_host_slug = format!("xinc-attack-host-{n}");
+    let control_host_slug = format!("xinc-control-host-{n}");
+    create_page(
+        runner.context(),
+        host_site_id,
+        &attack_host_slug,
+        "cross-site include attack host",
+        &format!("B4\n{attack_include}\nAF"),
+    )
+    .await;
+    create_page(
+        runner.context(),
+        host_site_id,
+        &control_host_slug,
+        "cross-site include public control host",
+        &format!("control before\n{control_include}\ncontrol after"),
+    )
+    .await;
+
+    CrossSiteIncludePrivacyFixture {
+        host_site_id,
+        attack_host_slug,
+        control_host_slug,
+        private_canary,
+        public_canary,
+        attack_include,
+        control_include,
+    }
+}
+
+fn anonymous_include_request_context(
+    fixture: &CrossSiteIncludePrivacyFixture,
+    with_page_context: bool,
+) -> RequestContext {
+    RequestContext {
+        user_id: None,
+        site_id: Some(fixture.host_site_id),
+        page_reference: with_page_context.then_some(Reference::Slug(Cow::Owned(
+            fixture.attack_host_slug.clone(),
+        ))),
+        ..Default::default()
+    }
+}
+
+async fn render_anonymous_include_preview(
+    runner: &mut TestRunner,
+    fixture: &CrossSiteIncludePrivacyFixture,
+    wikitext: &str,
+    with_page_context: bool,
+) -> String {
+    runner.set_request_context(anonymous_include_request_context(
+        fixture,
+        with_page_context,
+    ));
+    run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": fixture.host_site_id,
+            "title": "cross-site include privacy probe",
+            "wikitext": wikitext,
+            "syntax_only": false,
+        }),
+    )
+    .body
+}
+
+fn assert_include_gate_holds(html: &str, fixture: &CrossSiteIncludePrivacyFixture) {
+    assert!(
+        !html.contains(&fixture.private_canary),
+        "the restricted cross-site source must not disclose its canary:\n{html}",
+    );
+}
+
+#[tokio::test]
+async fn cross_site_include_normal_render_withholds_restricted_source_from_anonymous() {
+    let mut runner = TestRunner::setup().await;
+    let fixture = setup_cross_site_include_privacy_fixture(&mut runner).await;
+
+    runner.set_request_context(RequestContext {
+        user_id: None,
+        site_id: Some(fixture.host_site_id),
+        page_reference: Some(Reference::Slug(Cow::Owned(
+            fixture.attack_host_slug.clone(),
+        ))),
+        ..Default::default()
+    });
+    let attack = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": fixture.host_site_id,
+            "page": fixture.attack_host_slug,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("the public attack host should be readable");
+    let attack_html = attack
+        .compiled_body_html
+        .expect("the attack host should have compiled HTML");
+    assert!(
+        attack_html.contains("B4") && attack_html.contains("AF"),
+        "the attack host's own content should render:\n{attack_html}",
+    );
+    assert_include_gate_holds(&attack_html, &fixture);
+
+    runner.set_request_context(RequestContext {
+        user_id: None,
+        site_id: Some(fixture.host_site_id),
+        page_reference: Some(Reference::Slug(Cow::Owned(
+            fixture.control_host_slug.clone(),
+        ))),
+        ..Default::default()
+    });
+    let control = run_endpoint!(
+        runner,
+        page_get,
+        json!({
+            "site_id": fixture.host_site_id,
+            "page": fixture.control_host_slug,
+            "details": {"compiled_html": true},
+        }),
+    )
+    .expect("the public control host should be readable");
+    let control_html = control
+        .compiled_body_html
+        .expect("the control host should have compiled HTML");
+    assert!(
+        control_html.contains(&fixture.public_canary),
+        "the public cross-site include control must render:\n{control_html}",
+    );
+}
+
+#[tokio::test]
+async fn cross_site_include_start_preview_withholds_restricted_source_from_anonymous() {
+    let mut runner = TestRunner::setup().await;
+    let fixture = setup_cross_site_include_privacy_fixture(&mut runner).await;
+
+    let attack = render_anonymous_include_preview(
+        &mut runner,
+        &fixture,
+        &fixture.attack_include.clone(),
+        true,
+    )
+    .await;
+    assert_include_gate_holds(&attack, &fixture);
+
+    let control = render_anonymous_include_preview(
+        &mut runner,
+        &fixture,
+        &fixture.control_include.clone(),
+        true,
+    )
+    .await;
+    assert!(
+        control.contains(&fixture.public_canary),
+        "the public cross-site include control must render in the start-preview shape:\n{control}",
+    );
+}
+
+#[tokio::test]
+async fn cross_site_include_ajax_preview_withholds_restricted_source_from_anonymous() {
+    let mut runner = TestRunner::setup().await;
+    let fixture = setup_cross_site_include_privacy_fixture(&mut runner).await;
+
+    let attack = render_anonymous_include_preview(
+        &mut runner,
+        &fixture,
+        &fixture.attack_include.clone(),
+        false,
+    )
+    .await;
+    assert_include_gate_holds(&attack, &fixture);
+
+    let control = render_anonymous_include_preview(
+        &mut runner,
+        &fixture,
+        &fixture.control_include.clone(),
+        false,
+    )
+    .await;
+    assert!(
+        control.contains(&fixture.public_canary),
+        "the public cross-site include control must render in the ajax-preview shape:\n{control}",
+    );
+}
+
+#[tokio::test]
+async fn cross_site_include_listpages_content_withholds_restricted_source_from_anonymous()
+{
+    let mut runner = TestRunner::setup().await;
+    let fixture = setup_cross_site_include_privacy_fixture(&mut runner).await;
+    let listpages_source = |host_slug: &str| {
+        format!(
+            "[[module ListPages fullname=\"{host_slug}\" limit=\"1\" separate=\"no\"]]\n%%content%%\n[[/module]]"
+        )
+    };
+
+    let attack = render_anonymous_include_preview(
+        &mut runner,
+        &fixture,
+        &listpages_source(&fixture.attack_host_slug),
+        true,
+    )
+    .await;
+    assert!(
+        attack.contains("B4") && attack.contains("AF"),
+        "ListPages %%content%% should render the public host body:\n{attack}",
+    );
+    assert_include_gate_holds(&attack, &fixture);
+
+    let control = render_anonymous_include_preview(
+        &mut runner,
+        &fixture,
+        &listpages_source(&fixture.control_host_slug),
+        true,
+    )
+    .await;
+    assert!(
+        control.contains(&fixture.public_canary),
+        "ListPages %%content%% must render the public cross-site include control:\n{control}",
+    );
+}
