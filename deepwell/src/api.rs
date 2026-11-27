@@ -752,6 +752,19 @@ async fn build_module(app_state: ServerState) -> Result<RpcModule<ServerState>> 
     // User
     register!("user_create", user_create);
     register!("user_activate_from_wikidot", user_activate_from_wikidot);
+    register!("wikidot_claim_issue", wikidot_claim_issue);
+    register!(
+        "wikidot_claim_challenge_start",
+        wikidot_claim_challenge_start
+    );
+    register!(
+        "wikidot_claim_challenge_verify",
+        wikidot_claim_challenge_verify
+    );
+    register!(
+        "user_self_activate_from_wikidot",
+        user_self_activate_from_wikidot
+    );
     register!("user_get", user_get);
     register!("user_edit", user_edit);
     register!("user_password_change", user_password_change);

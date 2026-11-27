@@ -43,4 +43,5 @@ pub use super::text::Entity as Text;
 pub use super::text_block::Entity as TextBlock;
 pub use super::user::Entity as User;
 pub use super::user_role::Entity as UserRole;
+pub use super::wikidot_claim_token::Entity as WikidotClaimToken;
 pub use super::wikidot_user::Entity as WikidotUser;

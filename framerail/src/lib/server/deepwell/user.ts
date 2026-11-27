@@ -192,3 +192,56 @@ export async function userCreate({
     bypass_email_verification: bypassEmailVerification
   })
 }
+
+interface UserSelfActivateInput {
+  claimToken: string
+  email: string
+  locales: string[]
+  password: string
+  ipAddress: string
+}
+
+export interface IssuedWikidotClaimToken {
+  wikidot_user_id: number
+  proof_kind: "staff_issued" | "wikidot_profile_challenge"
+  token: string
+  challenge_nonce: string | null
+  expires_at: string
+}
+
+export async function wikidotClaimChallengeStart(
+  wikidotUserId: number,
+  ipAddress: string
+): Promise<IssuedWikidotClaimToken> {
+  return client.request("wikidot_claim_challenge_start", {
+    wikidot_user_id: wikidotUserId,
+    proof_kind: "wikidot_profile_challenge",
+    ip_address: ipAddress
+  })
+}
+
+export async function wikidotClaimChallengeVerify(
+  token: string,
+  ipAddress: string
+): Promise<"staff_issued" | "wikidot_profile_challenge"> {
+  return client.request("wikidot_claim_challenge_verify", {
+    token,
+    ip_address: ipAddress
+  })
+}
+
+export async function userSelfActivateFromWikidot({
+  claimToken,
+  email,
+  locales,
+  password,
+  ipAddress
+}: UserSelfActivateInput): Promise<UserModel> {
+  return client.request("user_self_activate_from_wikidot", {
+    claim_token: claimToken,
+    email,
+    locales,
+    password,
+    ip_address: ipAddress
+  })
+}
