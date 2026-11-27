@@ -45,6 +45,46 @@ pub(in crate::services::render) fn seal_list_pages_delayed_output_with_mode(
     seal_list_pages_delayed_output_with_modes(params).map(|(html, _styles)| html)
 }
 
+use ftml::render::Render as _;
+use ftml::render::html::HtmlRender;
+
+fn seal_non_delayed_list_output(
+    output: &str,
+    page_info: &PageInfo<'_>,
+    list_settings: &WikitextSettings,
+    page_existence: Option<&crate::services::PageExistenceSnapshot>,
+) -> (String, Vec<String>) {
+    let tokens = ftml::tokenize(output);
+    let (mut tree, _) = ftml::parse(&tokens, page_info, list_settings).into();
+    if list_settings.list_pages_inline {
+        let elements = std::mem::take(&mut tree.elements);
+        tree.elements = elements
+            .into_iter()
+            .flat_map(|element| match element {
+                ftml::tree::Element::Container(container)
+                    if container.ctype() == ftml::tree::ContainerType::Paragraph =>
+                {
+                    container.into()
+                }
+                element => vec![element],
+            })
+            .collect();
+    }
+    let html_output = match page_existence {
+        Some(page_existence) => HtmlRender.render_with_page_existence(
+            &tree,
+            page_info,
+            list_settings,
+            page_existence,
+        ),
+        None => HtmlRender.render(&tree, page_info, list_settings),
+    };
+    (
+        html_output.body,
+        tree.html_blocks.into_iter().map(String::from).collect(),
+    )
+}
+
 pub(super) fn seal_list_pages_delayed_output_with_modes(
     params: SealListPagesDelayedOutputParams<'_>,
 ) -> Result<(String, Vec<String>)> {
@@ -132,110 +172,125 @@ pub(super) fn seal_list_pages_delayed_output_with_modes(
     {
         return Ok((String::new(), extracted_styles));
     }
-    let generated_capacity = delayed_occurrences.len();
-    let mut occurrences = delayed_occurrences
-        .into_iter()
-        .map(|(range, value)| (range, PendingDelayedListPagesSlotValue::Generated(value)))
-        .chain(runtime_text_ranges.into_iter().map(|range| {
-            (
-                range.source_range,
-                PendingDelayedListPagesSlotValue::RuntimeText(range.origin),
-            )
-        }))
-        .collect::<Vec<_>>();
-    occurrences.sort_by_key(|(range, _)| range.start);
-
-    let mut segments = Vec::with_capacity(occurrences.len() * 2 + 1);
-    let mut bindings = Vec::with_capacity(generated_capacity);
-    let mut cursor = 0;
-    let mut generated_index = 0usize;
-    for (source_range, value) in occurrences {
-        if source_range.start < cursor {
-            return Err(Error::new(
-                "typed ListPages source ranges crossed",
-                ErrorType::Render,
-            )
-            .into());
-        }
-        if cursor < source_range.start {
-            segments.push(InputSegment::text(
-                cursor..source_range.start,
-                TextOrigin::Authored,
-            ));
-        }
-        match value {
-            PendingDelayedListPagesSlotValue::Generated(value) => {
-                let id = SlotId::new(
-                    u32::try_from(generated_index)
-                        .expect("ListPages generated slot count is budget-bounded"),
-                );
-                generated_index += 1;
-                let kind = match &value {
-                    GeneratedValue::PageLink { .. } => GeneratedKind::PageLink,
-                    GeneratedValue::TagLinks { .. } => GeneratedKind::TagLinks,
-                };
-                segments.push(InputSegment::generated(GeneratedInput {
-                    source_range: source_range.clone(),
-                    id,
-                    kind,
-                    occurrence: 0,
-                }));
-                bindings.push((id, value));
-            }
-            PendingDelayedListPagesSlotValue::RuntimeText(origin) => {
-                segments.push(InputSegment::text(source_range.clone(), origin));
-            }
-        }
-        cursor = source_range.end;
-    }
-    if cursor < output.len() {
-        segments.push(InputSegment::text(
-            cursor..output.len(),
-            TextOrigin::Authored,
-        ));
-    }
-
-    let delayed_input = DelayedInput::new(&output, segments).map_err(|error| {
-        Error::new(
-            format!("invalid typed ListPages stream: {error}"),
-            ErrorType::Render,
-        )
-    })?;
     let mut list_settings =
         WikitextSettings::from_mode(WikitextMode::List, settings.layout);
     list_settings.enable_html_blocks = settings.enable_html_blocks;
     list_settings.list_pages_inline = list_pages_inline;
-    let delayed_tree = parse_delayed_list(&delayed_input, page_info, &list_settings)
-        .map_err(|error| {
+    let (mut sealed_body, sealed_html_blocks) = if delayed_occurrences.is_empty()
+        && runtime_text_ranges.is_empty()
+    {
+        seal_non_delayed_list_output(&output, page_info, &list_settings, page_existence)
+    } else {
+        let generated_capacity = delayed_occurrences.len();
+        let mut occurrences = delayed_occurrences
+            .into_iter()
+            .map(|(range, value)| {
+                (range, PendingDelayedListPagesSlotValue::Generated(value))
+            })
+            .chain(runtime_text_ranges.into_iter().map(|range| {
+                (
+                    range.source_range,
+                    PendingDelayedListPagesSlotValue::RuntimeText(range.origin),
+                )
+            }))
+            .collect::<Vec<_>>();
+        occurrences.sort_by_key(|(range, _)| range.start);
+
+        let mut segments = Vec::with_capacity(occurrences.len() * 2 + 1);
+        let mut bindings = Vec::with_capacity(generated_capacity);
+        let mut cursor = 0;
+        let mut generated_index = 0usize;
+        for (source_range, value) in occurrences {
+            if source_range.start < cursor {
+                return Err(Error::new(
+                    "typed ListPages source ranges crossed",
+                    ErrorType::Render,
+                )
+                .into());
+            }
+            if cursor < source_range.start {
+                segments.push(InputSegment::text(
+                    cursor..source_range.start,
+                    TextOrigin::Authored,
+                ));
+            }
+            match value {
+                PendingDelayedListPagesSlotValue::Generated(value) => {
+                    let id = SlotId::new(
+                        u32::try_from(generated_index)
+                            .expect("ListPages generated slot count is budget-bounded"),
+                    );
+                    generated_index += 1;
+                    let kind = match &value {
+                        GeneratedValue::PageLink { .. } => GeneratedKind::PageLink,
+                        GeneratedValue::TagLinks { .. } => GeneratedKind::TagLinks,
+                    };
+                    segments.push(InputSegment::generated(GeneratedInput {
+                        source_range: source_range.clone(),
+                        id,
+                        kind,
+                        occurrence: 0,
+                    }));
+                    bindings.push((id, value));
+                }
+                PendingDelayedListPagesSlotValue::RuntimeText(origin) => {
+                    segments.push(InputSegment::text(source_range.clone(), origin));
+                }
+            }
+            cursor = source_range.end;
+        }
+        if cursor < output.len() {
+            segments.push(InputSegment::text(
+                cursor..output.len(),
+                TextOrigin::Authored,
+            ));
+        }
+
+        let delayed_input = DelayedInput::new(&output, segments).map_err(|error| {
             Error::new(
-                format!("failed to parse typed ListPages stream: {error}"),
+                format!("invalid typed ListPages stream: {error}"),
                 ErrorType::Render,
             )
         })?;
-    let bindings = SlotBindings::new(bindings).map_err(|error| {
-        Error::new(
-            format!("invalid typed ListPages bindings: {error}"),
-            ErrorType::Render,
+        let delayed_tree = parse_delayed_list(&delayed_input, page_info, &list_settings)
+            .map_err(|error| {
+                Error::new(
+                    format!("failed to parse typed ListPages stream: {error}"),
+                    ErrorType::Render,
+                )
+            })?;
+        let bindings = SlotBindings::new(bindings).map_err(|error| {
+            Error::new(
+                format!("invalid typed ListPages bindings: {error}"),
+                ErrorType::Render,
+            )
+        })?;
+        let bound = delayed_tree.bind(&bindings).map_err(|error| {
+            Error::new(
+                format!("failed to bind typed ListPages stream: {error}"),
+                ErrorType::Render,
+            )
+        })?;
+        let sealed = match page_existence {
+            Some(page_existence) => bound.render_html_with_page_existence(
+                page_info,
+                &list_settings,
+                page_existence,
+            ),
+            None => bound.render_html(page_info, &list_settings),
+        };
+        (
+            sealed.body().to_owned(),
+            sealed
+                .html_blocks()
+                .iter()
+                .map(|block| block.to_string())
+                .collect(),
         )
-    })?;
-    let bound = delayed_tree.bind(&bindings).map_err(|error| {
-        Error::new(
-            format!("failed to bind typed ListPages stream: {error}"),
-            ErrorType::Render,
-        )
-    })?;
-    let sealed = match page_existence {
-        Some(page_existence) => bound.render_html_with_page_existence(
-            page_info,
-            &list_settings,
-            page_existence,
-        ),
-        None => bound.render_html(page_info, &list_settings),
     };
-    let mut sealed_body =
-        CompatHtmlFragments::restore_in_order(&delayed_html_fragments, sealed.body());
-    let html_blocks = sealed
-        .html_blocks()
+    sealed_body =
+        CompatHtmlFragments::restore_in_order(&delayed_html_fragments, &sealed_body);
+    let html_blocks = sealed_html_blocks
         .iter()
         .map(|html| {
             compat_html.restore(&CompatHtmlFragments::restore_in_order(
@@ -485,4 +540,54 @@ pub(in crate::services::render) fn seal_pending_list_pages_delayed_outputs(
         wikitext.replace_range(start..replacement_end, &replacement);
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ftml::layout::Layout;
+    use std::borrow::Cow;
+
+    #[test]
+    fn non_delayed_fast_path_matches_delayed_path_byte_for_byte() {
+        let page_info = PageInfo {
+            page: Cow::Borrowed("test-page"),
+            category: None,
+            site: Cow::Borrowed("pentest"),
+            title: Cow::Borrowed("Test"),
+            alt_title: None,
+            score: ftml::data::ScoreValue::Integer(0),
+            tags: Vec::new(),
+            language: Cow::Borrowed("en"),
+        };
+        let mut list_settings =
+            WikitextSettings::from_mode(WikitextMode::List, Layout::Wikidot);
+        list_settings.enable_html_blocks = true;
+
+        let sample = "[[toc]]\n+ Heading\n\nLorem ipsum **bold** and //italic//.\n\n[[div]]\n[[html]]\n<p>hi</p>\n[[/html]]\n[[/div]]\n";
+        for inline in [false, true] {
+            list_settings.list_pages_inline = inline;
+            let fast =
+                seal_non_delayed_list_output(sample, &page_info, &list_settings, None);
+
+            let segments =
+                vec![InputSegment::text(0..sample.len(), TextOrigin::Authored)];
+            let delayed_input = DelayedInput::new(sample, segments).unwrap();
+            let delayed_tree =
+                parse_delayed_list(&delayed_input, &page_info, &list_settings).unwrap();
+            let bound = delayed_tree
+                .bind(&SlotBindings::new(Vec::new()).unwrap())
+                .unwrap();
+            let sealed = bound.render_html(&page_info, &list_settings);
+            let slow = (
+                sealed.body().to_owned(),
+                sealed
+                    .html_blocks()
+                    .iter()
+                    .map(|block| block.to_string())
+                    .collect::<Vec<_>>(),
+            );
+            assert_eq!(fast, slow, "mismatch for list_pages_inline={inline}");
+        }
+    }
 }
