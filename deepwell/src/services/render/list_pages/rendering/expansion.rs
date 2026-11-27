@@ -1,18 +1,23 @@
 use super::super::rendering_support::{
     ListPagesBlockRenderArgs, ListPagesExpansionArgs, ListPagesGeneratedIncludesArgs,
-    ListPagesNestedExpansionArgs, ListPagesRenderPlan,
+    ListPagesNestedExpansionArgs, ListPagesRenderPlan, exact_votes_matches_all,
+    fetch_exact_scores_bulk, fetch_exact_votes_bulk, list_pages_canonical_query_debug,
+    list_pages_scan_target, list_pages_total_match_key, superset_score_selectors,
 };
 use super::{
-    AuthorizedPageSelector, BTreeMap, BTreeSet, CategoryService, CompatHtmlFragments,
-    Cow, FoundPageFields, FoundPages, IncludeExpansion, ListPagesArgumentError,
+    AuthorizedPageSelector, BTreeMap, BTreeSet, CategoriesSelector, CategoryService,
+    CompatHtmlFragments, Cow, DEFAULT_LISTPAGES_PER_PAGE, FoundPageFields, FoundPages,
+    IncludeExpansion, IncludedCategories, ListPagesArgumentError,
     ListPagesBatchDisplayRequirements, ListPagesBlock, ListPagesBlockPlan,
     ListPagesBlockRenderResult, ListPagesContentCache, ListPagesExpansion,
     ListPagesExpansionOptions, ListPagesListingCache, ListPagesPageContext,
-    ListPagesTemplatePlan, MAX_LISTPAGES_RENDER_LIMIT, MAX_NESTED_LISTPAGES_DEPTH,
-    MAX_NESTED_LISTPAGES_MODULES_PER_PASS, OrderProperty, PageQueryScoreFilterCache,
-    PendingDelayedListPagesOutput, Reference, RenderService, Result,
-    SealPendingListPagesDelayedOutputsParams, collect_list_pages_css_yield_openers,
-    current_data_form_list_pages_head, escape_html_text, exact_name_list_pages_batch_key,
+    ListPagesTemplatePlan, MAX_LISTPAGES_RENDER_LIMIT, MAX_LISTPAGES_RENDER_SCAN_ROWS,
+    MAX_NESTED_LISTPAGES_DEPTH, MAX_NESTED_LISTPAGES_MODULES_PER_PASS, OrderProperty,
+    PageParentSelector, PageQuery, PageQueryScoreFilterCache, PaginationSelector,
+    PendingDelayedListPagesOutput, Reference, RenderRuntime, RenderService, Result,
+    SealPendingListPagesDelayedOutputsParams, ServiceContext, TagCondition,
+    collect_list_pages_css_yield_openers, current_data_form_list_pages_head,
+    escape_html_text, exact_name_list_pages_batch_key,
     expand_list_pages_generated_includes,
     find_list_pages_module_matches_with_delayed_links_budgeted,
     has_list_pages_module_opening_candidate, k12_hash,
@@ -20,18 +25,20 @@ use super::{
     list_pages_body_has_standalone_count_pages_opening,
     list_pages_body_inline_count_pages_legacy_tail,
     list_pages_body_is_no_visible_tracking_markup,
-    list_pages_body_starts_with_preparsed_block,
+    list_pages_body_starts_with_preparsed_block, list_pages_body_uses_first_image,
+    list_pages_content_query_target,
     list_pages_head_has_current_data_form_query_selector,
     list_pages_html_encoded_head_owns_script_tail, list_pages_module_in_block_position,
     list_pages_module654_literal, list_pages_raw_footnote_prefix_end,
-    list_pages_runtime_head_can_execute, list_pages_static_category_preflight,
-    list_pages_static_parent_fullname_with_url, load_current_page_data_form_context,
+    list_pages_row_scan_target, list_pages_runtime_head_can_execute,
+    list_pages_static_category_preflight, list_pages_static_parent_fullname_with_url,
+    load_current_page_data_form_context, page_query_cap_requires_original_module,
     parse_list_pages_arguments_with_url, prepare_list_pages_rendered_block,
     preserve_list_pages_module_matches, protect_ajax_module_literal_markers,
     push_source_without_css_yield_openers, raw_module_close_end,
-    restore_pending_nested_list_pages, seal_pending_list_pages_delayed_outputs,
-    union_found_page_fields, unsupported_list_pages_replacement,
-    url_offset_list_pages_content_bytes,
+    render_page_query_uses_single_scan, restore_pending_nested_list_pages,
+    seal_pending_list_pages_delayed_outputs, union_found_page_fields,
+    unsupported_list_pages_replacement, url_offset_list_pages_content_bytes,
 };
 
 fn list_pages_template_with_total_only_default_fallback(
@@ -564,10 +571,25 @@ impl RenderService {
         let mut permission_cache = BTreeMap::new();
         let mut score_filter_cache = PageQueryScoreFilterCache::default();
         let mut author_resolution_cache = BTreeMap::new();
+        let mut prefetched_by_block_idx = Self::prefetch_shared_score_votes_groups(
+            ctx,
+            current_site_id,
+            requested_current_page_id,
+            viewer_user_id,
+            page_info,
+            url,
+            &blocks,
+            expansion_budget.remaining_content_rows(),
+            &mut listing_cache,
+            &mut permission_cache,
+            &mut score_filter_cache,
+            &mut author_resolution_cache,
+        )
+        .await?;
         let mut cursor = 0;
-        let mut blocks = blocks.into_iter().peekable();
+        let mut blocks = blocks.into_iter().enumerate().peekable();
 
-        while let Some(block) = blocks.next() {
+        while let Some((block_idx, block)) = blocks.next() {
             let batch_key = match &block.plan {
                 ListPagesBlockPlan::Render(plan) => plan.batch_key.clone(),
                 _ => None,
@@ -575,7 +597,7 @@ impl RenderService {
             if let Some(batch_key) = batch_key {
                 let mut batch = vec![block];
                 while batch.len() < MAX_LISTPAGES_RENDER_LIMIT as usize
-                    && blocks.peek().is_some_and(|next| {
+                    && blocks.peek().is_some_and(|(_, next)| {
                         matches!(
                             &next.plan,
                             ListPagesBlockPlan::Render(plan)
@@ -583,7 +605,7 @@ impl RenderService {
                         )
                     })
                 {
-                    batch.push(blocks.next().unwrap());
+                    batch.push(blocks.next().unwrap().1);
                 }
 
                 let mut unique_slugs = BTreeSet::new();
@@ -822,7 +844,7 @@ impl RenderService {
                             include_budget: &mut include_budget,
                             render_cost_budget: &render_cost_budget,
                             expanded_include_cache: expanded_include_cache.clone(),
-                            prefetched_pages: None,
+                            prefetched_pages: prefetched_by_block_idx.remove(&block_idx),
                             prefetched_displays: None,
                             content_cache: &mut content_cache,
                             listing_cache: &mut listing_cache,
@@ -1005,5 +1027,469 @@ impl RenderService {
             },
         )?;
         Ok(expansion)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    async fn prefetch_shared_score_votes_groups(
+        ctx: &ServiceContext<'_>,
+        current_site_id: i64,
+        requested_current_page_id: Option<i64>,
+        viewer_user_id: Option<i64>,
+        page_info: &ftml::data::PageInfo<'_>,
+        url: super::super::super::UrlArguments<'_>,
+        blocks: &[ListPagesBlock],
+        remaining_content_rows: usize,
+        listing_cache: &mut ListPagesListingCache,
+        permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
+        score_filter_cache: &mut PageQueryScoreFilterCache,
+        author_resolution_cache: &mut BTreeMap<
+            super::super::ListPagesAuthorCacheKey,
+            super::super::ResolvedListPagesAuthors,
+        >,
+    ) -> Result<BTreeMap<usize, FoundPages>> {
+        let mut prefetched = BTreeMap::new();
+        let current_page_id = requested_current_page_id.unwrap_or(0);
+
+        struct GroupCandidate<'a> {
+            block_idx: usize,
+            plan: &'a ListPagesRenderPlan,
+            any_tags: Vec<Cow<'static, str>>,
+            categories: Vec<Cow<'static, str>>,
+            included_categories_all: bool,
+            page_parent: PageParentSelector<'a>,
+            resolved_authors: super::super::ResolvedListPagesAuthors,
+            scan_target: u64,
+            fields: FoundPageFields,
+        }
+
+        let mut groups: BTreeMap<String, Vec<GroupCandidate<'_>>> = BTreeMap::new();
+        for (block_idx, block) in blocks.iter().enumerate() {
+            let ListPagesBlockPlan::Render(plan) = &block.plan else {
+                continue;
+            };
+            let args = &plan.arguments;
+            if plan.batch_key.is_some()
+                || args.rss_only
+                || args.limit == Some(0)
+                || args.count_pages_per_page == Some(0)
+                || args.current_page_only
+                || args.creation_date_current_page
+                || args.update_date_current_page
+                || args.score_equals_current_page
+                || args.votes_equals_current_page
+                || !args.link_to.is_empty()
+                || args.same_visible_tags
+                || args.exact_visible_tags
+                || args.relative_range.is_some()
+                || !args.data_form_fields.is_empty()
+                || matches!(
+                    args.order.as_ref().map(|o| &o.property),
+                    Some(OrderProperty::Random)
+                )
+            {
+                continue;
+            }
+            if requested_current_page_id.is_none()
+                && (args.exclude_current_page_author
+                    || matches!(args.page_parent, PageParentSelector::DifferentParents))
+            {
+                continue;
+            }
+
+            let mut any_tags = args.any_tags.clone();
+            any_tags.extend(args.default_tags.iter().cloned());
+
+            let (category_all, include_current_category) =
+                if args.category_selector_present {
+                    (args.category_all, args.include_current_category)
+                } else {
+                    (false, true)
+                };
+            let categories = if include_current_category && !category_all {
+                Self::categories_with_current_page_category(
+                    args.categories.clone(),
+                    page_info,
+                )
+            } else {
+                args.categories.clone()
+            };
+
+            let resolved_authors = Self::resolve_list_pages_authors_cached(
+                ctx,
+                current_site_id,
+                current_page_id,
+                &args.authors,
+                args.author_filter_present,
+                args.exclude_current_page_author,
+                author_resolution_cache,
+            )
+            .await?;
+
+            let per_page = args
+                .count_pages_per_page
+                .unwrap_or(DEFAULT_LISTPAGES_PER_PAGE)
+                .clamp(1, MAX_LISTPAGES_RENDER_LIMIT);
+            let url_page = url.page_for_prefix(args.url_attr_prefix.as_deref());
+            let offset = if let Some(raw_offset) = args.offset_beyond_render_window {
+                if url_page.unwrap_or(1) > 1 {
+                    (raw_offset % per_page) as u32
+                } else {
+                    u32::MAX
+                }
+            } else {
+                args.offset
+            };
+            let query_limit =
+                list_pages_row_scan_target(args.limit, offset, args.exclude_current_page);
+            let query_target = if plan.template.uses_content()
+                && !render_page_query_uses_single_scan(args.order.clone())
+            {
+                list_pages_content_query_target(
+                    query_limit,
+                    per_page,
+                    remaining_content_rows,
+                    offset,
+                    args.exclude_current_page,
+                    true,
+                )
+            } else {
+                query_limit
+            };
+            let scan_target = list_pages_scan_target(query_target);
+
+            let mut fields = plan.template.fields();
+            fields.tags = true;
+            fields.page_category_id = true;
+            fields.slug |= list_pages_body_uses_first_image(plan.template.body());
+            fields.revision_count |= matches!(
+                args.order.as_ref().map(|o| &o.property),
+                Some(OrderProperty::Revisions)
+            );
+
+            let static_parent_refs = args
+                .static_parent_fullname
+                .as_ref()
+                .map(|p| vec![Reference::Slug(Cow::Borrowed(p.as_ref()))]);
+            let page_parent = match static_parent_refs {
+                Some(refs) => {
+                    PageParentSelector::HasParents(Box::leak(refs.into_boxed_slice()))
+                }
+                None => args.page_parent.clone(),
+            };
+
+            let key_query = PageQuery {
+                current_page_id,
+                current_site_id,
+                queried_site_id: None,
+                page_type: args.page_type,
+                categories: CategoriesSelector {
+                    included_categories: if category_all {
+                        IncludedCategories::All
+                    } else {
+                        IncludedCategories::List(&categories)
+                    },
+                    excluded_categories: &args.excluded_categories,
+                },
+                tags: TagCondition {
+                    any_present: &any_tags,
+                    all_present: &args.all_tags,
+                    none_present: &args.no_tags,
+                    untagged: args.untagged,
+                },
+                page_parent: page_parent.clone(),
+                contains_outgoing_links: &[],
+                creation_date: args.creation_date,
+                update_date: args.update_date,
+                author: resolved_authors.as_selector(),
+                score: &[],
+                votes: &[],
+                offset: 0,
+                name: args.name_pattern.clone(),
+                slug: args.slug.clone(),
+                slugs: &[],
+                data_form_fields: &[],
+                order: args.order.clone(),
+                candidate_limit: if !matches!(
+                    args.order.as_ref().map(|o| &o.property),
+                    Some(OrderProperty::Score | OrderProperty::DataFormFieldName { .. })
+                ) {
+                    None
+                } else {
+                    Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
+                },
+                pagination: PaginationSelector::default(),
+                fields: FoundPageFields::default(),
+            };
+            let group_key = format!(
+                "{}|exc={}",
+                list_pages_canonical_query_debug(&key_query),
+                args.exclude_current_page
+            );
+            groups.entry(group_key).or_default().push(GroupCandidate {
+                block_idx,
+                plan,
+                any_tags,
+                categories,
+                included_categories_all: category_all,
+                page_parent,
+                resolved_authors,
+                scan_target,
+                fields,
+            });
+        }
+
+        for (_, candidates) in groups {
+            if candidates.len() < 2 {
+                continue;
+            }
+            let distinct_score_votes: BTreeSet<String> = candidates
+                .iter()
+                .map(|c| {
+                    format!("{:?}|{:?}", c.plan.arguments.score, c.plan.arguments.votes)
+                })
+                .collect();
+            if distinct_score_votes.len() < 2 {
+                continue;
+            }
+
+            let score_slices: Vec<&[_]> = candidates
+                .iter()
+                .map(|c| c.plan.arguments.score.as_slice())
+                .collect();
+            let votes_slices: Vec<&[_]> = candidates
+                .iter()
+                .map(|c| c.plan.arguments.votes.as_slice())
+                .collect();
+            let superset_score = superset_score_selectors(&score_slices);
+            let superset_votes = superset_score_selectors(&votes_slices);
+
+            let score_varies = candidates
+                .iter()
+                .map(|c| format!("{:?}", c.plan.arguments.score))
+                .collect::<BTreeSet<_>>()
+                .len()
+                > 1;
+            let votes_varies = candidates
+                .iter()
+                .map(|c| format!("{:?}", c.plan.arguments.votes))
+                .collect::<BTreeSet<_>>()
+                .len()
+                > 1;
+
+            let max_scan_target = candidates
+                .iter()
+                .map(|c| c.scan_target)
+                .max()
+                .unwrap_or(MAX_LISTPAGES_RENDER_LIMIT);
+            let mut union_fields = FoundPageFields::default();
+            for c in &candidates {
+                union_found_page_fields(&mut union_fields, &c.fields);
+            }
+
+            let first = &candidates[0];
+            let first_args = &first.plan.arguments;
+            let superset_query = PageQuery {
+                current_page_id,
+                current_site_id,
+                queried_site_id: None,
+                page_type: first_args.page_type,
+                categories: CategoriesSelector {
+                    included_categories: if first.included_categories_all {
+                        IncludedCategories::All
+                    } else {
+                        IncludedCategories::List(&first.categories)
+                    },
+                    excluded_categories: &first_args.excluded_categories,
+                },
+                tags: TagCondition {
+                    any_present: &first.any_tags,
+                    all_present: &first_args.all_tags,
+                    none_present: &first_args.no_tags,
+                    untagged: first_args.untagged,
+                },
+                page_parent: first.page_parent.clone(),
+                contains_outgoing_links: &[],
+                creation_date: first_args.creation_date,
+                update_date: first_args.update_date,
+                author: first.resolved_authors.as_selector(),
+                score: &superset_score,
+                votes: &superset_votes,
+                offset: 0,
+                name: first_args.name_pattern.clone(),
+                slug: first_args.slug.clone(),
+                slugs: &[],
+                data_form_fields: &[],
+                order: first_args.order.clone(),
+                candidate_limit: if !matches!(
+                    first_args.order.as_ref().map(|o| &o.property),
+                    Some(OrderProperty::Score | OrderProperty::DataFormFieldName { .. })
+                ) {
+                    None
+                } else {
+                    Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
+                },
+                pagination: PaginationSelector {
+                    limit: Some(MAX_LISTPAGES_RENDER_LIMIT),
+                    per_page: PaginationSelector::default().per_page,
+                    reversed: false,
+                },
+                fields: union_fields,
+            };
+
+            let target_usize = max_scan_target.min(usize::MAX as u64) as usize;
+            let found = RenderRuntime::for_viewer(ctx, viewer_user_id)
+                .find_viewable_list_pages_rows(
+                    superset_query.clone(),
+                    target_usize,
+                    permission_cache,
+                    Some(score_filter_cache),
+                )
+                .await?;
+            if page_query_cap_requires_original_module(&found.metadata) {
+                continue;
+            }
+
+            let superset_complete = found.pages.pages.len() < target_usize;
+            let superset_ids: Vec<i64> =
+                found.pages.pages.iter().map(|r| r.page_id).collect();
+            let exact_scores = if score_varies {
+                fetch_exact_scores_bulk(ctx, &superset_ids).await?
+            } else {
+                BTreeMap::new()
+            };
+            let exact_votes = if votes_varies {
+                fetch_exact_votes_bulk(ctx, &superset_ids).await?
+            } else {
+                BTreeMap::new()
+            };
+
+            for c in &candidates {
+                let c_args = &c.plan.arguments;
+                let mut matched_rows: Vec<_> = found
+                    .pages
+                    .pages
+                    .iter()
+                    .filter(|r| {
+                        let score_ok = !score_varies
+                            || exact_scores
+                                .get(&r.page_id)
+                                .is_some_and(|s| s.matches_all(&c_args.score));
+                        let votes_ok = !votes_varies
+                            || exact_votes.get(&r.page_id).is_some_and(|v| {
+                                exact_votes_matches_all(*v, &c_args.votes)
+                            });
+                        score_ok && votes_ok
+                    })
+                    .cloned()
+                    .collect();
+
+                let c_target = c.scan_target.min(usize::MAX as u64) as usize;
+                if superset_complete || matched_rows.len() >= c_target {
+                    if !superset_complete {
+                        matched_rows.truncate(c_target);
+                    }
+                    if superset_complete && c.plan.template.uses_total() {
+                        let total_count = matched_rows
+                            .iter()
+                            .filter(|r| {
+                                !c_args.exclude_current_page
+                                    || r.page_id != current_page_id
+                            })
+                            .count();
+                        let mut c_query = superset_query.clone();
+                        c_query.score = &c_args.score;
+                        c_query.votes = &c_args.votes;
+                        let total_key = list_pages_total_match_key(
+                            viewer_user_id,
+                            &c_query,
+                            false,
+                            &BTreeSet::new(),
+                            None,
+                            current_page_id,
+                            c_args.exclude_current_page,
+                        );
+                        listing_cache.cache_exact_total(total_key, total_count);
+                    }
+                    prefetched.insert(
+                        c.block_idx,
+                        FoundPages {
+                            pages: matched_rows,
+                        },
+                    );
+                }
+            }
+
+            if !superset_complete
+                && candidates.iter().any(|c| c.plan.template.uses_total())
+            {
+                let mut total_superset_query = superset_query.clone();
+                total_superset_query.pagination.limit =
+                    Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS));
+                total_superset_query.fields = FoundPageFields {
+                    page_category_id: true,
+                    ..FoundPageFields::default()
+                };
+                let total_found = RenderRuntime::for_viewer(ctx, viewer_user_id)
+                    .find_viewable_count_pages_rows_unordered(
+                        total_superset_query,
+                        MAX_LISTPAGES_RENDER_SCAN_ROWS as usize,
+                        permission_cache,
+                    )
+                    .await?;
+                if !page_query_cap_requires_original_module(&total_found.metadata)
+                    && total_found.sample.is_complete()
+                {
+                    let total_pages = total_found.sample.into_pages().pages;
+                    let total_ids: Vec<i64> =
+                        total_pages.iter().map(|r| r.page_id).collect();
+                    let total_scores = if score_varies {
+                        fetch_exact_scores_bulk(ctx, &total_ids).await?
+                    } else {
+                        BTreeMap::new()
+                    };
+                    let total_votes = if votes_varies {
+                        fetch_exact_votes_bulk(ctx, &total_ids).await?
+                    } else {
+                        BTreeMap::new()
+                    };
+                    for c in &candidates {
+                        if !c.plan.template.uses_total() {
+                            continue;
+                        }
+                        let c_args = &c.plan.arguments;
+                        let count = total_pages
+                            .iter()
+                            .filter(|r| {
+                                (!c_args.exclude_current_page
+                                    || r.page_id != current_page_id)
+                                    && (!score_varies
+                                        || total_scores.get(&r.page_id).is_some_and(
+                                            |s| s.matches_all(&c_args.score),
+                                        ))
+                                    && (!votes_varies
+                                        || total_votes.get(&r.page_id).is_some_and(|v| {
+                                            exact_votes_matches_all(*v, &c_args.votes)
+                                        }))
+                            })
+                            .count();
+                        let mut c_query = superset_query.clone();
+                        c_query.score = &c_args.score;
+                        c_query.votes = &c_args.votes;
+                        let total_key = list_pages_total_match_key(
+                            viewer_user_id,
+                            &c_query,
+                            false,
+                            &BTreeSet::new(),
+                            None,
+                            current_page_id,
+                            c_args.exclude_current_page,
+                        );
+                        listing_cache.cache_exact_total(total_key, count);
+                    }
+                }
+            }
+        }
+
+        Ok(prefetched)
     }
 }

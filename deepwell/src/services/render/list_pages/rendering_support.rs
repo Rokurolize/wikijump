@@ -42,7 +42,7 @@ use super::{
     register_generated_list_pages_html, repair_list_pages_block_boundaries,
     strip_generated_list_pages_html_markers, wrap_pending_list_pages_delayed_output,
 };
-use crate::error::prelude::Result;
+use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::hash::TextHash;
 use crate::models::page_category;
 use crate::services::ServiceContext;
@@ -57,7 +57,7 @@ use crate::services::render::service::IncludeExpansionOptions;
 use crate::services::score::ScoreValue;
 use ftml::data::PageInfo;
 use ftml::settings::WikitextSettings;
-use sea_orm::FromQueryResult;
+use sea_orm::{ConnectionTrait, FromQueryResult};
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -946,6 +946,389 @@ pub(in crate::services::render) fn list_pages_total_only_scan_cache_key(
         "totals-only|{viewer_user_id:?}|{scan_target}|{}",
         list_pages_canonical_query_debug(&query)
     )
+}
+
+/// Exact rational/integer representation of a page's effective score for
+/// sound Rust-side predicate filtering across non-equivalent `rating=` forms.
+///
+/// For `stars` categories with `score_count > 0`, the effective score is
+/// `score_sum / score_count`; comparing against `ScoreValue::Integer(rhs)`
+/// uses exact `i128` cross-multiplication (`lhs_num <op> rhs * lhs_den`),
+/// matching PostgreSQL `numeric` comparison without `f32`/`f64` rounding.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(in crate::services::render) struct ExactScore {
+    pub(in crate::services::render) is_stars: bool,
+    pub(in crate::services::render) sum: i64,
+    pub(in crate::services::render) count: i64,
+}
+
+impl ExactScore {
+    pub(in crate::services::render) fn matches_selector(
+        self,
+        selector: &ScoreSelector,
+    ) -> bool {
+        let lhs_num: i128 = if self.is_stars && self.count == 0 {
+            0
+        } else {
+            i128::from(self.sum)
+        };
+        let lhs_den: i128 = if self.is_stars && self.count > 0 {
+            i128::from(self.count)
+        } else {
+            1
+        };
+        match selector.score {
+            ScoreValue::Integer(rhs) => {
+                let rhs_scaled = i128::from(rhs) * lhs_den;
+                match selector.comparison {
+                    ComparisonOperation::GreaterThan => lhs_num > rhs_scaled,
+                    ComparisonOperation::LessThan => lhs_num < rhs_scaled,
+                    ComparisonOperation::GreaterOrEqualThan => lhs_num >= rhs_scaled,
+                    ComparisonOperation::LessOrEqualThan => lhs_num <= rhs_scaled,
+                    ComparisonOperation::Equal => lhs_num == rhs_scaled,
+                    ComparisonOperation::NotEqual => lhs_num != rhs_scaled,
+                }
+            }
+            ScoreValue::Float(rhs) => {
+                let lhs_f = lhs_num as f64 / lhs_den as f64;
+                match selector.comparison {
+                    ComparisonOperation::GreaterThan => lhs_f > rhs,
+                    ComparisonOperation::LessThan => lhs_f < rhs,
+                    ComparisonOperation::GreaterOrEqualThan => lhs_f >= rhs,
+                    ComparisonOperation::LessOrEqualThan => lhs_f <= rhs,
+                    ComparisonOperation::Equal => lhs_f == rhs,
+                    ComparisonOperation::NotEqual => lhs_f != rhs,
+                }
+            }
+        }
+    }
+
+    pub(in crate::services::render) fn matches_all(
+        self,
+        selectors: &[ScoreSelector],
+    ) -> bool {
+        selectors.iter().all(|s| self.matches_selector(s))
+    }
+}
+
+pub(in crate::services::render) fn exact_votes_matches_all(
+    votes: i64,
+    selectors: &[ScoreSelector],
+) -> bool {
+    selectors.iter().all(|s| {
+        let lhs = votes as f64;
+        let rhs = s.score.to_f64();
+        match s.comparison {
+            ComparisonOperation::GreaterThan => lhs > rhs,
+            ComparisonOperation::LessThan => lhs < rhs,
+            ComparisonOperation::GreaterOrEqualThan => lhs >= rhs,
+            ComparisonOperation::LessOrEqualThan => lhs <= rhs,
+            ComparisonOperation::Equal => lhs == rhs,
+            ComparisonOperation::NotEqual => lhs != rhs,
+        }
+    })
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct LowerBound {
+    value: i64,
+    strict: bool,
+}
+
+impl LowerBound {
+    fn tighter(a: Option<Self>, b: Option<Self>) -> Option<Self> {
+        match (a, b) {
+            (None, x) | (x, None) => x,
+            (Some(a), Some(b)) => {
+                if (a.value, a.strict) >= (b.value, b.strict) {
+                    Some(a)
+                } else {
+                    Some(b)
+                }
+            }
+        }
+    }
+
+    fn looser(a: Option<Self>, b: Option<Self>) -> Option<Self> {
+        match (a, b) {
+            (None, _) | (_, None) => None,
+            (Some(a), Some(b)) => {
+                if (a.value, a.strict) <= (b.value, b.strict) {
+                    Some(a)
+                } else {
+                    Some(b)
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct UpperBound {
+    value: i64,
+    strict: bool,
+}
+
+impl UpperBound {
+    fn tighter(a: Option<Self>, b: Option<Self>) -> Option<Self> {
+        match (a, b) {
+            (None, x) | (x, None) => x,
+            (Some(a), Some(b)) => {
+                if (a.value, !a.strict) <= (b.value, !b.strict) {
+                    Some(a)
+                } else {
+                    Some(b)
+                }
+            }
+        }
+    }
+
+    fn looser(a: Option<Self>, b: Option<Self>) -> Option<Self> {
+        match (a, b) {
+            (None, _) | (_, None) => None,
+            (Some(a), Some(b)) => {
+                if (a.value, !a.strict) >= (b.value, !b.strict) {
+                    Some(a)
+                } else {
+                    Some(b)
+                }
+            }
+        }
+    }
+}
+
+/// Computes a proved sound superset `Vec<ScoreSelector>` for a disjunction
+/// of `ScoreSelector` conjunctions. Every value satisfying any input
+/// conjunction is guaranteed to satisfy the returned superset conjunction.
+pub(in crate::services::render) fn superset_score_selectors(
+    groups: &[&[ScoreSelector]],
+) -> Vec<ScoreSelector> {
+    if groups.is_empty() || groups.iter().any(|g| g.is_empty()) {
+        return Vec::new();
+    }
+
+    let mut group_lower: Option<LowerBound> = None;
+    let mut group_upper: Option<UpperBound> = None;
+    let mut candidate_holes = BTreeSet::new();
+
+    for (idx, conjunction) in groups.iter().enumerate() {
+        let mut conj_lower: Option<LowerBound> = None;
+        let mut conj_upper: Option<UpperBound> = None;
+        for selector in *conjunction {
+            let ScoreValue::Integer(val) = selector.score else {
+                return Vec::new();
+            };
+            match selector.comparison {
+                ComparisonOperation::GreaterThan => {
+                    candidate_holes.insert(val);
+                    conj_lower = LowerBound::tighter(
+                        conj_lower,
+                        Some(LowerBound {
+                            value: val,
+                            strict: true,
+                        }),
+                    );
+                }
+                ComparisonOperation::GreaterOrEqualThan => {
+                    conj_lower = LowerBound::tighter(
+                        conj_lower,
+                        Some(LowerBound {
+                            value: val,
+                            strict: false,
+                        }),
+                    );
+                }
+                ComparisonOperation::LessThan => {
+                    candidate_holes.insert(val);
+                    conj_upper = UpperBound::tighter(
+                        conj_upper,
+                        Some(UpperBound {
+                            value: val,
+                            strict: true,
+                        }),
+                    );
+                }
+                ComparisonOperation::LessOrEqualThan => {
+                    conj_upper = UpperBound::tighter(
+                        conj_upper,
+                        Some(UpperBound {
+                            value: val,
+                            strict: false,
+                        }),
+                    );
+                }
+                ComparisonOperation::Equal => {
+                    conj_lower = LowerBound::tighter(
+                        conj_lower,
+                        Some(LowerBound {
+                            value: val,
+                            strict: false,
+                        }),
+                    );
+                    conj_upper = UpperBound::tighter(
+                        conj_upper,
+                        Some(UpperBound {
+                            value: val,
+                            strict: false,
+                        }),
+                    );
+                }
+                ComparisonOperation::NotEqual => {
+                    candidate_holes.insert(val);
+                }
+            }
+        }
+        if idx == 0 {
+            group_lower = conj_lower;
+            group_upper = conj_upper;
+        } else {
+            group_lower = LowerBound::looser(group_lower, conj_lower);
+            group_upper = UpperBound::looser(group_upper, conj_upper);
+        }
+    }
+
+    let mut result = Vec::new();
+    if let Some(lo) = group_lower {
+        result.push(ScoreSelector {
+            score: ScoreValue::Integer(lo.value),
+            comparison: if lo.strict {
+                ComparisonOperation::GreaterThan
+            } else {
+                ComparisonOperation::GreaterOrEqualThan
+            },
+        });
+    }
+    if let Some(hi) = group_upper {
+        result.push(ScoreSelector {
+            score: ScoreValue::Integer(hi.value),
+            comparison: if hi.strict {
+                ComparisonOperation::LessThan
+            } else {
+                ComparisonOperation::LessOrEqualThan
+            },
+        });
+    }
+    for hole in candidate_holes {
+        let point = ExactScore {
+            is_stars: false,
+            sum: hole,
+            count: 1,
+        };
+        if groups.iter().all(|conj| !point.matches_all(conj)) {
+            result.push(ScoreSelector {
+                score: ScoreValue::Integer(hole),
+                comparison: ComparisonOperation::NotEqual,
+            });
+        }
+    }
+    result
+}
+
+pub(in crate::services::render) async fn fetch_exact_scores_bulk(
+    ctx: &ServiceContext<'_>,
+    page_ids: &[i64],
+) -> Result<BTreeMap<i64, ExactScore>> {
+    #[derive(FromQueryResult, Debug)]
+    struct Row {
+        page_id: i64,
+        is_stars: bool,
+        score_sum: i64,
+        score_count: i64,
+    }
+    if page_ids.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    let txn = ctx.transaction();
+    let rows = Row::find_by_statement(sea_orm::Statement::from_sql_and_values(
+        txn.get_database_backend(),
+        "SELECT \
+            scored_page.page_id, \
+            (COALESCE(score_category.rating_type, score_default_category.rating_type, 'plus_minus') = 'stars') AS is_stars, \
+            CASE \
+                WHEN COALESCE(score_category.rating_type, score_default_category.rating_type, 'plus_minus') = 'stars' \
+                THEN COALESCE(SUM(score_vote.value) FILTER (WHERE score_vote.rating_system = 'stars'), 0)::bigint \
+                ELSE COALESCE(score_snapshot.imported_rating, 0) + COALESCE(SUM(score_vote.value) FILTER (WHERE score_vote.rating_system = 'points' AND (score_snapshot.imported_rating IS NULL OR score_vote.from_wikidot = FALSE)), 0)::bigint \
+            END AS score_sum, \
+            CASE \
+                WHEN COALESCE(score_category.rating_type, score_default_category.rating_type, 'plus_minus') = 'stars' \
+                THEN COUNT(score_vote.value) FILTER (WHERE score_vote.rating_system = 'stars')::bigint \
+                ELSE 1::bigint \
+            END AS score_count \
+        FROM page scored_page \
+        JOIN page_category score_category ON score_category.category_id = scored_page.page_category_id \
+        LEFT JOIN page_category score_default_category ON score_default_category.site_id = scored_page.site_id AND score_default_category.slug = '_default' \
+        LEFT JOIN wikidot_page_snapshot score_snapshot ON score_snapshot.page_id = scored_page.page_id \
+        LEFT JOIN page_vote score_vote ON score_vote.page_id = scored_page.page_id AND score_vote.deleted_at IS NULL AND score_vote.disabled_at IS NULL \
+        WHERE scored_page.page_id = ANY($1) \
+        GROUP BY scored_page.page_id, score_snapshot.imported_rating, score_category.rating_type, score_default_category.rating_type",
+        [sea_orm::Value::from(page_ids.to_vec())],
+    ))
+    .all(txn)
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to load bulk ListPages scores",
+            ErrorType::PageQuery,
+        )
+    })?;
+    Ok(rows
+        .into_iter()
+        .map(|r| {
+            (
+                r.page_id,
+                ExactScore {
+                    is_stars: r.is_stars,
+                    sum: r.score_sum,
+                    count: r.score_count,
+                },
+            )
+        })
+        .collect())
+}
+
+pub(in crate::services::render) async fn fetch_exact_votes_bulk(
+    ctx: &ServiceContext<'_>,
+    page_ids: &[i64],
+) -> Result<BTreeMap<i64, i64>> {
+    #[derive(FromQueryResult, Debug)]
+    struct Row {
+        page_id: i64,
+        effective_votes: i64,
+    }
+    if page_ids.is_empty() {
+        return Ok(BTreeMap::new());
+    }
+    let txn = ctx.transaction();
+    let rows = Row::find_by_statement(sea_orm::Statement::from_sql_and_values(
+        txn.get_database_backend(),
+        "SELECT \
+            p.page_id, \
+            (COALESCE(CASE \
+                WHEN snapshot.meta_json ->> 'votes_count' ~ '^[0-9]{1,19}$' \
+                    AND (length(snapshot.meta_json ->> 'votes_count') < 19 \
+                        OR snapshot.meta_json ->> 'votes_count' <= '9223372036854775807') \
+                THEN (snapshot.meta_json ->> 'votes_count')::bigint \
+                ELSE COUNT(vote.page_vote_id) FILTER (WHERE vote.from_wikidot = TRUE) \
+            END, 0) + COUNT(vote.page_vote_id) FILTER (WHERE vote.from_wikidot = FALSE))::bigint AS effective_votes \
+        FROM page p \
+        LEFT JOIN wikidot_page_snapshot snapshot ON snapshot.page_id = p.page_id \
+        LEFT JOIN page_vote vote ON vote.page_id = p.page_id AND vote.deleted_at IS NULL AND vote.disabled_at IS NULL \
+        WHERE p.page_id = ANY($1) \
+        GROUP BY p.page_id, snapshot.meta_json",
+        [sea_orm::Value::from(page_ids.to_vec())],
+    ))
+    .all(txn)
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to load bulk ListPages scores",
+            ErrorType::PageQuery,
+        )
+    })?;
+    Ok(rows
+        .into_iter()
+        .map(|r| (r.page_id, r.effective_votes))
+        .collect())
 }
 
 pub(in crate::services::render) fn list_pages_total_match_key(
@@ -2050,6 +2433,80 @@ mod tests {
                     assert_eq!(wider.len(), (limit as usize).min(50 - offset as usize));
                 }
             }
+        }
+
+        #[test]
+        fn superset_score_selectors_sound_for_all_boundary_forms() {
+            let gt0 = [ScoreSelector {
+                score: ScoreValue::Integer(0),
+                comparison: ComparisonOperation::GreaterThan,
+            }];
+            let ge1 = [ScoreSelector {
+                score: ScoreValue::Integer(1),
+                comparison: ComparisonOperation::GreaterOrEqualThan,
+            }];
+            let eq1 = [ScoreSelector {
+                score: ScoreValue::Integer(1),
+                comparison: ComparisonOperation::Equal,
+            }];
+            let ne0 = [ScoreSelector {
+                score: ScoreValue::Integer(0),
+                comparison: ComparisonOperation::NotEqual,
+            }];
+            let sup = superset_score_selectors(&[&gt0, &ge1, &eq1, &ne0]);
+            assert_eq!(sup, ne0);
+
+            let broad_gt = [ScoreSelector {
+                score: ScoreValue::Integer(-999),
+                comparison: ComparisonOperation::GreaterThan,
+            }];
+            let broad_lt = [ScoreSelector {
+                score: ScoreValue::Integer(999),
+                comparison: ComparisonOperation::LessThan,
+            }];
+            assert!(superset_score_selectors(&[&broad_gt, &broad_lt]).is_empty());
+
+            let sel1 = [ScoreSelector {
+                score: ScoreValue::Integer(380),
+                comparison: ComparisonOperation::GreaterOrEqualThan,
+            }];
+            let sel2 = [ScoreSelector {
+                score: ScoreValue::Integer(385),
+                comparison: ComparisonOperation::Equal,
+            }];
+            assert_eq!(superset_score_selectors(&[&sel1, &sel2]), sel1);
+
+            // Exhaustive boundary check on fractional stars and integer scores
+            let half = ExactScore {
+                is_stars: true,
+                sum: 1,
+                count: 2,
+            };
+            let third = ExactScore {
+                is_stars: true,
+                sum: 4,
+                count: 3,
+            };
+            let one = ExactScore {
+                is_stars: true,
+                sum: 2,
+                count: 2,
+            };
+            let zero_novote = ExactScore {
+                is_stars: true,
+                sum: 0,
+                count: 0,
+            };
+            let neg = ExactScore {
+                is_stars: false,
+                sum: -1,
+                count: 1,
+            };
+            assert!(half.matches_all(&gt0) && !half.matches_all(&ge1));
+            assert!(third.matches_all(&gt0) && third.matches_all(&ge1));
+            assert!(one.matches_all(&eq1));
+            assert!(!zero_novote.matches_all(&sup));
+            assert!(neg.matches_all(&sup));
         }
     }
 }
