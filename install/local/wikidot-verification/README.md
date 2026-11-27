@@ -48,12 +48,14 @@ and test it offline thereafter.
 
 ## Deepwell test stacks seed once
 
-`scripts/run-deepwell-integration-validation.mjs` runs the Deepwell suite as nextest shards, each on its own PostgreSQL, Valkey, and MinIO containers with one active test at a time. The shard parent seeds one stack, captures its PostgreSQL dump, MinIO bucket trees, and Valkey keys, and every shard restores that capture instead of running the seeder itself. A failed capture or restore discards that stack and seeds it the old way, with a loud log line.
+`scripts/run-deepwell-integration-validation.mjs` runs Deepwell tests against task-owned PostgreSQL, Valkey, and MinIO containers. A single-stack invocation prepares one keyed seed capture and restores it into that stack by default; a sharded run prepares one capture and restores it into every shard instead of running the seeder in each one. A failed capture or restore discards that stack and seeds it the old way, with a loud log line.
 
-The capture is keyed by everything that changes seeded state: migrations, the seeder directory, the locales it reads, `install/local/deepwell/config.toml`, the Deepwell binary, and the three image IDs. Every shard of one run shares the id layout of that one seeding; the seeder's own id layout varies between runs.
+The capture is keyed by everything that changes seeded state: migrations, the seeder directory, the locales it reads, `install/local/deepwell/config.toml`, the Deepwell binary, and the three image IDs. It holds the PostgreSQL dump, MinIO bucket trees, and Valkey keys from that seeding. Every stack restored from one capture shares the id layout of that one seeding; because the default cache persists, that sharing can extend across separate validation runs. The seeder's own id layout varies between independent seeding runs.
 
-- `WIKIJUMP_DEEPWELL_SEED_CAPTURE=off` restores per-stack seeding.
-- `WIKIJUMP_DEEPWELL_SEED_CAPTURE_ROOT=<dir>` keeps keyed captures across runs. This saves another 65 to 75 s (measured, 12 shards), but seeded rows then carry the capture's wall-clock times into later runs. Do not set it for a validation whose result is recorded as a PASS.
+Keyed captures persist under `$XDG_CACHE_HOME/wikijump/deepwell-seed-captures` when `XDG_CACHE_HOME` is set, and under `~/.cache/wikijump/deepwell-seed-captures` otherwise. That cache root may be swept; a missing or damaged capture is verified as absent or invalid and built again. Set `WIKIJUMP_DEEPWELL_SEED_CAPTURE_ROOT=<dir>` to choose another cache root. Seeded rows carry the capture's wall-clock times into later runs.
+
+- `WIKIJUMP_DEEPWELL_SEED_CAPTURE=off` restores per-stack migrations and seeding for tests that validate those paths or require a freshly seeded clock or freshly generated identifiers.
+- `WIKIJUMP_DEEPWELL_SEED_CAPTURE=<dir>` restores one already prepared capture directory without preparing the keyed cache first.
 
 ## Syntax differential runner
 
