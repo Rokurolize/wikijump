@@ -21,10 +21,15 @@
 mod locale;
 mod service;
 mod structs;
+mod wikidot_claim;
 
 pub use self::service::UserService;
 pub use self::structs::{
     ActivateUserFromWikidot, CreateUser, CreateUserOutput, DeleteUser, GetUser,
     GetUserOutput, PasswordChangeOutcome, UpdateUser, UpdateUserBody, User, UserOutput,
     UserStub, WikijumpUserOutput,
+};
+pub use self::wikidot_claim::{
+    IssuedWikidotClaimToken, RedeemedWikidotClaim, WikidotClaimService,
+    WikidotOwnershipVerifier, WikidotProfileChallengeVerifier, WikidotProofKind,
 };

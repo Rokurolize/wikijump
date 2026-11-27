@@ -23,9 +23,15 @@ use crate::constants::ADMIN_USER_ID;
 use crate::models::user::Model as UserModel;
 use crate::models::wikidot_user::Entity as WikidotUser;
 use crate::services::authentication::AuthenticateUser;
+use crate::services::email::{
+    EmailService, EmailTokenPurpose, EmailTokenService, IssueEmailToken,
+    IssueEmailTokenOutcome,
+};
 use crate::services::user::{
     ActivateUserFromWikidot, CreateUser, CreateUserOutput, DeleteUser, GetUser,
-    GetUserOutput, UpdateUser, User, UserOutput, WikijumpUserOutput,
+    GetUserOutput, IssuedWikidotClaimToken, UpdateUser, User, UserOutput,
+    WikidotClaimService, WikidotProfileChallengeVerifier, WikidotProofKind,
+    WikijumpUserOutput,
 };
 use crate::services::{
     AuthenticationAttemptService, AuthenticationService, MutationAuthorization,
@@ -185,6 +191,132 @@ pub async fn user_activate_from_wikidot(
                 ErrorType::User,
             )
         })
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct IssueWikidotClaimInput {
+    wikidot_user_id: i64,
+    ip_address: IpAddr,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct StartWikidotClaimChallengeInput {
+    wikidot_user_id: i64,
+    proof_kind: WikidotProofKind,
+    ip_address: IpAddr,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct VerifyWikidotClaimChallengeInput {
+    token: String,
+    ip_address: IpAddr,
+}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SelfActivateFromWikidotInput {
+    claim_token: String,
+    email: String,
+    locales: Vec<String>,
+    password: String,
+    ip_address: IpAddr,
+}
+
+pub async fn wikidot_claim_issue(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<IssuedWikidotClaimToken> {
+    MutationAuthorization::require_platform_staff(ctx, "Wikidot claim token issuance")?;
+    let input: IssueWikidotClaimInput = parse!(params, User);
+    WikidotClaimService::issue_staff_claim(ctx, input.wikidot_user_id, input.ip_address)
+        .await
+}
+
+pub async fn wikidot_claim_challenge_start(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<IssuedWikidotClaimToken> {
+    let input: StartWikidotClaimChallengeInput = parse!(params, User);
+    check_registration_rate_limit(ctx, &input.ip_address.to_string()).await?;
+    WikidotClaimService::start_challenge(
+        ctx,
+        input.wikidot_user_id,
+        input.proof_kind,
+        input.ip_address,
+    )
+    .await
+}
+
+pub async fn wikidot_claim_challenge_verify(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<WikidotProofKind> {
+    let input: VerifyWikidotClaimChallengeInput = parse!(params, User);
+    check_registration_rate_limit(ctx, &input.ip_address.to_string()).await?;
+    let verifier = WikidotProfileChallengeVerifier::default();
+    WikidotClaimService::verify_challenge(ctx, &input.token, &verifier).await
+}
+
+pub async fn user_self_activate_from_wikidot(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<UserModel> {
+    info!("Self-service activating a Wikijump user from a Wikidot user record");
+    let input: SelfActivateFromWikidotInput = parse!(params, User);
+    check_registration_rate_limit(ctx, &input.ip_address.to_string()).await?;
+
+    let redeemed = WikidotClaimService::redeem(ctx, &input.claim_token).await?;
+    let user = UserService::activate_from_wikidot(
+        ctx,
+        ActivateUserFromWikidot {
+            user_id: redeemed.wikidot_user_id,
+            user_type: UserType::Regular,
+            email: input.email,
+            locales: input.locales,
+            password: input.password,
+            bypass_filter: false,
+            bypass_email_verification: false,
+            ip_address: input.ip_address,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to self-activate a Wikijump user from a Wikidot user record",
+            ErrorType::User,
+        )
+    })?;
+
+    if let IssueEmailTokenOutcome::Issued(issued) = EmailTokenService::issue(
+        ctx,
+        IssueEmailToken {
+            user_id: user.user_id,
+            email: user.email.clone(),
+            purpose: EmailTokenPurpose::VerifyEmail,
+            ip_address: input.ip_address,
+        },
+    )
+    .await
+    .or_raise(|| {
+        Error::new(
+            "failed to issue verification email for activated Wikidot user",
+            ErrorType::Email,
+        )
+    })? {
+        EmailService::send_token_email(
+            ctx,
+            &user.email,
+            EmailTokenPurpose::VerifyEmail,
+            &issued,
+            &user.locales,
+        )
+        .await;
+    }
+
+    Ok(user)
 }
 
 pub async fn user_get(

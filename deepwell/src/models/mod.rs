@@ -46,4 +46,5 @@ pub mod text;
 pub mod text_block;
 pub mod user;
 pub mod user_role;
+pub mod wikidot_claim_token;
 pub mod wikidot_user;
