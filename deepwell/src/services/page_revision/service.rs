@@ -64,7 +64,7 @@ use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, JoinType,
     PaginatorTrait, QueryFilter, QueryOrder, QuerySelect, RelationTrait, Set,
 };
-use sea_query::{Order, Query, SimpleExpr};
+use sea_query::{Alias, Expr, Order, Query, SimpleExpr};
 use std::collections::BTreeMap;
 use std::num::NonZeroI32;
 use std::sync::LazyLock;
@@ -1806,6 +1806,69 @@ impl PageRevisionService {
             .or_raise(make_error)?;
         compiled_html.extend(rows);
         Ok(compiled_html)
+    }
+
+    /// Batch-loads the latest compiled body HTML and wikitext for `page_ids` in `site_id`
+    /// in a single grouped query, so callers can detect visibility-sensitive pages without
+    /// per-row queries or re-renders.
+    pub async fn get_compiled_body_html_with_wikitext_optional_batch(
+        ctx: &ServiceContext<'_>,
+        site_id: i64,
+        page_ids: &[i64],
+    ) -> Result<BTreeMap<i64, (Option<String>, Option<String>)>> {
+        let mut results = page_ids
+            .iter()
+            .copied()
+            .map(|page_id| (page_id, (None, None)))
+            .collect::<BTreeMap<_, _>>();
+        if page_ids.is_empty() {
+            return Ok(results);
+        }
+
+        let make_error = || {
+            Error::new(
+                format!(
+                    "failed to get latest compiled body HTML and wikitext for {} pages in site ID {}",
+                    page_ids.len(),
+                    site_id,
+                ),
+                ErrorType::PageRevision,
+            )
+        };
+        let compiled_alias = Alias::new("compiled_body_text");
+        let wikitext_alias = Alias::new("wikitext_text");
+        let rows = Page::find()
+            .select_only()
+            .column(page::Column::PageId)
+            .expr_as(
+                Expr::col((compiled_alias.clone(), text::Column::Contents)),
+                "compiled_body_html",
+            )
+            .expr_as(
+                Expr::col((wikitext_alias.clone(), text::Column::Contents)),
+                "wikitext",
+            )
+            .join(JoinType::LeftJoin, page::Relation::PageRevision.def())
+            .join_as(
+                JoinType::LeftJoin,
+                page_revision::Relation::Text4.def(),
+                compiled_alias,
+            )
+            .join_as(
+                JoinType::LeftJoin,
+                page_revision::Relation::Text1.def(),
+                wikitext_alias,
+            )
+            .filter(page::Column::SiteId.eq(site_id))
+            .filter(page::Column::PageId.is_in(page_ids.iter().copied()))
+            .into_tuple::<(i64, Option<String>, Option<String>)>()
+            .all(ctx.transaction())
+            .await
+            .or_raise(make_error)?;
+        for (page_id, compiled_html, wikitext) in rows {
+            results.insert(page_id, (compiled_html, wikitext));
+        }
+        Ok(results)
     }
 
     pub async fn get_wikitext_scalar_count_optional_batch(

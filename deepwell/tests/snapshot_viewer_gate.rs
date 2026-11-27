@@ -451,4 +451,58 @@ async fn stored_snapshot_never_serves_rows_the_viewer_cannot_see() {
     .compiled_body_html
     .expect("plain revision should carry compiled HTML");
     assert_eq!(plain_served, plain_stored);
+
+    // Residual A: ListPages %%preview%% batch path must never leak pre-fix
+    // baked rows to anonymous viewers, must still render authorized rows,
+    // and must keep viewer-independent plain previews intact.
+    let preview_wikitext =
+        format!("[[module ListPages name=\"{holder_slug}\"]]\n%%preview%%\n[[/module]]",);
+    let list_pages_preview = |viewer: Option<i64>, wikitext: String| {
+        RenderService::render_page_for_viewer(
+            runner.context(),
+            wikitext,
+            &page_info,
+            Layout::Wikidot,
+            PageId {
+                site_id: holder_site_id,
+                category_id: holder_page.page_category_id,
+                page_id: holder_page_id,
+            },
+            viewer,
+            UrlArguments::default(),
+        )
+    };
+    let anonymous_preview = list_pages_preview(None, preview_wikitext.clone())
+        .await
+        .expect("anonymous ListPages %%preview%% should render")
+        .html_output
+        .body;
+    let anonymous_preview_count = anonymous_preview.matches(&marker).count();
+    println!("anonymous ListPages %%preview%% markers: {anonymous_preview_count}");
+    assert_eq!(
+        anonymous_preview_count, 0,
+        "anonymous ListPages %%preview%% must not serve the gated rows: {anonymous_preview}",
+    );
+    let authorized_preview = list_pages_preview(Some(ADMIN_USER_ID), preview_wikitext)
+        .await
+        .expect("authorized ListPages %%preview%% should render")
+        .html_output
+        .body;
+    let authorized_preview_count = authorized_preview.matches(&marker).count();
+    println!("authorized ListPages %%preview%% markers: {authorized_preview_count}");
+    assert!(
+        authorized_preview_count >= 1,
+        "authorized ListPages %%preview%% must still include rows from the gated site: {authorized_preview}",
+    );
+    let plain_preview_wikitext =
+        format!("[[module ListPages name=\"{plain_slug}\"]]\n%%preview%%\n[[/module]]",);
+    let plain_preview = list_pages_preview(None, plain_preview_wikitext)
+        .await
+        .expect("plain ListPages %%preview%% should render")
+        .html_output
+        .body;
+    assert!(
+        plain_preview.contains(&plain_body),
+        "plain ListPages %%preview%% must preserve viewer-independent preview text: {plain_preview}",
+    );
 }

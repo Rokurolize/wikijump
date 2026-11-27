@@ -101,6 +101,7 @@ pub(super) async fn render_body_for_module_arguments(
         language: cow!(locale_for_ftml(&site.locale)),
     };
 
+    let is_visibility_sensitive = wikitext_has_visibility_sensitive_module(&wikitext);
     let output = RenderService::render_page_for_viewer(
         ctx,
         wikitext,
@@ -121,11 +122,21 @@ pub(super) async fn render_body_for_module_arguments(
     match output {
         Ok(output) => Ok(output.html_output.body),
         Err(error) if saved_render_answers_failed_render(module_arguments, &error) => {
-            warn!(
-                "Serving the saved render of page ID {} after the live render timed out",
-                page.page_id,
-            );
-            Ok(stored_body_html)
+            if is_visibility_sensitive {
+                warn!(
+                    "Serving a viewer-safe timeout fallback for page ID {} after the live render timed out",
+                    page.page_id,
+                );
+            } else {
+                warn!(
+                    "Serving the saved render of page ID {} after the live render timed out",
+                    page.page_id,
+                );
+            }
+            Ok(timeout_fallback_body(
+                is_visibility_sensitive,
+                stored_body_html,
+            ))
         }
         Err(error) => Err(error),
     }
@@ -177,6 +188,23 @@ pub(crate) async fn viewer_safe_compiled_body(
     .await
 }
 
+const VIEWER_SAFE_TIMEOUT_FALLBACK_HTML: &str = r#"<div class="wikidot-runtime-module" data-wikidot-module="visibility-sensitive-timeout"></div>"#;
+
+/// Returns a safe fallback body when a bare-URL live render times out:
+/// viewer-independent pages keep their stored snapshot byte-identically,
+/// while visibility-sensitive pages receive a neutral placeholder so pre-fix
+/// baked snapshots are never served raw.
+fn timeout_fallback_body(
+    is_visibility_sensitive: bool,
+    stored_body_html: String,
+) -> String {
+    if is_visibility_sensitive {
+        VIEWER_SAFE_TIMEOUT_FALLBACK_HTML.to_owned()
+    } else {
+        stored_body_html
+    }
+}
+
 fn saved_render_answers_failed_render(
     module_arguments: &PageModuleArguments,
     error: &Exn<Error>,
@@ -219,5 +247,31 @@ mod tests {
             &paged,
             &failed_render(ErrorType::RenderTimeout),
         ));
+    }
+
+    #[test]
+    fn timeout_fallback_preserves_plain_and_gates_sensitive_pages() {
+        let plain_html = String::from("<p>Plain body</p>");
+        assert_eq!(
+            timeout_fallback_body(
+                wikitext_has_visibility_sensitive_module("Plain body"),
+                plain_html.clone(),
+            ),
+            plain_html,
+        );
+
+        let leaky_html = String::from("<p>LEAKED_GATED_SITE</p>");
+        for wikitext in [
+            "[[module PlatformActivity]]",
+            "[[module PlatformSites]]",
+            "[[module SiteChanges]]",
+        ] {
+            let fallback = timeout_fallback_body(
+                wikitext_has_visibility_sensitive_module(wikitext),
+                leaky_html.clone(),
+            );
+            assert_eq!(fallback, VIEWER_SAFE_TIMEOUT_FALLBACK_HTML);
+            assert!(!fallback.contains("LEAKED_GATED_SITE"));
+        }
     }
 }

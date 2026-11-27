@@ -49,6 +49,8 @@ use super::{
     wikidot_content_section,
 };
 use crate::hash::k12_hash;
+use crate::services::render::wikitext_has_visibility_sensitive_module;
+use crate::services::view::viewer_safe_compiled_body;
 
 fn list_pages_total_query<'a>(
     query: &PageQuery<'a>,
@@ -765,15 +767,37 @@ impl RenderService {
                 }
             }
             for (site_id, page_ids) in missing_by_site {
-                let loaded = PageRevisionService::get_compiled_body_html_optional_batch(
+                let loaded = PageRevisionService::get_compiled_body_html_with_wikitext_optional_batch(
                     ctx, site_id, &page_ids,
                 )
                 .await?;
-                content_cache.compiled_body_html.extend(
-                    loaded.into_iter().map(|(page_id, compiled_html)| {
-                        ((site_id, page_id), compiled_html)
-                    }),
-                );
+                for (page_id, (compiled_html, wikitext)) in loaded {
+                    let safe_html = match (compiled_html, wikitext) {
+                        (Some(stored_body), Some(wikitext))
+                            if wikitext_has_visibility_sensitive_module(&wikitext) =>
+                        {
+                            let page_revision =
+                                PageRevisionService::get_latest(ctx, site_id, page_id)
+                                    .await?;
+                            Some(
+                                viewer_safe_compiled_body(
+                                    ctx,
+                                    site_id,
+                                    page_id,
+                                    &page_revision,
+                                    Some(&wikitext),
+                                    viewer_user_id,
+                                    stored_body,
+                                )
+                                .await?,
+                            )
+                        }
+                        (compiled_html, _) => compiled_html,
+                    };
+                    content_cache
+                        .compiled_body_html
+                        .insert((site_id, page_id), safe_html);
+                }
             }
         }
         if wants_size {
