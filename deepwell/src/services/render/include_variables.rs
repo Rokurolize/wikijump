@@ -33,13 +33,6 @@ use ftml::{self};
 
 pub(super) const MAX_INCLUDE_VARIABLE_EXPANDED_BYTES: usize = 768_000;
 
-pub(super) fn apply_include_variables(
-    content: &mut String,
-    include: &IncludeRef<'_>,
-) -> Result<()> {
-    apply_include_variables_with_budget(content, include, None)
-}
-
 pub(in crate::services::render) fn apply_include_variables_with_budget(
     content: &mut String,
     include: &IncludeRef<'_>,
@@ -88,17 +81,7 @@ pub(in crate::services::render) fn apply_include_variables_with_budget(
     Ok(())
 }
 
-pub(super) fn apply_include_variables_before_resolving_iftags(
-    content: &mut String,
-    include: &IncludeRef<'_>,
-    page_info: &PageInfo<'_>,
-) -> Result<()> {
-    apply_include_variables_before_resolving_iftags_with_budget(
-        content, include, page_info, None,
-    )
-}
-
-pub(super) fn apply_include_variables_before_resolving_iftags_with_budget(
+pub(in crate::services::render) fn apply_include_variables_before_resolving_iftags_with_budget(
     content: &mut String,
     include: &IncludeRef<'_>,
     page_info: &PageInfo<'_>,
@@ -109,22 +92,7 @@ pub(super) fn apply_include_variables_before_resolving_iftags_with_budget(
     Ok(())
 }
 
-pub(super) fn prepare_include_source_variables_and_comment_branches(
-    content: &mut String,
-    include: &IncludeRef<'_>,
-    page_info: &PageInfo<'_>,
-    compat_text: &mut CompatTextFragments,
-) -> Result<()> {
-    prepare_include_source_variables_and_comment_branches_with_budget(
-        content,
-        include,
-        page_info,
-        compat_text,
-        None,
-    )
-}
-
-pub(super) fn prepare_include_source_variables_and_comment_branches_with_budget(
+pub(in crate::services::render) fn prepare_include_source_variables_and_comment_branches_with_budget(
     content: &mut String,
     include: &IncludeRef<'_>,
     page_info: &PageInfo<'_>,
@@ -213,7 +181,7 @@ mod tests {
         let include = include(&[("x", "{$y}{$y}{$y}{$y}"), ("y", "{$x}{$x}{$x}{$x}")]);
         let mut content = "{$x}".to_owned();
 
-        apply_include_variables(&mut content, &include)
+        apply_include_variables_with_budget(&mut content, &include, None)
             .expect("two-step fold must stay within budget");
 
         assert_eq!(content, "{$x}".repeat(16));
@@ -235,7 +203,7 @@ mod tests {
         );
         let mut content = "{$x}{$y}".to_owned();
 
-        let error = apply_include_variables(&mut content, &include)
+        let error = apply_include_variables_with_budget(&mut content, &include, None)
             .expect_err("the two-step fold must exceed the byte ceiling");
 
         assert_eq!(content.len(), MAX_INCLUDE_VARIABLE_EXPANDED_BYTES + 2);
@@ -248,7 +216,7 @@ mod tests {
             include_with_arguments(&[("first", "{$second}"), ("second", "final")]);
         let mut content = "{$first}".to_owned();
 
-        apply_include_variables(&mut content, &include)
+        apply_include_variables_with_budget(&mut content, &include, None)
             .expect("fold must stay within budget");
 
         assert_eq!(content, "final");
@@ -260,7 +228,7 @@ mod tests {
             include_with_arguments(&[("first", "kept"), ("second", "{$first}")]);
         let mut content = "{$second}".to_owned();
 
-        apply_include_variables(&mut content, &include)
+        apply_include_variables_with_budget(&mut content, &include, None)
             .expect("fold must stay within budget");
 
         assert_eq!(content, "{$first}");
@@ -271,7 +239,7 @@ mod tests {
         let include = include_with_arguments(&[("x", "prefix {$x}")]);
         let mut content = "{$x}".to_owned();
 
-        apply_include_variables(&mut content, &include)
+        apply_include_variables_with_budget(&mut content, &include, None)
             .expect("fold must stay within budget");
 
         assert_eq!(content, "prefix {$x}");
@@ -283,7 +251,7 @@ mod tests {
             include_with_arguments(&[("author", "{$shadow}"), ("shadow", "yes")]);
         let mut content = "{$author}|{$shadow}".to_owned();
 
-        apply_include_variables(&mut content, &include)
+        apply_include_variables_with_budget(&mut content, &include, None)
             .expect("fold must stay within budget");
 
         assert_eq!(content, "yes|yes");

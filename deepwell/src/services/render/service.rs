@@ -116,8 +116,8 @@ use super::include_resolution::{
 use super::include_variable_iftags::resolve_unbound_include_variable_iftags;
 #[cfg(test)]
 use super::include_variables::{
-    apply_include_variables, apply_include_variables_before_resolving_iftags,
-    prepare_include_source_variables_and_comment_branches,
+    apply_include_variables_before_resolving_iftags_with_budget,
+    apply_include_variables_with_budget,
 };
 use super::include_variables::{
     is_include_variable_name,
