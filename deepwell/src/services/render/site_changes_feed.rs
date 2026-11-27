@@ -18,6 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
+use super::render_budget::{RenderCostBudget, SharedRenderCostBudget};
 use super::service::RenderService;
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::services::page::foreign_snapshot_exclusion_sql;
@@ -105,11 +106,21 @@ pub fn wikidot_site_changes_change_type(
     "metadata".to_owned()
 }
 
+pub(super) fn charge_site_changes_feed_body_bytes(
+    render_cost_budget: &SharedRenderCostBudget,
+    body_html: &str,
+) -> Result<()> {
+    render_cost_budget
+        .charge_expanded_bytes(body_html.len(), "site changes feed")
+        .map_err(|error| Error::new(error.to_string(), ErrorType::Render).into())
+}
+
 impl RenderService {
     pub async fn wikidot_site_changes_feed(
         ctx: &ServiceContext<'_>,
         site_id: i64,
     ) -> Result<Option<WikidotSiteChangesFeedOutput>> {
+        let render_cost_budget = RenderCostBudget::new_default();
         let viewer_user_id = ctx.request().user_id().ok();
         let site_viewable = PermissionService::check_user_can(
             ctx,
@@ -278,6 +289,7 @@ impl RenderService {
                 let body_html = TextService::get(ctx, &row.compiled_html_hash)
                     .await
                     .or_raise(make_error)?;
+                charge_site_changes_feed_body_bytes(&render_cost_budget, &body_html)?;
                 items.push(WikidotSiteChangesFeedItem {
                     revision_id: row.revision_id,
                     revision_number: row.revision_number,
@@ -374,5 +386,21 @@ mod tests {
             wikidot_site_changes_change_type(false, false, &changes(&["parent", "tags"])),
             "tags"
         );
+    }
+
+    #[test]
+    fn site_changes_feed_charges_cumulative_expanded_byte_budget() {
+        use super::super::render_budget::RenderCostBudget;
+        use super::charge_site_changes_feed_body_bytes;
+
+        let budget = RenderCostBudget::new_default();
+        let item_body = "x".repeat(500_000);
+        for _ in 0..8 {
+            charge_site_changes_feed_body_bytes(&budget, &item_body)
+                .expect("8 x 500kB items fit within 4 MiB feed budget");
+        }
+        let error = charge_site_changes_feed_body_bytes(&budget, &item_body)
+            .expect_err("9th 500kB item must exceed 4 MiB feed budget");
+        assert!(format!("{error:?}").contains("site changes feed"));
     }
 }

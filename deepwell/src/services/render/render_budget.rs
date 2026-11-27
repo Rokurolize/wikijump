@@ -2,23 +2,26 @@ use std::fmt;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 
-pub(super) type SharedRenderCostBudget = Arc<RenderCostBudget>;
+pub(in crate::services::render) type SharedRenderCostBudget = Arc<RenderCostBudget>;
 
-pub(super) const DEFAULT_RENDER_COST_UNITS: u64 = 1_000_000;
-pub(super) const MAX_SELECTED_CONTENT_RENDER_DEPTH: usize = 8;
+pub(in crate::services::render) const DEFAULT_RENDER_COST_UNITS: u64 = 1_000_000;
+pub(in crate::services::render) const DEFAULT_EXPANDED_OUTPUT_BYTE_BUDGET: usize =
+    4 * 1024 * 1024;
+pub(in crate::services::render) const MAX_SELECTED_CONTENT_RENDER_DEPTH: usize = 8;
 
 #[derive(Debug)]
-pub(super) struct RenderCostBudget {
+pub(in crate::services::render) struct RenderCostBudget {
     remaining: AtomicU64,
+    remaining_expanded_bytes: AtomicUsize,
     nested_render_depth: AtomicUsize,
     exhausted: AtomicUsize,
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(super) struct RenderBudgetExceeded {
-    pub(super) operation: &'static str,
-    pub(super) requested: u64,
-    pub(super) remaining: u64,
+pub(in crate::services::render) struct RenderBudgetExceeded {
+    pub(in crate::services::render) operation: &'static str,
+    pub(in crate::services::render) requested: u64,
+    pub(in crate::services::render) remaining: u64,
 }
 
 impl fmt::Display for RenderBudgetExceeded {
@@ -34,16 +37,51 @@ impl fmt::Display for RenderBudgetExceeded {
 impl std::error::Error for RenderBudgetExceeded {}
 
 impl RenderCostBudget {
-    pub(super) fn new(maximum: u64) -> SharedRenderCostBudget {
+    pub(in crate::services::render) fn new(maximum: u64) -> SharedRenderCostBudget {
+        Self::with_expanded_byte_budget(maximum, DEFAULT_EXPANDED_OUTPUT_BYTE_BUDGET)
+    }
+
+    pub(in crate::services::render) fn with_expanded_byte_budget(
+        maximum: u64,
+        maximum_expanded_bytes: usize,
+    ) -> SharedRenderCostBudget {
         Arc::new(Self {
             remaining: AtomicU64::new(maximum),
+            remaining_expanded_bytes: AtomicUsize::new(maximum_expanded_bytes),
             nested_render_depth: AtomicUsize::new(0),
             exhausted: AtomicUsize::new(0),
         })
     }
 
-    pub(super) fn new_default() -> SharedRenderCostBudget {
+    pub(in crate::services::render) fn new_default() -> SharedRenderCostBudget {
         Self::new(DEFAULT_RENDER_COST_UNITS)
+    }
+
+    pub(in crate::services::render) fn charge_expanded_bytes(
+        &self,
+        requested: usize,
+        operation: &'static str,
+    ) -> Result<(), RenderBudgetExceeded> {
+        let mut remaining = self.remaining_expanded_bytes.load(Ordering::Relaxed);
+        loop {
+            if requested > remaining {
+                self.exhausted.store(1, Ordering::Relaxed);
+                return Err(RenderBudgetExceeded {
+                    operation,
+                    requested: requested as u64,
+                    remaining: remaining as u64,
+                });
+            }
+            match self.remaining_expanded_bytes.compare_exchange_weak(
+                remaining,
+                remaining - requested,
+                Ordering::Relaxed,
+                Ordering::Relaxed,
+            ) {
+                Ok(_) => return Ok(()),
+                Err(observed) => remaining = observed,
+            }
+        }
     }
 
     pub(super) fn charge(
@@ -147,4 +185,45 @@ fn nested_render_guard_shares_depth_across_budget_clones() {
     clone
         .enter_nested_render(1)
         .expect("dropping the guard releases the depth");
+}
+
+#[test]
+fn expanded_byte_budget_is_shared_across_operations() {
+    let budget = RenderCostBudget::with_expanded_byte_budget(100, 1_000);
+    let clone = Arc::clone(&budget);
+
+    budget
+        .charge_expanded_bytes(400, "include variable expansion")
+        .expect("first include fits");
+    clone
+        .charge_expanded_bytes(350, "selected-content render")
+        .expect("selected-content render fits");
+    let error = clone
+        .charge_expanded_bytes(300, "site changes feed")
+        .expect_err("cumulative bytes exceed 1000");
+
+    assert_eq!(error.operation, "site changes feed");
+    assert_eq!(error.requested, 300);
+    assert_eq!(error.remaining, 250);
+    assert!(budget.is_exhausted());
+}
+
+#[test]
+fn default_expanded_byte_budget_covers_legitimate_large_pages() {
+    let budget = RenderCostBudget::new_default();
+    let single_subcap = 768_000;
+
+    // Five full 768,000-byte includes (3.84 MB) fit under the 4 MiB default budget.
+    for _ in 0..5 {
+        budget
+            .charge_expanded_bytes(single_subcap, "include variable expansion")
+            .expect("legitimate large page includes fit");
+    }
+
+    // A sixth 768,000-byte include (4.608 MB) exceeds the 4 MiB default budget.
+    assert!(
+        budget
+            .charge_expanded_bytes(single_subcap, "include variable expansion")
+            .is_err()
+    );
 }

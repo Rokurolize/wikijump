@@ -21,6 +21,7 @@
 use super::compat::text_fragments::CompatTextFragments;
 use super::include_comment_branches::remove_unresolved_include_comment_branches_source_local;
 use super::include_variable_iftags::resolve_include_variable_iftags;
+use super::render_budget::SharedRenderCostBudget;
 use super::service::{
     INCLUDE_VARIABLE_CLOSE_SENTINEL, INCLUDE_VARIABLE_OPEN_SENTINEL,
     INCLUDE_VARIABLE_REGEX,
@@ -35,6 +36,14 @@ pub(super) const MAX_INCLUDE_VARIABLE_EXPANDED_BYTES: usize = 768_000;
 pub(super) fn apply_include_variables(
     content: &mut String,
     include: &IncludeRef<'_>,
+) -> Result<()> {
+    apply_include_variables_with_budget(content, include, None)
+}
+
+pub(in crate::services::render) fn apply_include_variables_with_budget(
+    content: &mut String,
+    include: &IncludeRef<'_>,
+    render_cost_budget: Option<&SharedRenderCostBudget>,
 ) -> Result<()> {
     let arguments = include.arguments();
     let names = arguments
@@ -70,6 +79,12 @@ pub(super) fn apply_include_variables(
         .into());
     }
 
+    if let Some(budget) = render_cost_budget {
+        budget
+            .charge_expanded_bytes(content.len(), "include variable expansion")
+            .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
+    }
+
     Ok(())
 }
 
@@ -78,7 +93,18 @@ pub(super) fn apply_include_variables_before_resolving_iftags(
     include: &IncludeRef<'_>,
     page_info: &PageInfo<'_>,
 ) -> Result<()> {
-    apply_include_variables(content, include)?;
+    apply_include_variables_before_resolving_iftags_with_budget(
+        content, include, page_info, None,
+    )
+}
+
+pub(super) fn apply_include_variables_before_resolving_iftags_with_budget(
+    content: &mut String,
+    include: &IncludeRef<'_>,
+    page_info: &PageInfo<'_>,
+    render_cost_budget: Option<&SharedRenderCostBudget>,
+) -> Result<()> {
+    apply_include_variables_with_budget(content, include, render_cost_budget)?;
     resolve_include_variable_iftags(content, include.variables(), page_info);
     Ok(())
 }
@@ -89,7 +115,28 @@ pub(super) fn prepare_include_source_variables_and_comment_branches(
     page_info: &PageInfo<'_>,
     compat_text: &mut CompatTextFragments,
 ) -> Result<()> {
-    apply_include_variables_before_resolving_iftags(content, include, page_info)?;
+    prepare_include_source_variables_and_comment_branches_with_budget(
+        content,
+        include,
+        page_info,
+        compat_text,
+        None,
+    )
+}
+
+pub(super) fn prepare_include_source_variables_and_comment_branches_with_budget(
+    content: &mut String,
+    include: &IncludeRef<'_>,
+    page_info: &PageInfo<'_>,
+    compat_text: &mut CompatTextFragments,
+    render_cost_budget: Option<&SharedRenderCostBudget>,
+) -> Result<()> {
+    apply_include_variables_before_resolving_iftags_with_budget(
+        content,
+        include,
+        page_info,
+        render_cost_budget,
+    )?;
     remove_unresolved_include_comment_branches_source_local(content, compat_text);
     Ok(())
 }
@@ -240,5 +287,110 @@ mod tests {
             .expect("fold must stay within budget");
 
         assert_eq!(content, "yes|yes");
+    }
+
+    #[test]
+    fn single_subcap_include_remains_unchanged_under_shared_budget() {
+        use super::super::render_budget::RenderCostBudget;
+
+        let budget = RenderCostBudget::new_default();
+        let payload = "a".repeat(500_000);
+        let include = include_with_arguments(&[("x", "")]);
+        let _ = include;
+        let variables = [(Cow::Borrowed("x"), Cow::Borrowed(payload.as_str()))]
+            .into_iter()
+            .collect::<VariableMap<'_>>();
+        let arguments = variables
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect::<IncludeArguments<'_>>();
+        let inc = IncludeRef::with_arguments(
+            PageRef::page_only("component:leaf"),
+            variables,
+            arguments,
+        );
+        let mut content = "{$x}".to_owned();
+
+        apply_include_variables_with_budget(&mut content, &inc, Some(&budget))
+            .expect("single sub-cap include must succeed");
+
+        assert_eq!(content.len(), 500_000);
+    }
+
+    #[test]
+    fn sibling_fanout_matrix_rejects_over_aggregate_budget() {
+        use super::super::render_budget::RenderCostBudget;
+
+        let leaf_payload = "a".repeat(500_000);
+        let variables = [(Cow::Borrowed("x"), Cow::Borrowed(leaf_payload.as_str()))]
+            .into_iter()
+            .collect::<VariableMap<'_>>();
+        let arguments = variables
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect::<IncludeArguments<'_>>();
+        let inc = IncludeRef::with_arguments(
+            PageRef::page_only("component:leaf"),
+            variables,
+            arguments,
+        );
+
+        for fanout in [1usize, 2, 4, 8] {
+            let budget = RenderCostBudget::new_default();
+            for _ in 0..fanout {
+                let mut content = "{$x}".to_owned();
+                apply_include_variables_with_budget(&mut content, &inc, Some(&budget))
+                    .expect("fanout <= 8x 500kB fits in 4 MiB budget");
+            }
+        }
+
+        let budget = RenderCostBudget::new_default();
+        let mut rejected_at = None;
+        for ordinal in 1..=16 {
+            let mut content = "{$x}".to_owned();
+            if apply_include_variables_with_budget(&mut content, &inc, Some(&budget))
+                .is_err()
+            {
+                rejected_at = Some(ordinal);
+                break;
+            }
+        }
+        assert_eq!(rejected_at, Some(9));
+    }
+
+    #[test]
+    fn nested_fanout_tree_rejects_over_aggregate_budget() {
+        use super::super::render_budget::RenderCostBudget;
+
+        let node_payload = "b".repeat(500_000);
+        let variables = [(Cow::Borrowed("x"), Cow::Borrowed(node_payload.as_str()))]
+            .into_iter()
+            .collect::<VariableMap<'_>>();
+        let arguments = variables
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect::<IncludeArguments<'_>>();
+        let inc = IncludeRef::with_arguments(
+            PageRef::page_only("component:fanout"),
+            variables,
+            arguments,
+        );
+        let budget = RenderCostBudget::new_default();
+        let mut expanded_nodes = 0usize;
+        let mut rejected = false;
+        'outer: for count in [1usize, 2, 4, 8, 16] {
+            for _ in 0..count {
+                let mut content = "{$x}".to_owned();
+                if apply_include_variables_with_budget(&mut content, &inc, Some(&budget))
+                    .is_err()
+                {
+                    rejected = true;
+                    break 'outer;
+                }
+                expanded_nodes += 1;
+            }
+        }
+        assert!(rejected);
+        assert_eq!(expanded_nodes, 8);
     }
 }
