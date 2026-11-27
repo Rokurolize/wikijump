@@ -26,7 +26,7 @@ use crate::services::settings::{
     SiteSettings, ToolbarSettings, UpdateGoogleAnalyticsSettings,
     UpdateMembershipSettings,
 };
-use crate::types::{AccessPolicy, Maybe, Reference};
+use crate::types::{AccessPolicy, Bytes, Maybe, Reference};
 use ftml::layout::Layout;
 use std::net::IpAddr;
 
@@ -66,6 +66,79 @@ pub struct DeleteSite<'a> {
 #[derive(Deserialize, Debug, Clone)]
 pub struct GetSiteBackup<'a> {
     pub site: Reference<'a>,
+    #[serde(default)]
+    pub version: Option<u32>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum PageCollisionPolicy {
+    #[default]
+    Skip,
+    Overwrite,
+    Rename,
+    Error,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum FileCollisionPolicy {
+    #[default]
+    Skip,
+    Overwrite,
+    Rename,
+    Error,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum DomainCollisionPolicy {
+    #[default]
+    Skip,
+    Error,
+}
+
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, Default, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum AliasCollisionPolicy {
+    #[default]
+    Skip,
+    Error,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ImportSiteBackup<'a> {
+    pub site: Reference<'a>,
+    pub archive: Bytes<'static>,
+    #[serde(default)]
+    pub page_collision: PageCollisionPolicy,
+    #[serde(default)]
+    pub file_collision: FileCollisionPolicy,
+    #[serde(default)]
+    pub domain_collision: DomainCollisionPolicy,
+    #[serde(default)]
+    pub alias_collision: AliasCollisionPolicy,
+    #[serde(default)]
+    pub ip_address: Option<IpAddr>,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct ImportSiteBackupOutput {
+    pub site_id: i64,
+    pub format_version: u32,
+    pub pages_created: usize,
+    pub pages_overwritten: usize,
+    pub pages_renamed: usize,
+    pub pages_skipped: usize,
+    pub files_created: usize,
+    pub files_overwritten: usize,
+    pub files_renamed: usize,
+    pub files_skipped: usize,
+    pub aliases_created: usize,
+    pub aliases_skipped: usize,
+    pub domains_created: usize,
+    pub domains_skipped: usize,
+    pub warnings: Vec<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

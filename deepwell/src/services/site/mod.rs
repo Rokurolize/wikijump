@@ -30,7 +30,9 @@ pub use self::bootstrap::{BootstrapNewSite, STANDARD_TEMPLATE_PAGES};
 pub use self::clone::{CloneSite, CloneSiteOutput, SiteCloneService};
 pub use self::service::SiteService;
 pub use self::structs::{
-    CreateSite, CreateSiteOutput, DeleteSite, EducationalUpgrade, GetSite, GetSiteBackup,
-    GetSiteIcon, GetSiteIconOutput, GetSiteOutput, SetSiteIcon, SetSiteIconOutput,
+    AliasCollisionPolicy, CreateSite, CreateSiteOutput, DeleteSite,
+    DomainCollisionPolicy, EducationalUpgrade, FileCollisionPolicy, GetSite,
+    GetSiteBackup, GetSiteIcon, GetSiteIconOutput, GetSiteOutput, ImportSiteBackup,
+    ImportSiteBackupOutput, PageCollisionPolicy, SetSiteIcon, SetSiteIconOutput,
     UpdateSite, UpdateSiteBody,
 };

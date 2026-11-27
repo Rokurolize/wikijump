@@ -28,7 +28,7 @@ use crate::services::permission::{CheckPermissionContext, PermissionService};
 use crate::services::site::{
     BootstrapNewSite, CloneSite, CloneSiteOutput, CreateSite, CreateSiteOutput,
     DeleteSite, GetSite, GetSiteBackup, GetSiteIcon, GetSiteIconOutput, GetSiteOutput,
-    SetSiteIcon, SetSiteIconOutput, UpdateSite,
+    ImportSiteBackup, ImportSiteBackupOutput, SetSiteIcon, SetSiteIconOutput, UpdateSite,
 };
 use crate::types::{Action, AliasType, Bytes, Permission, Reference, Resource};
 
@@ -246,7 +246,7 @@ pub async fn site_backup_export(
     ctx: &ServiceContext<'_>,
     params: Params<'static>,
 ) -> Result<Bytes<'static>> {
-    let GetSiteBackup { site } = parse!(params, Site);
+    let GetSiteBackup { site, version } = parse!(params, Site);
     let site_id = match site {
         Reference::Id(site_id) => site_id,
         Reference::Slug(_) => {
@@ -279,13 +279,57 @@ pub async fn site_backup_export(
         return Err(Error::new("cannot export a deleted site", ErrorType::Site).into());
     }
 
-    info!("Exporting backup of site ID {site_id} as user ID {actor_user_id}");
+    let version = version.unwrap_or(1);
+    info!("Exporting v{version} backup of site ID {site_id} as user ID {actor_user_id}");
 
-    let archive = SiteBackupService::export(ctx, site_id)
+    let archive = SiteBackupService::export_with_version(ctx, site_id, version)
         .await
         .or_raise(|| Error::new("failed to build site backup", ErrorType::Site))?;
 
     Ok(Bytes::from(archive))
+}
+
+pub async fn site_backup_import(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<ImportSiteBackupOutput> {
+    let input: ImportSiteBackup = parse!(params, Site);
+    let site = SiteService::get(ctx, input.site.clone())
+        .await
+        .or_raise(|| {
+            Error::new(
+                "failed to get target site for backup import",
+                ErrorType::Site,
+            )
+        })?;
+
+    if site.deleted_at.is_some() {
+        return Err(
+            Error::new("cannot import into a deleted site", ErrorType::Site).into(),
+        );
+    }
+
+    let actor_user_id = MutationAuthorization::require_permission(
+        ctx,
+        site.site_id,
+        None,
+        Permission {
+            resource_type: Resource::Site,
+            resource_category: None,
+            action: Action::Edit,
+        },
+        "import a site backup",
+    )
+    .await?;
+
+    info!(
+        "Importing backup into site ID {} as user ID {}",
+        site.site_id, actor_user_id
+    );
+
+    SiteBackupService::import(ctx, actor_user_id, site.site_id, input)
+        .await
+        .or_raise(|| Error::new("failed to import site backup", ErrorType::Site))
 }
 
 pub async fn site_icon_get(
