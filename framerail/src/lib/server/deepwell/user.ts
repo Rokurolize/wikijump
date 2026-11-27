@@ -167,6 +167,7 @@ interface UserCreateInput {
   locales: string[]
   password: string
   ipAddress: string
+  passcode?: string
   bypassFilter?: boolean
   bypassEmailVerification?: boolean
 }
@@ -178,6 +179,7 @@ export async function userCreate({
   locales,
   password,
   ipAddress,
+  passcode,
   bypassFilter = false,
   bypassEmailVerification = false
 }: UserCreateInput): Promise<UserCreate> {
@@ -188,6 +190,7 @@ export async function userCreate({
     locales,
     password,
     ip_address: ipAddress,
+    ...(passcode !== undefined ? { passcode } : {}),
     bypass_filter: bypassFilter,
     bypass_email_verification: bypassEmailVerification
   })

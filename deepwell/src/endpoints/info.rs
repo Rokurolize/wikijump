@@ -20,6 +20,7 @@
 
 use super::prelude::*;
 use crate::info;
+use crate::services::{PlatformSettingsService, RegistrationMode};
 use crate::utils::now;
 use std::path::PathBuf;
 use time::OffsetDateTime;
@@ -34,6 +35,7 @@ pub struct Info {
     pub hostname: &'static str,
     pub config_path: PathBuf,
     pub registration_open: bool,
+    pub registration_mode: RegistrationMode,
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -63,6 +65,7 @@ pub async fn server_info(
     _params: Params<'static>,
 ) -> Result<Info> {
     let config = ctx.config();
+    let registration_mode = PlatformSettingsService::registration_mode(ctx).await?;
 
     Ok(Info {
         package: PackageInfo {
@@ -83,7 +86,8 @@ pub async fn server_info(
             ftml_commit: info::FTML_COMMIT,
         },
         config_path: config.raw_toml_path.clone(),
-        registration_open: config.allow_registration,
+        registration_open: registration_mode == RegistrationMode::Open,
+        registration_mode,
         hostname: &info::HOSTNAME,
         current_time: now(),
     })

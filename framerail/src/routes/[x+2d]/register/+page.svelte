@@ -41,7 +41,7 @@
   )
 </script>
 
-{#if data.registrationOpen === false}
+{#if data.registrationMode === "closed"}
   <p role="status" class="register-disabled">
     {data.internationalization?.["register.disabled-notice"]}
   </p>
@@ -149,6 +149,25 @@
         {/each}
       </select>
     </div>
+
+    {#if data.registrationMode === "passcode"}
+      <label for="passcode">Registration passcode</label>
+      <div class="input-container">
+        <input
+          id="passcode"
+          name="passcode"
+          class="register-passcode"
+          autocomplete="one-time-code"
+          required
+          type="text"
+          bind:value={$form.passcode}
+        />
+        <p class="description">
+          Open registration is disabled. Enter a valid temporary passcode to create an
+          account.
+        </p>
+      </div>
+    {/if}
 
     <!--
       #2074 anti-bot honeypot mirroring the observed Wikidot signup control

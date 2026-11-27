@@ -19,6 +19,7 @@
  */
 
 use super::article_cache::{ArticlePageCache, ArticlePageCacheMetadataInput};
+use crate::constants::ADMIN_USER_ID;
 use super::module_arguments::PageModuleArguments;
 use super::module_render::{
     RenderBodyForModuleArgumentsInput, render_body_for_module_arguments,
@@ -2150,6 +2151,7 @@ ORDER BY breadcrumb_chain.depth ASC
                 categories,
                 page_templates,
                 is_master_admin: site.master_admin_user_id == user_id,
+                is_platform_staff: user_id == Some(ADMIN_USER_ID),
             }
         } else {
             warn!("User doesn't have admin access, returning permission page");

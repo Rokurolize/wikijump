@@ -204,6 +204,7 @@ impl UserService {
             bypass_filter,
             bypass_email_verification,
             override_user_id,
+            passcode: _,
             ip_address,
         }: CreateUser,
         reuse_existing_known_user: bool,
@@ -673,6 +674,7 @@ impl UserService {
                 bypass_filter,
                 bypass_email_verification,
                 override_user_id: Some(user_id),
+                passcode: None,
                 ip_address,
             },
         )

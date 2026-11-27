@@ -49,6 +49,12 @@ import {
   membershipApplicationList,
   membershipApplicationReview
 } from "$lib/server/deepwell/membership"
+import {
+  platformSettingsGet,
+  platformSettingUpdate,
+  registrationPasscodeIssue,
+  registrationPasscodeRevoke
+} from "$lib/server/deepwell/platform-settings"
 import { translate } from "$lib/server/deepwell/translate"
 import {
   failForActionError,
@@ -231,6 +237,15 @@ export async function loadAdminPage(
     valibot(blockLookupSchema)
   )
 
+  const isPlatformStaff =
+    response.type === "site_found" &&
+    response.data.is_platform_staff &&
+    Boolean(adminContext)
+  const platformSettings =
+    isPlatformStaff && adminContext
+      ? await platformSettingsGet(adminContext)
+      : null
+
   const viewData = {
     view: response.type,
     html: response.type === "admin_permissions" ? response.data.html : undefined,
@@ -260,7 +275,9 @@ export async function loadAdminPage(
     roles,
     rolePermissions,
     categories: response.type === "site_found" ? response.data.categories : [],
-    pageTemplates: response.type === "site_found" ? response.data.page_templates : []
+    pageTemplates: response.type === "site_found" ? response.data.page_templates : [],
+    isPlatformStaff,
+    platformSettings
   }
 
   return { ...parentData, ...viewData }
@@ -1497,3 +1514,96 @@ const blockLookupSchema = object({
   siteId: number(),
   userId: number()
 })
+
+export async function platformSettingUpdateAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const { siteId } = loadSiteInfo(request.headers)
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, { message: "platform staff session required" })
+  }
+
+  const formData = await request.formData()
+  const mode = String(formData.get("allowRegistrationMode") ?? "default")
+  const allowRegistration =
+    mode === "open" ? true : mode === "closed" ? false : null
+
+  try {
+    const settings = await platformSettingUpdate(
+      allowRegistration,
+      getClientAddress(),
+      { sessionToken, siteId }
+    )
+    return { settings }
+  } catch (err) {
+    return failForActionError(err, {})
+  }
+}
+
+export async function registrationPasscodeIssueAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const { siteId } = loadSiteInfo(request.headers)
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, { message: "platform staff session required" })
+  }
+
+  const formData = await request.formData()
+  const label = String(formData.get("label") ?? "").trim() || undefined
+  const expiresRaw = Number(formData.get("expiresInSeconds") ?? 86400)
+  const expiresInSeconds =
+    Number.isFinite(expiresRaw) && expiresRaw > 0 ? Math.trunc(expiresRaw) : 86400
+  const maxUsesStr = String(formData.get("maxUses") ?? "").trim()
+  const maxUses = maxUsesStr ? Math.trunc(Number(maxUsesStr)) : null
+  const passcode = String(formData.get("passcode") ?? "").trim() || undefined
+
+  try {
+    const issuedPasscode = await registrationPasscodeIssue(
+      {
+        label,
+        expiresInSeconds,
+        maxUses,
+        passcode,
+        ipAddress: getClientAddress()
+      },
+      { sessionToken, siteId }
+    )
+    return { issuedPasscode }
+  } catch (err) {
+    return failForActionError(err, {})
+  }
+}
+
+export async function registrationPasscodeRevokeAction({
+  request,
+  getClientAddress,
+  cookies
+}: RequestEvent) {
+  const { siteId } = loadSiteInfo(request.headers)
+  const sessionToken = cookies.get("wikijump_token")
+  if (!sessionToken) {
+    return fail(401, { message: "platform staff session required" })
+  }
+
+  const formData = await request.formData()
+  const passcodeId = Math.trunc(Number(formData.get("passcodeId")))
+  if (!Number.isFinite(passcodeId) || passcodeId <= 0) {
+    return fail(400, { message: "invalid passcodeId" })
+  }
+
+  try {
+    await registrationPasscodeRevoke(passcodeId, getClientAddress(), {
+      sessionToken,
+      siteId
+    })
+    return { revokedPasscodeId: passcodeId }
+  } catch (err) {
+    return failForActionError(err, {})
+  }
+}

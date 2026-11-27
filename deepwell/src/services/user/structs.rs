@@ -359,6 +359,8 @@ pub struct CreateUser {
 
     #[serde(default)]
     pub override_user_id: Option<i64>,
+    #[serde(default)]
+    pub passcode: Option<String>,
     pub ip_address: IpAddr,
 }
 

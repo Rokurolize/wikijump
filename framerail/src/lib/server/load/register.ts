@@ -85,11 +85,14 @@ export async function loadRegisterPage(request: Request, preloadData: PreloadDat
 
   const registerForm = await superValidate(valibot(registerSchema))
 
-  const { registration_open } = await info()
+  const { registration_open, registration_mode } = await info()
+  const registrationMode =
+    registration_mode ?? (registration_open ? "open" : "closed")
 
   return {
     isLoggedIn,
     registrationOpen: registration_open,
+    registrationMode,
     internationalization,
     registerForm,
     legalDestinations: legalDestinations(),
@@ -115,11 +118,27 @@ export async function registerAction({ request, getClientAddress }: RequestEvent
     )
   }
 
-  const { registration_open } = await info()
-  if (!registration_open) {
+  const { registration_open, registration_mode } = await info()
+  const registrationMode =
+    registration_mode ?? (registration_open ? "open" : "closed")
+  if (registrationMode === "closed") {
     return fail(
       403,
       redactAuthActionPayload({ form: clearRegisterPasswords(form) }, submittedPasswords)
+    )
+  }
+
+  const passcode = form.data.passcode?.trim()
+  if (registrationMode === "passcode" && !passcode) {
+    return fail(
+      400,
+      redactAuthActionPayload(
+        {
+          form: clearRegisterPasswords(form),
+          message: "A registration passcode is required."
+        },
+        submittedPasswords
+      )
     )
   }
 
@@ -133,7 +152,8 @@ export async function registerAction({ request, getClientAddress }: RequestEvent
       email: data.email,
       locales: data.locale,
       password: data.password,
-      ipAddress
+      ipAddress,
+      ...(passcode ? { passcode } : {})
     })
 
     return redactAuthActionPayload(
@@ -169,6 +189,7 @@ const registerSchema = pipe(
       check(accountPasswordMeetsMinimum, ACCOUNT_PASSWORD_TOO_SHORT)
     ),
     confirmPassword: pipe(string(), minLength(1)),
+    passcode: optional(string()),
     leaveBlank: optional(string()),
     locale: pipe(
       optional(array(string()), ["en"]),

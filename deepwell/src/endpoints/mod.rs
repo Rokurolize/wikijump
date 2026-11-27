@@ -63,6 +63,7 @@ pub mod all {
     pub use super::page_meta_tag::*;
     pub use super::page_revision::*;
     pub use super::parent::*;
+    pub use super::platform_settings::*;
     pub use super::role::*;
     pub use super::routing::*;
     pub use super::search::*;
@@ -104,6 +105,7 @@ pub mod page_lock;
 pub mod page_meta_tag;
 pub mod page_revision;
 pub mod parent;
+pub mod platform_settings;
 pub mod role;
 pub mod routing;
 pub mod search;

@@ -296,6 +296,7 @@ interface AdminViewSiteFound {
     categories: PageCategoryModel[]
     page_templates: PageTemplateSummary[]
     is_master_admin: boolean
+    is_platform_staff: boolean
   }
 }
 

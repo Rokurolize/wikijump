@@ -143,6 +143,7 @@ pub async fn bot_user_create(
             bypass_filter,
             bypass_email_verification,
             override_user_id: None,
+            passcode: None,
             ip_address,
         },
     )
