@@ -239,8 +239,8 @@
   }
 
   .wikitext-live-preview-status {
-    margin: 0;
     padding: 0.35em 0.7em;
+    margin: 0;
     font-size: 0.9em;
     border-bottom: 1px solid rgb(210, 210, 210);
   }
@@ -257,8 +257,8 @@
   }
 
   .wikitext-live-preview-error {
-    margin: 0;
     padding: 0.35em 0.7em;
+    margin: 0;
     color: rgb(120, 0, 0);
     background: rgb(255, 230, 230);
     border-bottom: 1px solid rgb(210, 160, 160);
