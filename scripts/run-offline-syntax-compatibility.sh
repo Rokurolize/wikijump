@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [[ "${WIKIJUMP_TEST_NETWORK_GUARD_ACTIVE:-}" != "1" ]]; then
   # The channel comes from the tree's own rust-toolchain.toml, so a
   # toolchain bump needs no change here.
-  channel="$(sed -n 's/^channel = "\([0-9.]*\)"/\1/p' "${ROOT}/rust-toolchain.toml")"
+  channel="$(sed -n 's/^channel = "\([^"]*\)"/\1/p' "${ROOT}/rust-toolchain.toml")"
   if [[ -z "${channel}" ]]; then
     echo "offline syntax compatibility could not read the Rust channel from rust-toolchain.toml" >&2
     exit 2

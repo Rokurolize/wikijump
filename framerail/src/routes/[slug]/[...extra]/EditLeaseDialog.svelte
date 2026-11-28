@@ -1,6 +1,13 @@
 <script lang="ts">
   import { getPageLayoutContext } from "$lib/layout/page-layout-context"
   import { Layout } from "$lib/types"
+  import {
+    currentEditorLabels,
+    formatEditorLabel
+  } from "$lib/wikidot/editor-labels-client"
+  import type { EditorLabels } from "$lib/wikidot/editor-labels"
+  import { focusDialog } from "$lib/util/editor-focus"
+  import { onDestroy, onMount } from "svelte"
 
   import type { EditLeaseConflict } from "$lib/wikidot/wikidot-edit-lease.js"
 
@@ -16,7 +23,8 @@
     onCopyText,
     onReacquire,
     onLeave,
-    onClose
+    onClose,
+    labels = currentEditorLabels()
   }: {
     kind: EditLeaseDialogKind
     conflicts?: EditLeaseConflict[]
@@ -28,9 +36,28 @@
     onReacquire?: () => void
     onLeave?: () => void
     onClose?: () => void
+    labels?: EditorLabels
   } = $props()
 
   const pageLayoutContext = getPageLayoutContext()
+  let dialog = $state<HTMLDivElement>()
+  let restoreFocus: (() => void) | undefined
+
+  onMount(() => {
+    if (dialog) restoreFocus = focusDialog(dialog)
+  })
+
+  onDestroy(() => {
+    restoreFocus?.()
+  })
+
+  const onKeydown = (event: KeyboardEvent) => {
+    if (event.key !== "Escape") return
+    const dismiss = onClose ?? onCancel
+    if (!dismiss) return
+    event.preventDefault()
+    dismiss()
+  }
 
   const formatRemaining = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60)
@@ -44,72 +71,93 @@
       : conflict.mode
 </script>
 
+<svelte:window onkeydown={onKeydown} />
+
 {#snippet body()}
   {#if kind === "conflict"}
-    <h1 id="edit-lease-dialog-title">The page is being edited</h1>
+    <h1 id="edit-lease-dialog-title">{labels.leaseTitleConflict}</h1>
     <p>
-      It seems that the page is currently being edited by another user. The details
-      follow:
+      {labels.leaseConflictDescription}
     </p>
     <ul class="edit-lease-conflicts">
       {#each conflicts as conflict (conflict.userId + conflict.mode)}
         <li>
-          User {conflict.userId} &mdash; lock mode: {modeLabel(conflict)} &mdash; time remaining:
-          {formatRemaining(conflict.secondsRemaining)}
+          {formatEditorLabel(labels, "leaseConflictUser", {
+            user: conflict.userId,
+            mode: modeLabel(conflict),
+            remaining: formatRemaining(conflict.secondsRemaining)
+          })}
         </li>
       {/each}
     </ul>
     <p>
-      You can wait for the lock to expire, or force the edit and take the lock over. The
-      other editor will then no longer be able to save.
+      {labels.leaseConflictChoice}
     </p>
   {:else if kind === "page_changed"}
-    <h1 id="edit-lease-dialog-title">The page has changed</h1>
+    <h1 id="edit-lease-dialog-title">{labels.leaseTitleChanged}</h1>
     <p>
-      The page was changed after you started editing, so your save was rejected. Your text
-      has not been merged with the current version.
+      {labels.leaseChangedDescription}
     </p>
     <p>
-      You can view the current page, reload the editor with the current text (losing your
-      changes), or copy your text before leaving.
+      {labels.leaseChangedChoice}
     </p>
   {:else}
-    <h1 id="edit-lease-dialog-title">Your edit lock was taken</h1>
+    <h1 id="edit-lease-dialog-title">{labels.leaseTitleTaken}</h1>
     <p>
-      Another editor took over the page edit lock, so your save was rejected. You can take
-      the lock back, which restarts your editing session against the current version, or
-      leave the editor.
+      {labels.leaseTakenDescription}
     </p>
   {/if}
 {/snippet}
 
 {#snippet buttons()}
   {#if kind === "conflict"}
-    <button class="btn btn-primary" onclick={onForce} type="button"> Edit anyway </button>
-    <button class="btn btn-danger" onclick={onCancel} type="button">Cancel</button>
+    <button class="btn btn-primary" onclick={onForce} type="button">
+      {labels.leaseEditAnyway}
+    </button>
+    <button class="btn btn-danger" onclick={onCancel} type="button">
+      {labels.leaseCancel}
+    </button>
   {:else if kind === "page_changed"}
     <button class="btn btn-primary" onclick={onViewPage} type="button">
-      View current page
+      {labels.leaseViewPage}
     </button>
-    <button class="btn" onclick={onReload} type="button">Reload editor</button>
+    <button class="btn" onclick={onReload} type="button">
+      {labels.leaseReload}
+    </button>
     {#if onCopyText}
-      <button class="btn" onclick={onCopyText} type="button">Copy my text</button>
+      <button class="btn" onclick={onCopyText} type="button">
+        {labels.leaseCopyText}
+      </button>
     {/if}
-    <button class="btn btn-danger" onclick={onClose} type="button">Close</button>
+    <button class="btn btn-danger" onclick={onClose} type="button">
+      {labels.leaseClose}
+    </button>
   {:else}
     <button class="btn btn-primary" onclick={onReacquire} type="button">
-      Take the lock back
+      {labels.takeLockBack}
     </button>
-    <button class="btn" onclick={onLeave} type="button">Leave editor</button>
-    <button class="btn btn-danger" onclick={onClose} type="button">Close</button>
+    <button class="btn" onclick={onLeave} type="button">
+      {labels.leaseLeave}
+    </button>
+    <button class="btn btn-danger" onclick={onClose} type="button">
+      {labels.leaseClose}
+    </button>
   {/if}
 {/snippet}
 
 {#if pageLayoutContext.current === Layout.WIKIDOT}
   <div id="odialog-shader" class="odialog-shader"></div>
   <div id="odialog-container" style:display="block" class="odialog-container">
-    <div id="owindow-1" class="owindow edit-lease-dialog">
-      <div class="title modal-header">Page edit lock</div>
+    <div
+      id="owindow-1"
+      class="owindow edit-lease-dialog"
+      bind:this={dialog}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="edit-lease-dialog-title"
+      tabindex="-1"
+    >
+      <div class="title modal-header">{labels.leaseDialogTitle}</div>
       <div class="content modal-body">
         {@render body()}
       </div>
@@ -122,8 +170,11 @@
   <div class="modal-container" role="presentation">
     <div
       class="modal edit-lease-dialog"
-      aria-describedby="edit-lease-dialog-title"
+      bind:this={dialog}
+      aria-labelledby="edit-lease-dialog-title"
+      aria-modal="true"
       role="dialog"
+      tabindex="-1"
     >
       <div class="modal-message">
         {@render body()}
@@ -137,7 +188,7 @@
 
 <style lang="scss">
   .edit-lease-conflicts {
-    text-align: left;
+    text-align: start;
   }
 
   .modal-container {
@@ -168,5 +219,16 @@
   .modal-container > .modal h1 {
     margin-top: 0;
     font-size: 1.2em;
+  }
+
+  @media (width <= 480px), (pointer: coarse) {
+    .modal-container > .modal {
+      width: min(92vw, 26rem);
+      margin-block: 10vh;
+    }
+
+    .modal-container > .modal button {
+      min-height: 2.75rem;
+    }
   }
 </style>

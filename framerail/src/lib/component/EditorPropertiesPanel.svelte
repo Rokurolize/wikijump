@@ -3,7 +3,12 @@
   import { onMount, type Snippet } from "svelte"
 
   import { Layout } from "$lib/types"
+  import {
+    currentEditorLabels,
+    formatEditorLabel
+  } from "$lib/wikidot/editor-labels-client"
   import { splitSpaceSeparated } from "$lib/wikidot/editor-properties"
+  import type { EditorLabels } from "$lib/wikidot/editor-labels"
 
   import type { PropertiesErrors, PropertiesReport } from "$lib/wikidot/editor-properties"
 
@@ -25,6 +30,7 @@
     templateLabel = "",
     currentLayoutLabel = "",
     onRetryParent,
+    labels = currentEditorLabels(),
     children
   }: {
     title?: string
@@ -44,6 +50,7 @@
     templateLabel?: string
     currentLayoutLabel?: string
     onRetryParent?: () => void
+    labels?: EditorLabels
     children?: Snippet
   } = $props()
 
@@ -92,12 +99,11 @@
             parent = parents.data.res.join(" ")
           }
         } else {
-          loadError =
-            "The current parent could not be loaded. Reload the editor to retry."
+          loadError = labels.propertiesParentLoadError
         }
       } catch {
         if (!active) return
-        loadError = "The current parent could not be loaded. Reload the editor to retry."
+        loadError = labels.propertiesParentLoadError
       } finally {
         if (active) parentReady = true
       }
@@ -109,58 +115,62 @@
   })
 </script>
 
-<section class="editor-properties" data-properties="panel" aria-label="Page properties">
-  <h2 class="editor-properties-heading">Page properties</h2>
+<section
+  class="editor-properties"
+  data-properties="panel"
+  aria-label={labels.propertiesHeading}
+>
+  <h2 class="editor-properties-heading">{labels.propertiesHeading}</h2>
 
   <div class="editor-properties-fields">
     <div class="editor-properties-field">
-      <label for="ed6-title">Title</label>
+      <label for="ed6-title">{labels.propertiesTitle}</label>
       <input
         id="ed6-title"
         class="editor-title"
         name="title"
-        placeholder="Title"
+        placeholder={labels.propertiesTitle}
         type="text"
         bind:value={title}
       />
     </div>
 
     <div class="editor-properties-field">
-      <label for="ed6-alt-title">Alternate title</label>
+      <label for="ed6-alt-title">{labels.propertiesAltTitle}</label>
       <input
         id="ed6-alt-title"
         class="editor-alt-title"
         name="altTitle"
-        placeholder="Alternate title"
+        placeholder={labels.propertiesAltTitle}
         type="text"
         bind:value={altTitle}
       />
     </div>
 
     <div class="editor-properties-field">
-      <span class="editor-properties-label">Layout</span>
+      <span class="editor-properties-label">{labels.propertiesLayout}</span>
       {#if creating}
         <select id="ed6-layout" name="layout" class="editor-layout" bind:value={layout}>
-          <option value={null}>Default</option>
+          <option value={null}>{labels.propertiesDefaultLayout}</option>
           {#each Object.values(Layout) as layoutOption (layoutOption)}
             <option value={layoutOption}>{layoutOption}</option>
           {/each}
         </select>
       {:else}
         <span class="editor-properties-readonly" data-properties="layout">
-          {currentLayoutLabel || "Default"}
+          {currentLayoutLabel || labels.propertiesDefaultLayout}
         </span>
         <span class="editor-properties-hint">
-          Change layout from the page's Options menu.
+          {labels.propertiesLayoutHint}
         </span>
       {/if}
     </div>
 
     {#if creating}
       <div class="editor-properties-field">
-        <span class="editor-properties-label">Initial template</span>
+        <span class="editor-properties-label">{labels.propertiesTemplate}</span>
         <span class="editor-properties-readonly" data-properties="template">
-          {templateLabel || "No template"}
+          {templateLabel || labels.propertiesNoTemplate}
         </span>
       </div>
     {/if}
@@ -170,12 +180,12 @@
 
   <div class="editor-properties-fields">
     <div class="editor-properties-field">
-      <label for="ed6-tags">Tags</label>
+      <label for="ed6-tags">{labels.propertiesTags}</label>
       <input
         id="ed6-tags"
         class="editor-tags"
         name="tags"
-        placeholder="Tags"
+        placeholder={labels.propertiesTags}
         type="text"
         aria-invalid={errors.tags !== null}
         aria-describedby={errors.tags ? "ed6-tags-error" : undefined}
@@ -189,34 +199,38 @@
     </div>
 
     <div class="editor-properties-field">
-      <label for="ed6-comments">Revision comments</label>
+      <label for="ed6-comments">{labels.propertiesComments}</label>
       <textarea
         id="ed6-comments"
         class="editor-comments"
         name="comments"
-        placeholder="Revision comments"
+        placeholder={labels.propertiesComments}
         bind:value={comments}></textarea>
     </div>
   </div>
 
   <div class="editor-properties-parent" data-properties="parent-move">
-    <h3>Page-tree move (parent)</h3>
+    <h3>{labels.propertiesParentHeading}</h3>
     <p>
-      Changing the parent is a structural page-tree move, not a metadata edit. It is
-      applied after the content save, creates its own revision, and needs edit permission
-      on this page.
+      {labels.propertiesParentDescription}
     </p>
     {#if !creating && canMove === false}
-      <p class="editor-properties-error" role="alert" data-properties="permission-denied">
-        You do not have permission to move this page in the page tree. Ask a site
-        administrator for edit permission before changing the parent.
+      <p
+        class="editor-properties-error"
+        role="alert"
+        aria-live="assertive"
+        data-properties="permission-denied"
+      >
+        {labels.propertiesParentDenied}
       </p>
     {/if}
     {#if loadError}
-      <p class="editor-properties-error" role="alert">{loadError}</p>
+      <p class="editor-properties-error" role="alert" aria-live="assertive">
+        {loadError}
+      </p>
     {/if}
     <div class="editor-properties-field">
-      <label for="ed6-parent">Parent page</label>
+      <label for="ed6-parent">{labels.propertiesParent}</label>
       <input
         id="ed6-parent"
         class="editor-parent"
@@ -230,10 +244,11 @@
       />
       <p class="editor-properties-hint" id="ed6-parent-hint">
         {#if creating}
-          Applied when the page is created. Separate multiple parents with spaces.
+          {labels.propertiesParentHintCreate}
         {:else}
-          Current parents: {initialParent.join(" ") || "none"}. Leave the field empty to
-          remove all parents. Separate multiple parents with spaces.
+          {formatEditorLabel(labels, "propertiesParentHintExisting", {
+            parents: initialParent.join(" ") || labels.propertiesNoParents
+          })}
         {/if}
       </p>
       {#if errors.parent}
@@ -257,6 +272,12 @@
       report.state === "failed"
         ? "alert"
         : "status"}
+      aria-live={report.state === "invalid" ||
+      report.state === "partial" ||
+      report.state === "failed"
+        ? "assertive"
+        : "polite"}
+      aria-atomic="true"
     >
       {report.message}
     </p>
@@ -267,7 +288,7 @@
         type="button"
         onclick={onRetryParent}
       >
-        Retry page-tree move
+        {labels.propertiesRetryMove}
       </button>
     {/if}
   {/if}
@@ -295,8 +316,8 @@
   }
 
   .editor-properties-parent {
-    border-top: 1px solid #ccc;
     padding-top: 1em;
+    border-top: 1px solid #ccc;
   }
 
   .editor-properties-field {
@@ -337,5 +358,14 @@
 
   .editor-properties-retry {
     align-self: flex-start;
+  }
+
+  @media (width <= 480px), (pointer: coarse) {
+    .editor-properties-field input,
+    .editor-properties-field select,
+    .editor-properties-field textarea,
+    .editor-properties-retry {
+      min-height: 2.75rem;
+    }
   }
 </style>

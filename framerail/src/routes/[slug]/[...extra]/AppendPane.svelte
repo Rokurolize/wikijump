@@ -3,6 +3,7 @@
   import { deserialize } from "$app/forms"
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { PagePane } from "$lib/types"
+  import { currentEditorLabels } from "$lib/wikidot/editor-labels-client"
   import { classifyEditLeaseSaveError } from "$lib/wikidot/wikidot-edit-lease.js"
   import WikitextEditor from "$lib/component/WikitextEditor.svelte"
   import { onDestroy, onMount, untrack } from "svelte"
@@ -24,6 +25,7 @@
   let { pagePaneState = $bindable(), data }: PageProps & { pagePaneState: PagePane } =
     $props()
 
+  const labels = $derived(currentEditorLabels())
   let appendedWikitext = $state("")
   const appendLabel = $derived.by(() => {
     const translated = data.internationalization?.["wiki-page-append-content"]
@@ -154,16 +156,15 @@
 <h1 class="page-append-header">{data.wikidot_page_actions?.append ?? "Append"}</h1>
 
 {#if leaseRequired && leaseSnapshot.status === "acquiring"}
-  <p role="status">Acquiring the page edit lock&hellip;</p>
+  <p role="status" aria-live="polite">{labels.acquiringLock}</p>
 {:else if leaseRequired && leaseSnapshot.status === "conflict"}
-  <p role="alert">This page is being edited by another user.</p>
+  <p role="alert" aria-live="assertive">{labels.lockConflict}</p>
 {:else}
   {#if leaseSnapshot.superseded}
-    <p class="edit-lease-superseded" role="alert">
-      Your edit lock was taken by another user. Saving will be rejected until you take the
-      lock back.
+    <p class="edit-lease-superseded" role="alert" aria-live="assertive">
+      {labels.lockSuperseded}
       <button class="btn" onclick={reacquireLease} type="button">
-        Take the lock back
+        {labels.takeLockBack}
       </button>
     </p>
   {/if}

@@ -14,6 +14,7 @@
   } from "$lib/wikidot/wikidot-data-form.js"
   import WikitextEditor from "$lib/component/WikitextEditor.svelte"
   import WikitextPreviewPane from "$lib/component/WikitextPreviewPane.svelte"
+  import { currentEditorLabels } from "$lib/wikidot/editor-labels-client"
   import WikidotDataFormMatchWorker from "$lib/wikidot/wikidot-data-form-match.worker.ts?worker"
   import { superForm } from "sveltekit-superforms"
   import { onDestroy, onMount, tick, untrack } from "svelte"
@@ -81,6 +82,8 @@
     onLeaseSaveSuccess?: (res: unknown) => void
     onLeaseSaveFailure?: (failure: LeaseSaveFailure) => boolean
   } = $props()
+
+  const labels = $derived(currentEditorLabels())
 
   let values = $state<Record<string, string>>(
     untrack(() => buildWikidotDataFormState(definition, initialValues))
@@ -505,7 +508,7 @@
   }
 </script>
 
-<h1>{creating ? "Create" : "Edit"} {headingCategory}</h1>
+<h1>{creating ? labels.createHeading : labels.editHeading} {headingCategory}</h1>
 
 <!-- svelte-ignore a11y_no_redundant_roles -->
 <form
@@ -790,7 +793,7 @@
         id="edit-cancel-button"
         class="btn btn-danger"
         href="javascript:;"
-        onclick={cancelEdit}>Cancel</a
+        onclick={cancelEdit}>{labels.cancel}</a
       >
       <!-- svelte-ignore a11y_invalid_attribute -->
       <a
@@ -799,7 +802,7 @@
         href="javascript:;"
         onclick={() =>
           document.querySelector<HTMLFormElement>("#edit-page-form")?.requestSubmit()}
-        >Save</a
+        >{labels.save}</a
       >
     </div>
   </div>
@@ -810,6 +813,7 @@
     {siteId}
     title={$form.title}
     wikitext={previewWikitext}
-    label="Preview"
+    label={labels.preview}
+    {labels}
   />
 {/if}

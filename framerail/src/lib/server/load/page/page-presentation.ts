@@ -1,5 +1,6 @@
 import defaults from "$lib/defaults"
 
+import { editorLabelKeys } from "$lib/wikidot/editor-labels"
 import {
   buildWikidotPageActionLabels,
   selectWikidotPageRating,
@@ -32,6 +33,7 @@ const basePageTranslateKeys = (
   licenseUrl: string
 ): TranslateKeys => ({
   ...defaults.translateKeys,
+  ...Object.fromEntries(Object.values(editorLabelKeys).map((key) => [key, {}])),
   "save": {},
   "cancel": {},
   "preview": {},

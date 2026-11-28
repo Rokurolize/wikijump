@@ -1,3 +1,7 @@
+import {
+  editorFixtureKeys,
+  resolveEditorFixtureLabel
+} from "./editor-catalogue-fixture.ts"
 import { handleSiteRpc } from "./site-handler.ts"
 
 const pageLabels: Record<string, Record<string, string>> = {
@@ -32,19 +36,24 @@ export const handlePageLabelTranslationRpc = ({ rpcRequest }: { rpcRequest: any 
   }
 
   const keys = Object.keys(rpcRequest.params.messages)
-  if (!keys.some((key) => Object.hasOwn(pageLabels.en, key))) return undefined
+  if (
+    !keys.some((key) => Object.hasOwn(pageLabels.en, key) || editorFixtureKeys.has(key))
+  ) {
+    return undefined
+  }
 
-  const locale = rpcRequest.params.locales.some((value: any) =>
+  const japanese = rpcRequest.params.locales.some((value: any) =>
     `${value}`.toLowerCase().startsWith("ja")
   )
-    ? "ja"
-    : "en"
+  const locale = japanese ? "ja" : "en"
   const shared: any = handleSiteRpc({ rpcRequest })?.result ?? {}
   return {
     result: Object.fromEntries(
       keys.map((key): [string, string] => [
         key,
-        pageLabels[locale][key] ?? shared[key] ?? key
+        editorFixtureKeys.has(key)
+          ? resolveEditorFixtureLabel(key, japanese, rpcRequest.params.messages[key])
+          : (pageLabels[locale][key] ?? shared[key] ?? key)
       ])
     )
   }
