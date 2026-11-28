@@ -195,6 +195,39 @@ class RollStafflabTest(unittest.TestCase):
         second = git("rev-parse", "HEAD")
         return repo, first, second
 
+    def test_compose_command_appends_the_source_owned_edge_overlay_last(self) -> None:
+        home = self.root / "stafflab"
+        home.mkdir()
+        local_override = home / "compose.override.yaml"
+        local_override.write_text("services: {}\n", encoding="utf-8")
+
+        command = ROLL.compose_command(home, "config")
+        files = [
+            command[index + 1]
+            for index, value in enumerate(command)
+            if value == "--file"
+        ]
+
+        self.assertEqual(files[-2], str(local_override))
+        self.assertEqual(files[-1], str(ROLL.STAFFLAB_COMPOSE_OVERRIDE))
+        self.assertEqual(command[-1], "config")
+
+    def test_stafflab_edge_overlay_preserves_existing_publications_and_adds_ipv6(self) -> None:
+        overlay = ROLL.STAFFLAB_COMPOSE_OVERRIDE.read_text(encoding="utf-8")
+
+        self.assertEqual(
+            overlay,
+            """services:
+  caddy:
+    ports: !override
+      - \"127.0.0.1:28080:80\"
+      - \"127.0.0.1:28443:443\"
+      - \"[::1]:28443:443\"
+      - \"100.69.57.33:28443:443\"
+      - \"100.69.57.33:28443:443/udp\"
+""",
+        )
+
     def test_fetch_resolves_stafflab_loopback_ipv6_before_ipv4(self) -> None:
         completed = subprocess.CompletedProcess([], 0, stdout="body\n200", stderr="")
         with mock.patch.object(ROLL.subprocess, "run", return_value=completed) as run:

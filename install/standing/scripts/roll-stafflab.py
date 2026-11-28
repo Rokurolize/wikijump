@@ -51,6 +51,9 @@ ABOUT_HOSTS = (
 KNOWN_SWEEP_STATUSES = {("scp-jp-sigma10.localhost", "_admin"): 401}
 GIT_OBJECT = re.compile(r"[0-9a-f]{40}")
 RENDER_AHEAD = Path(__file__).resolve().parents[1] / "render_ahead.py"
+STAFFLAB_COMPOSE_OVERRIDE = (
+    Path(__file__).resolve().parents[1] / "stafflab.compose.override.yaml"
+)
 
 
 def default_stafflab_home() -> Path:
@@ -75,6 +78,7 @@ def compose_command(home: Path, *args: str) -> list[str]:
     override = home / "compose.override.yaml"
     if override.exists():
         command.extend(("--file", str(override)))
+    command.extend(("--file", str(STAFFLAB_COMPOSE_OVERRIDE)))
     command.extend(args)
     return command
 
