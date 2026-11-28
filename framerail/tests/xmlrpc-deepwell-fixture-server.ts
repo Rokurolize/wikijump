@@ -11,6 +11,7 @@ import { dispatchFixtureRpc } from "./xmlrpc-deepwell-fixture/dispatch.ts"
 import { sendRpcError } from "./xmlrpc-deepwell-fixture/response.ts"
 
 const PORT = Number(process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747")
+const initialPages = structuredClone(pages)
 const initialPageWorkflowProbe = structuredClone(pages["page-workflow-probe"])
 const initialPageWorkflowFiles = Object.fromEntries(
   Object.entries(fixtureState.filesByPageId[3000340] ?? {}).map(([name, file]) => [
@@ -81,6 +82,29 @@ const handleDiagnosticRequest = (request: IncomingMessage, response: ServerRespo
   if (request.method === "POST" && url.pathname === "/clear-page-edit-locks") {
     fixtureState.editLocks = {}
     sendJson(response, { cleared: true })
+    return true
+  }
+  if (request.method === "POST" && url.pathname === "/reset-fixture-page") {
+    const slug = url.searchParams.get("slug")
+    if (!slug) {
+      response.writeHead(400).end("Missing page slug")
+      return true
+    }
+    if (initialPages[slug]) {
+      pages[slug] = structuredClone(initialPages[slug])
+    } else {
+      delete pages[slug]
+    }
+    sendJson(response, { reset: true })
+    return true
+  }
+  if (request.method === "GET" && url.pathname === "/fixture-page-source") {
+    const slug = url.searchParams.get("slug")
+    if (!slug || !pages[slug]) {
+      response.writeHead(404).end("Unknown page slug")
+      return true
+    }
+    sendJson(response, { wikitext: pages[slug].wikitext })
     return true
   }
   if (request.method !== "GET") return false

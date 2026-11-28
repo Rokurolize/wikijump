@@ -57,18 +57,20 @@ test("Append and Files Upload fields expose their associated names", async ({
   await expect(page.locator("#edit-append-button")).toBeVisible()
   await page.locator("#edit-append-button").click()
 
-  const append = page.locator("#page-append-input")
-  await expect(append).toBeVisible()
-  await expect(page.getByRole("textbox", { name: "Wikitext to append" })).toHaveCount(1)
+  const appendFallback = page.locator("#page-append-input")
+  const appendEditor = page.getByRole("textbox", { name: "Wikitext to append" })
+  await expect(appendEditor).toHaveCount(1)
+  await expect(appendEditor).toBeVisible()
+  await expect(appendFallback).toBeHidden()
   expect(
-    await append.evaluate((element: HTMLTextAreaElement) =>
+    await appendFallback.evaluate((element: HTMLTextAreaElement) =>
       Array.from(element.labels ?? []).some((label) => label.htmlFor === element.id)
     )
   ).toBe(true)
   await page.locator('label[for="page-append-input"]').click()
-  await expect(append).toBeFocused()
+  await expect(appendEditor).toBeFocused()
 
-  const appendGeometry = await append.boundingBox()
+  const appendGeometry = await appendEditor.boundingBox()
   expect(appendGeometry).not.toBeNull()
   expect(appendGeometry!.x + appendGeometry!.width).toBeLessThanOrEqual(320)
 
@@ -226,7 +228,8 @@ test("authorized Append and Upload round-trip only through the isolated fixture 
 
   await page.locator("#more-options-button").click()
   await page.locator("#edit-append-button").click()
-  await page.locator("#page-append-input").fill("run-owned issue 2259 append")
+  await page.locator("#page-append .cm-content").click()
+  await page.keyboard.type("run-owned issue 2259 append")
   await page.locator('#page-append input[type="submit"]').click()
   await expect(page.locator("#page-append")).toHaveCount(0)
 
