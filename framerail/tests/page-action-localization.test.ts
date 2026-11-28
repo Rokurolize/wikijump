@@ -128,6 +128,14 @@ test("English fallback and localized catalogs define the exact page action label
     new URL("../../locales/fluent/wiki-page/zh_Hans.ftl", import.meta.url),
     "utf8"
   )
+  const baseKo = await readFile(
+    new URL("../../locales/fluent/base/ko.ftl", import.meta.url),
+    "utf8"
+  )
+  const wikiKo = await readFile(
+    new URL("../../locales/fluent/wiki-page/ko.ftl", import.meta.url),
+    "utf8"
+  )
 
   const baseLabels: Record<string, string> = {
     delete: "削除",
@@ -161,6 +169,33 @@ test("English fallback and localized catalogs define the exact page action label
   assert.match(wikiZhHans, /^ {2}\.permission-only = 仅权限用户$/mu)
   assert.match(wikiZhHans, /^wiki-page-action-lock = 锁定页面$/mu)
   assert.match(wikiZhHans, /^wiki-page-action-rename-move = 移动$/mu)
+
+  const koreanBaseLabels: Record<string, string> = {
+    delete: "삭제",
+    edit: "편집",
+    files: "파일",
+    history: "기록",
+    layout: "레이아웃",
+    options: "옵션",
+    parents: "부모 페이지",
+    vote: "평가"
+  }
+  const koreanPageLabels: Record<string, string> = {
+    "wiki-page-view-source": "소스 보기",
+    "wiki-page-action-append": "추가",
+    "wiki-page-action-edit-sections": "섹션 편집",
+    "wiki-page-action-edit-meta": "메타 태그 편집",
+    "wiki-page-action-watchers": "주시자",
+    "wiki-page-action-backlinks": "역링크",
+    "wiki-page-action-lock": "페이지 잠금",
+    "wiki-page-action-rename-move": "이동"
+  }
+  for (const [key, label] of Object.entries(koreanBaseLabels)) {
+    assert.match(baseKo, new RegExp(`^${key} = ${label}$`, "mu"), `ko: ${key}`)
+  }
+  for (const [key, label] of Object.entries(koreanPageLabels)) {
+    assert.match(wikiKo, new RegExp(`^${key} = ${label}$`, "mu"), `ko: ${key}`)
+  }
 })
 
 test("non-Japanese page locales retain the English fallback after their preferred locale", () => {
