@@ -383,8 +383,8 @@
       "arguments": [],
       "body": "raw",
       "deprecated": false,
-      "description": "",
-      "head": "map",
+      "description": "Output: Element::Form / <span class=\"wj-raw\">",
+      "head": "none",
       "htmlAttributes": false,
       "key": "form",
       "names": [
@@ -432,7 +432,7 @@
       "body": "raw",
       "deprecated": false,
       "description": "Output: Element::Html / <iframe>",
-      "head": "none",
+      "head": "map",
       "htmlAttributes": false,
       "key": "html",
       "names": [
@@ -785,7 +785,7 @@
       "body": "raw",
       "deprecated": false,
       "description": "Outputs: Element::Raw / <span class=\"wj-raw\">",
-      "head": "map",
+      "head": "none",
       "htmlAttributes": false,
       "key": "raw",
       "names": [
@@ -1347,7 +1347,7 @@
       "src/parsing/rule/impls/comment.rs"
     ],
     "repository": "https://github.com/Rokurolize/ftml",
-    "revision": "1dbb9e8c2cc97d0d48db352b8d5761c4e42419f8"
+    "revision": "d12840bfb2562a5331710d93f6249a3165ea0435"
   },
   "syntax": [
     {
