@@ -138,6 +138,7 @@ pub(in crate::services::render) struct SubstituteListPagesVariablesDelayedParams
     pub(in crate::services::render) runtime_text_ranges:
         &'a mut Vec<ListPagesRuntimeTextRange>,
     pub(in crate::services::render) runtime_title_is_delayed: bool,
+    pub(in crate::services::render) raw_content_bytes: &'a mut usize,
 }
 
 pub(in crate::services::render) struct ProtectListPagesDelayedOutputParams<'a> {
@@ -275,11 +276,12 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row(
 ) -> PreparedDelayedListPagesRow {
     params.render_cost_budget = None;
     prepare_delayed_list_pages_row_with_budget(params)
+        .expect("test row preparation has no expanded byte budget")
 }
 
 pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
     params: PrepareDelayedListPagesRowParams<'_>,
-) -> PreparedDelayedListPagesRow {
+) -> Result<PreparedDelayedListPagesRow> {
     let PrepareDelayedListPagesRowParams {
         template,
         body,
@@ -296,6 +298,7 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
     let mut generated_slots = Vec::new();
     let mut runtime_text_ranges = Vec::new();
     let mut tracked_content_fragments = BTreeSet::new();
+    let mut raw_content_bytes = 0usize;
     let mut prepared_body = suppress_generated_list_pages_heading_toc(body).into_owned();
     let parser_gates = protect_delayed_row_parser_gates(&mut prepared_body);
     preprocess_delayed_row_body(&mut prepared_body);
@@ -323,8 +326,17 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
                 generated_slots: &mut generated_slots,
                 runtime_text_ranges: &mut runtime_text_ranges,
                 runtime_title_is_delayed,
+                raw_content_bytes: &mut raw_content_bytes,
             },
         );
+        if let Some(budget) = render_cost_budget
+            && let Err(error) = budget.charge_expanded_bytes(
+                raw_content_bytes,
+                "raw selected-content substitution",
+            )
+        {
+            return Err(Error::new(error.to_string(), ErrorType::Render).into());
+        }
         resolve_list_pages_expr_parser_functions(
             &mut body,
             &mut generated_slots,
@@ -368,13 +380,13 @@ pub(in crate::services::render) fn prepare_delayed_list_pages_row_with_budget(
     };
     let logical_body_bytes =
         compat_text.logical_len_for_tracked_fragments(&body, &tracked_content_fragments);
-    PreparedDelayedListPagesRow {
+    Ok(PreparedDelayedListPagesRow {
         body,
         logical_body_bytes,
         generated_slots,
         runtime_text_ranges,
         html_fragments,
-    }
+    })
 }
 
 pub(in crate::services::render) fn raw_module_close_end(
@@ -481,6 +493,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_delayed(
         generated_slots,
         runtime_text_ranges,
         runtime_title_is_delayed,
+        raw_content_bytes,
     } = params;
     substitute_list_pages_variables_inner(ListPagesSubstitutionArgs {
         template,
@@ -494,6 +507,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_delayed(
         generated_slots: Some(generated_slots),
         runtime_text_ranges: Some(runtime_text_ranges),
         runtime_title_is_delayed,
+        raw_content_bytes: Some(raw_content_bytes),
     })
 }
 
@@ -519,6 +533,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables_with_fragment
         generated_slots: None,
         runtime_text_ranges: None,
         runtime_title_is_delayed: false,
+        raw_content_bytes: None,
     })
 }
 

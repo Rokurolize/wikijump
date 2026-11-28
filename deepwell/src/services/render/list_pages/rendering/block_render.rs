@@ -1269,6 +1269,14 @@ impl RenderService {
                                     },
                                 )?;
                             }
+                            render_cost_budget
+                                .charge_expanded_bytes(
+                                    derivation.expanded_byte_charge,
+                                    "cached selected-content render",
+                                )
+                                .map_err(|error| {
+                                    Error::new(error.to_string(), ErrorType::Render)
+                                })?;
                             include_budget.consume(derivation.expanded_include_count);
                             included_pages
                                 .extend(derivation.included_pages.iter().cloned());
@@ -1281,6 +1289,7 @@ impl RenderService {
                             let mut rendered_page_styles = Vec::new();
                             let mut cost_charges: Vec<&'static str> = Vec::new();
                             let mut expanded_include_count = 0usize;
+                            let mut expanded_byte_charge = 0usize;
                             let mut derivation_included_pages = Vec::new();
                             // No full-content render runs for %%content%%:
                             // live Wikidot substitutes the listed page's raw
@@ -1392,6 +1401,9 @@ impl RenderService {
                                     )
                                     .await?
                                 };
+                                expanded_byte_charge += rendered
+                                    .expanded_bytes_charged
+                                    .max(rendered.body.len());
                                 cost_charges.push(if wants_full_default_summary {
                                     "default-summary render"
                                 } else {
@@ -1447,6 +1459,9 @@ impl RenderService {
                                         },
                                     )
                                     .await?;
+                                expanded_byte_charge += rendered
+                                    .expanded_bytes_charged
+                                    .max(rendered.body.len());
                                 cost_charges.push("selected-content render");
                                 expanded_include_count += rendered.expanded_include_count;
                                 include_budget.consume(rendered.expanded_include_count);
@@ -1464,6 +1479,7 @@ impl RenderService {
                                     styles: rendered_page_styles.clone(),
                                     included_pages: derivation_included_pages,
                                     expanded_include_count,
+                                    expanded_byte_charge,
                                     cost_charges,
                                 },
                             );
@@ -1519,6 +1535,14 @@ impl RenderService {
                                 Error::new(error.to_string(), ErrorType::Render)
                             })?;
                         }
+                        render_cost_budget
+                            .charge_expanded_bytes(
+                                entry.expanded_byte_charge,
+                                "cached block-content render",
+                            )
+                            .map_err(|error| {
+                                Error::new(error.to_string(), ErrorType::Render)
+                            })?;
                         (
                             entry.body,
                             entry.styles,
@@ -1552,6 +1576,9 @@ impl RenderService {
                                 styles: rendered.styles.clone(),
                                 included_pages: rendered.included_pages.clone(),
                                 expanded_include_count: rendered.expanded_include_count,
+                                expanded_byte_charge: rendered
+                                    .expanded_bytes_charged
+                                    .max(rendered.body.len()),
                                 cost_charges: vec!["block-content render"],
                             },
                         );
@@ -1658,7 +1685,7 @@ impl RenderService {
                     numbered_link_titles: numbered_link_titles.as_ref(),
                     render_cost_budget: Some(render_cost_budget),
                 },
-            );
+            )?;
             if let Some(fragments) = prepared_row.html_fragments {
                 delayed_html_fragments.push(fragments);
             }

@@ -10,6 +10,7 @@
  * (at your option) any later version.
  */
 
+use super::super::render_budget::{RenderCostBudget, SharedRenderCostBudget};
 use super::super::runtime::RenderRuntime;
 use super::super::service::RenderService;
 use super::super::{
@@ -39,11 +40,21 @@ const WIKIDOT_RSS_ITEM_LIMIT: u64 = 20;
 const MAX_WIKIDOT_RSS_ITEM_LIMIT: u64 = 1_000;
 const MAX_WIKIDOT_RSS_SELECTOR_BYTES: usize = 8 * 1024;
 
+pub(in crate::services::render) fn charge_list_pages_feed_body_bytes(
+    render_cost_budget: &SharedRenderCostBudget,
+    body_html: &str,
+) -> Result<()> {
+    render_cost_budget
+        .charge_expanded_bytes(body_html.len(), "list pages feed")
+        .map_err(|error| Error::new(error.to_string(), ErrorType::Render).into())
+}
+
 impl RenderService {
     pub async fn render_wikidot_list_pages_feed(
         ctx: &ServiceContext<'_>,
         input: WikidotListPagesFeedInput,
     ) -> Result<WikidotListPagesFeedOutput> {
+        let render_cost_budget = RenderCostBudget::new_default();
         let WikidotListPagesFeedInput {
             site_id,
             pagetype,
@@ -354,6 +365,7 @@ impl RenderService {
                     ErrorType::Render,
                 )
             })?;
+            charge_list_pages_feed_body_bytes(&render_cost_budget, &body_html)?;
             let snapshot = snapshot_displays.get(&page.page_id);
             let created_by_html = snapshot
                 .and_then(|snapshot| {
@@ -456,5 +468,21 @@ mod tests {
         assert!(fields.page_revision_id);
         assert!(fields.created_at);
         assert!(fields.created_by);
+    }
+
+    #[test]
+    fn list_pages_feed_charges_cumulative_expanded_byte_budget() {
+        use super::super::super::render_budget::RenderCostBudget;
+        use super::charge_list_pages_feed_body_bytes;
+
+        let budget = RenderCostBudget::new_default();
+        let item_body = "x".repeat(500_000);
+        for _ in 0..8 {
+            charge_list_pages_feed_body_bytes(&budget, &item_body)
+                .expect("8 x 500kB items fit within 4 MiB feed budget");
+        }
+        let error = charge_list_pages_feed_body_bytes(&budget, &item_body)
+            .expect_err("9th 500kB item must exceed 4 MiB feed budget");
+        assert!(format!("{error:?}").contains("list pages feed"));
     }
 }

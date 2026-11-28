@@ -63,6 +63,7 @@ pub(in crate::services::render) fn substitute_list_pages_variables(
         generated_slots: None,
         runtime_text_ranges: None,
         runtime_title_is_delayed: false,
+        raw_content_bytes: None,
     });
     compat_text.restore(&compat_html.restore(&protected))
 }

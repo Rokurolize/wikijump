@@ -15,6 +15,7 @@
 use super::super::super::module_arguments::wikidot_module_argument;
 use super::super::rendering_support::ListPagesSelectedContentArgs;
 use super::*;
+use crate::services::render::render_budget::SharedRenderCostBudget;
 use crate::services::render::service::wikidot_inline_span_marker_open;
 use ftml::tree::{SocialButtons, SocialSelection, SocialService};
 
@@ -79,6 +80,7 @@ pub(super) struct RenderedListPagesSource {
     pub(super) styles: Vec<String>,
     pub(super) included_pages: Vec<PageRef>,
     pub(super) expanded_include_count: usize,
+    pub(super) expanded_bytes_charged: usize,
 }
 
 #[derive(Clone, Copy)]
@@ -608,6 +610,8 @@ pub(super) async fn render_list_pages_default_summary_source(
     render_cost_budget
         .charge(1, "default-summary render")
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
+    charge_selected_content_source_bytes(&render_cost_budget, wikitext)?;
+    let expanded_bytes_charged = wikitext.len();
     let _nested_render_guard = render_cost_budget
         .enter_nested_render(MAX_SELECTED_CONTENT_RENDER_DEPTH)
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
@@ -649,6 +653,7 @@ pub(super) async fn render_list_pages_default_summary_source(
         styles: std::mem::take(&mut html_output.styles),
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
+        expanded_bytes_charged,
     })
 }
 
@@ -684,6 +689,8 @@ pub(super) async fn render_list_pages_block_content_source(
     render_cost_budget
         .charge(1, "block-content render")
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
+    charge_selected_content_source_bytes(&render_cost_budget, wikitext)?;
+    let expanded_bytes_charged = wikitext.len();
     let _nested_render_guard = render_cost_budget
         .enter_nested_render(MAX_SELECTED_CONTENT_RENDER_DEPTH)
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
@@ -724,7 +731,17 @@ pub(super) async fn render_list_pages_block_content_source(
         styles: std::mem::take(&mut html_output.styles),
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
+        expanded_bytes_charged,
     })
+}
+
+pub(super) fn charge_selected_content_source_bytes(
+    render_cost_budget: &SharedRenderCostBudget,
+    wikitext: &str,
+) -> Result<()> {
+    render_cost_budget
+        .charge_expanded_bytes(wikitext.len(), "selected-content render")
+        .map_err(|error| Error::new(error.to_string(), ErrorType::Render).into())
 }
 
 pub(super) async fn render_list_pages_selected_content_source(
@@ -748,6 +765,8 @@ pub(super) async fn render_list_pages_selected_content_source(
     render_cost_budget
         .charge(1, "selected-content render")
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
+    charge_selected_content_source_bytes(&render_cost_budget, wikitext)?;
+    let expanded_bytes_charged = wikitext.len();
     let _nested_render_guard = render_cost_budget
         .enter_nested_render(MAX_SELECTED_CONTENT_RENDER_DEPTH)
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
@@ -814,6 +833,7 @@ pub(super) async fn render_list_pages_selected_content_source(
         styles: std::mem::take(&mut html_output.styles),
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
+        expanded_bytes_charged,
     })
 }
 
@@ -1051,5 +1071,50 @@ mod tests {
         let protected = protect_selected_content_includes(leading, &mut fragments);
         assert!(!protected.contains("[[include a]]"), "{protected}");
         assert_eq!(fragments.restore(&protected), leading);
+    }
+
+    #[test]
+    fn selected_content_recompile_shares_cumulative_expanded_byte_budget() {
+        use crate::services::render::include_variables::apply_include_variables_with_budget;
+        use crate::services::render::render_budget::RenderCostBudget;
+        use ftml::data::PageRef;
+        use ftml::includes::{IncludeArguments, IncludeRef};
+        use ftml::tree::VariableMap;
+        use std::borrow::Cow;
+
+        let budget = RenderCostBudget::new_default();
+        let payload = "a".repeat(500_000);
+        let variables = [(Cow::Borrowed("x"), Cow::Borrowed(payload.as_str()))]
+            .into_iter()
+            .collect::<VariableMap<'_>>();
+        let arguments = variables
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect::<IncludeArguments<'_>>();
+        let inc = IncludeRef::with_arguments(
+            PageRef::page_only("component:leaf"),
+            variables,
+            arguments,
+        );
+
+        // Charge 6 x 500kB = 3.0 MB via include variable expansion
+        for _ in 0..6 {
+            let mut content = "{$x}".to_owned();
+            apply_include_variables_with_budget(&mut content, &inc, Some(&budget))
+                .expect("6 x 500kB includes fit within 4 MiB");
+        }
+
+        // Charge 2 x 500kB = 1.0 MB via ListPages selected-content recompile (total 4.0 MB)
+        for _ in 0..2 {
+            charge_selected_content_source_bytes(&budget, &payload).expect(
+                "2 x 500kB selected-content recompiles fit within remaining ~1.19 MB",
+            );
+        }
+
+        // 3rd selected-content recompile (total 4.5 MB > 4 MiB) must be rejected
+        let error = charge_selected_content_source_bytes(&budget, &payload).expect_err(
+            "cumulative include + selected-content bytes must reject over 4 MiB",
+        );
+        assert!(format!("{error:?}").contains("selected-content render"));
     }
 }

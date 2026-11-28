@@ -96,6 +96,7 @@ pub(in crate::services::render) struct ListPagesSubstitutionArgs<'a, 'ctx> {
     pub(in crate::services::render) runtime_text_ranges:
         Option<&'a mut Vec<ListPagesRuntimeTextRange>>,
     pub(in crate::services::render) runtime_title_is_delayed: bool,
+    pub(in crate::services::render) raw_content_bytes: Option<&'a mut usize>,
 }
 
 pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_inner(
@@ -113,6 +114,7 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
         mut generated_slots,
         mut runtime_text_ranges,
         runtime_title_is_delayed,
+        mut raw_content_bytes,
     } = args;
     let html_body_ranges = collect_list_pages_html_body_ranges(template);
     let html_escape_ranges = collect_list_pages_html_escape_ranges(template);
@@ -794,8 +796,12 @@ pub(in crate::services::render::list_pages) fn substitute_list_pages_variables_i
                         context
                             .page_wikitext
                             .map(|wikitext| {
+                                let content = wikidot_content_section(wikitext, section);
+                                if let Some(bytes) = raw_content_bytes.as_deref_mut() {
+                                    *bytes += content.len();
+                                }
                                 protect_list_pages_content_insertion(
-                                    &wikidot_content_section(wikitext, section),
+                                    &content,
                                     compat_text,
                                     tracked_content_fragments.as_deref_mut(),
                                 )

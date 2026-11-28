@@ -755,6 +755,7 @@ pub(in crate::services::render) struct ListPagesContentSectionEntry {
     pub(in crate::services::render) styles: Vec<String>,
     pub(in crate::services::render) included_pages: Vec<ftml::data::PageRef>,
     pub(in crate::services::render) expanded_include_count: usize,
+    pub(in crate::services::render) expanded_byte_charge: usize,
     pub(in crate::services::render) cost_charges: Vec<&'static str>,
 }
 
@@ -785,6 +786,7 @@ pub(in crate::services::render) struct ListPagesSummaryDerivation {
     pub(in crate::services::render) styles: Vec<String>,
     pub(in crate::services::render) included_pages: Vec<ftml::data::PageRef>,
     pub(in crate::services::render) expanded_include_count: usize,
+    pub(in crate::services::render) expanded_byte_charge: usize,
     pub(in crate::services::render) cost_charges: Vec<&'static str>,
 }
 
@@ -1895,6 +1897,7 @@ mod tests {
                 styles: Vec::new(),
                 included_pages: Vec::new(),
                 expanded_include_count: 0,
+                expanded_byte_charge: 0,
                 cost_charges: vec!["block-content render"],
             },
         );

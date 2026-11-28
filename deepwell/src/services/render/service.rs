@@ -116,10 +116,12 @@ use super::include_resolution::{
 use super::include_variable_iftags::resolve_unbound_include_variable_iftags;
 #[cfg(test)]
 use super::include_variables::{
-    apply_include_variables, apply_include_variables_before_resolving_iftags,
+    apply_include_variables_before_resolving_iftags_with_budget,
+    apply_include_variables_with_budget,
 };
 use super::include_variables::{
-    is_include_variable_name, prepare_include_source_variables_and_comment_branches,
+    is_include_variable_name,
+    prepare_include_source_variables_and_comment_branches_with_budget,
     protect_include_variables, unprotect_include_variables,
 };
 use super::legacy_actions::LegacyActionRegistry;
@@ -3410,6 +3412,16 @@ impl RenderService {
                     include_source_cache.expanded_include(&expansion_key)
                     && cached.expanded_include_count <= remaining_includes
                 {
+                    if let Err(error) =
+                        expansion_context.render_cost_budget.charge_expanded_bytes(
+                            cached.wikitext.len(),
+                            "cached include expansion",
+                        )
+                    {
+                        return Err(
+                            Error::new(error.to_string(), ErrorType::Render).into()
+                        );
+                    }
                     remaining_includes -= cached.expanded_include_count;
                     fetched_pages.push(Some(cached.wikitext.clone()));
                     nested_included_pages.push(cached.included_pages.clone());
@@ -3431,11 +3443,12 @@ impl RenderService {
                     &attachment_variable_owners,
                     &mut include_source_cache.attachment_provenance,
                 );
-                prepare_include_source_variables_and_comment_branches(
+                prepare_include_source_variables_and_comment_branches_with_budget(
                     &mut source.wikitext,
                     &include,
                     expansion_context.page_info,
                     compat_text,
+                    Some(&expansion_context.render_cost_budget),
                 )?;
                 qualify_included_relative_image_attachments(
                     &mut source.wikitext,
