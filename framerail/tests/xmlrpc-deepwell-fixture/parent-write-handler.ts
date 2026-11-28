@@ -1,16 +1,33 @@
 import type { IncomingMessage } from "node:http"
 
-import { fixtureState, hasExactKeys, requestContextHeaders } from "./context.ts"
+import { fixtureState, hasExactKeys, pageById, requestContextHeaders } from "./context.ts"
 import { pages, parentBySlug } from "./data.ts"
+import { sendRpcError } from "./response.ts"
 
 export const handleParentWriteRpc = ({
   rpcRequest,
-  request
+  request,
+  response
 }: {
   rpcRequest: any
   request: IncomingMessage
+  response: import("node:http").ServerResponse
 }) => {
   const { counters, pageWriteRequests } = fixtureState
+  if (
+    rpcRequest.method === "parent_update" &&
+    fixtureState.propertiesFailure?.step === "parent"
+  ) {
+    const failure = fixtureState.propertiesFailure
+    fixtureState.propertiesFailure = null
+    pageWriteRequests.parentUpdate.push({
+      headers: requestContextHeaders(request),
+      params: rpcRequest.params
+    })
+    sendRpcError(response, rpcRequest.id, failure.code, "Fixture page-tree move failure")
+    return { responded: true }
+  }
+
   let result
   const parentGetPageReference = rpcRequest.params?.page
   const parentGetPage =
@@ -35,22 +52,35 @@ export const handleParentWriteRpc = ({
   } else if (
     rpcRequest.method === "parent_update" &&
     rpcRequest.params.site_id === 6000005 &&
-    typeof rpcRequest.params.child === "string" &&
+    (typeof rpcRequest.params.child === "string" ||
+      typeof rpcRequest.params.child === "number") &&
     request.headers["x-deepwell-session-token"] === "fixture-session-token" &&
     request.headers["x-deepwell-site-id"] === "6000005" &&
-    request.headers["x-deepwell-page"] === rpcRequest.params.child
+    request.headers["x-deepwell-page"] ===
+      (typeof rpcRequest.params.child === "number"
+        ? pageById(rpcRequest.params.child)?.slug
+        : rpcRequest.params.child)
   ) {
+    const childSlug =
+      typeof rpcRequest.params.child === "number"
+        ? pageById(rpcRequest.params.child)?.slug
+        : rpcRequest.params.child
+    if (!childSlug) return undefined
     pageWriteRequests.parentUpdate.push({
       headers: requestContextHeaders(request),
       params: rpcRequest.params
     })
+    if ((rpcRequest.params.add ?? []).includes("missing:parent")) {
+      sendRpcError(response, rpcRequest.id, 2007, "Fixture parent page does not exist")
+      return { responded: true }
+    }
     if (Array.isArray(rpcRequest.params.add) && rpcRequest.params.add.length > 0) {
-      parentBySlug[rpcRequest.params.child] = rpcRequest.params.add[0]
+      parentBySlug[childSlug] = rpcRequest.params.add[0]
     }
     if (Array.isArray(rpcRequest.params.remove)) {
       for (const parent of rpcRequest.params.remove) {
-        if (parentBySlug[rpcRequest.params.child] === parent) {
-          delete parentBySlug[rpcRequest.params.child]
+        if (parentBySlug[childSlug] === parent) {
+          delete parentBySlug[childSlug]
         }
       }
     }

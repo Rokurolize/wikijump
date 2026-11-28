@@ -88,6 +88,7 @@ export const fixtureState = {
   }[],
   pendingPageRevisionDiffResponse: null as
     null | ((outcome?: "success" | "failure") => void),
+  propertiesFailure: null as null | { step: "content" | "parent"; code: number },
   articleReadRequests: {
     articleView: [],
     articleViewCacheMetadata: []

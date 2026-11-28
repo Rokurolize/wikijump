@@ -6,12 +6,13 @@ import {
   fixtureState,
   resetRequestGroups
 } from "./xmlrpc-deepwell-fixture/context.ts"
-import { pages } from "./xmlrpc-deepwell-fixture/data.ts"
+import { pages, parentBySlug } from "./xmlrpc-deepwell-fixture/data.ts"
 import { dispatchFixtureRpc } from "./xmlrpc-deepwell-fixture/dispatch.ts"
 import { sendRpcError } from "./xmlrpc-deepwell-fixture/response.ts"
 
 const PORT = Number(process.env.PLAYWRIGHT_FIXTURE_PORT ?? "42747")
 const initialPages = structuredClone(pages)
+const initialParents = structuredClone(parentBySlug)
 const initialPageWorkflowProbe = structuredClone(pages["page-workflow-probe"])
 const initialPageWorkflowFiles = Object.fromEntries(
   Object.entries(fixtureState.filesByPageId[3000340] ?? {}).map(([name, file]) => [
@@ -84,6 +85,41 @@ const handleDiagnosticRequest = (request: IncomingMessage, response: ServerRespo
     sendJson(response, { cleared: true })
     return true
   }
+  if (request.method === "POST" && url.pathname === "/set-properties-failure") {
+    const step = url.searchParams.get("step")
+    if (step !== "content" && step !== "parent") {
+      response.writeHead(400).end("Unknown failure step")
+      return true
+    }
+    fixtureState.propertiesFailure = {
+      step,
+      code: Number(url.searchParams.get("code") ?? "4000")
+    }
+    sendJson(response, { armed: step })
+    return true
+  }
+  if (request.method === "POST" && url.pathname === "/clear-properties-failure") {
+    fixtureState.propertiesFailure = null
+    sendJson(response, { cleared: true })
+    return true
+  }
+  if (request.method === "GET" && url.pathname === "/fixture-page-properties") {
+    const slug = url.searchParams.get("slug")
+    const page = slug ? pages[slug] : undefined
+    if (!page) {
+      response.writeHead(404).end("Unknown page slug")
+      return true
+    }
+    const parent = parentBySlug[page.slug]
+    sendJson(response, {
+      slug: page.slug,
+      title: page.title,
+      tags: page.tags,
+      wikitext: page.wikitext,
+      parent: Array.isArray(parent) ? parent : parent ? [parent] : []
+    })
+    return true
+  }
   if (request.method === "POST" && url.pathname === "/reset-fixture-page") {
     const slug = url.searchParams.get("slug")
     if (!slug) {
@@ -94,6 +130,11 @@ const handleDiagnosticRequest = (request: IncomingMessage, response: ServerRespo
       pages[slug] = structuredClone(initialPages[slug])
     } else {
       delete pages[slug]
+    }
+    if (initialParents[slug]) {
+      parentBySlug[slug] = structuredClone(initialParents[slug])
+    } else {
+      delete parentBySlug[slug]
     }
     sendJson(response, { reset: true })
     return true

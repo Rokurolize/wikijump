@@ -9,13 +9,25 @@
   import { superForm } from "sveltekit-superforms"
   import { onDestroy, onMount, untrack } from "svelte"
 
+  import EditorPropertiesPanel from "$lib/component/EditorPropertiesPanel.svelte"
   import WikitextEditor from "$lib/component/WikitextEditor.svelte"
   import WikitextPreviewPane from "$lib/component/WikitextPreviewPane.svelte"
+  import {
+    classifyPropertyActionError,
+    diffParents,
+    firstPropertyError,
+    hasPropertyErrors,
+    IDLE_PROPERTIES_REPORT,
+    parentReportMessage,
+    splitSpaceSeparated,
+    validateProperties
+  } from "$lib/wikidot/editor-properties"
 
   import DataFormEditor from "./DataFormEditor.svelte"
   import EditLeaseDialog from "./EditLeaseDialog.svelte"
   import { createPageEditLeaseSession, startEditLeaseTimers } from "./edit-lease-client"
 
+  import type { ParentChange, PropertiesReport } from "$lib/wikidot/editor-properties"
   import type { EditLeaseConflict } from "$lib/wikidot/wikidot-edit-lease.js"
   import type { PageProps } from "./$types"
 
@@ -39,6 +51,20 @@
   })
   let leaseDialog = $state<"page_changed" | "other_locks" | null>(null)
   let stopLeaseTimers: (() => void) | undefined
+
+  let initialParents = $state<string[]>([])
+  let parentReady = $state(false)
+  let canMoveParent = $state(false)
+  let propertiesReport = $state<PropertiesReport>({ ...IDLE_PROPERTIES_REPORT })
+  let pendingParentChange: ParentChange | null = null
+  let parentResultResolve: ((applied: boolean) => void) | null = null
+
+  const currentLayoutLabel = untrack(() => {
+    const layout = data.page?.layout
+    if (!layout)
+      return data.internationalization?.["wiki-page-layout.default"] ?? "Default"
+    return data.internationalization?.[`wiki-page-layout.${layout}`] ?? String(layout)
+  })
 
   const syncLease = () => {
     leaseSnapshot = {
@@ -115,8 +141,28 @@
     untrack(() => data.forms.pageEditForm),
     {
       dataType: "json",
-      onSubmit: async ({ jsonData }) => {
+      onSubmit: async ({ jsonData, cancel }) => {
+        const errors = propertiesErrors
+        if (hasPropertyErrors(errors)) {
+          propertiesReport = {
+            state: "invalid",
+            message: firstPropertyError(errors) ?? "Check the page properties."
+          }
+          cancel()
+          return
+        }
+
         const fields = leaseRequired ? leaseSession.saveFields() : undefined
+        const nextParents = splitSpaceSeparated($form.parent ?? "")
+        const change = diffParents(initialParents, nextParents)
+        pendingParentChange = change.add.length || change.remove.length ? change : null
+        propertiesReport = {
+          state: "saving",
+          step: pendingParentChange ? "parent" : "content",
+          message: pendingParentChange
+            ? "Saving page content, then applying the page-tree move…"
+            : "Saving page properties…"
+        }
         const submitForm = {
           ...$form,
           siteId: data.site.site_id,
@@ -142,6 +188,15 @@
             leaseSession.noteSaveSucceeded(result.data.res)
             syncLease()
           }
+          if (pendingParentChange) {
+            propertiesReport = {
+              state: "saving",
+              step: "parent",
+              message: "Page content saved. Applying the page-tree move…"
+            }
+            const applied = await runParentMutation()
+            if (!applied) return
+          }
           goto(resolve(`${params.slug}`), {
             reset: false
           })
@@ -156,6 +211,14 @@
             syncLease()
             return
           }
+          propertiesReport = {
+            state: "failed",
+            step: "content",
+            message: parentReportMessage(
+              false,
+              classifyPropertyActionError(result.data, "content")
+            )
+          }
           errorPopupState.current = {
             state: true,
             message: result.data.message,
@@ -165,6 +228,78 @@
       }
     }
   )
+
+  const { submit: submitParentForm, enhance: parentEnhance } = superForm(
+    untrack(() => data.forms.pageParentForm),
+    {
+      dataType: "json",
+      onSubmit: async ({ jsonData }) => {
+        const change = pendingParentChange
+        jsonData({
+          siteId: data.site.site_id,
+          pageId: data.page?.page_id,
+          addParents: change?.add.length ? change.add : undefined,
+          removeParents: change?.remove.length ? change.remove : undefined
+        })
+      },
+      onResult: async ({ result, cancel }) => {
+        cancel()
+        const applied = result.type === "success"
+        if (!applied && result.type === "failure" && result.data) {
+          propertiesReport = {
+            state: "partial",
+            step: "parent",
+            message: parentReportMessage(
+              true,
+              classifyPropertyActionError(result.data, "parent")
+            )
+          }
+        } else if (!applied) {
+          propertiesReport = {
+            state: "partial",
+            step: "parent",
+            message: parentReportMessage(
+              true,
+              "The page-tree move request failed. Check the parent page and try again."
+            )
+          }
+        } else {
+          propertiesReport = {
+            state: "saved",
+            message: "Page properties and the page-tree move were saved."
+          }
+        }
+        parentResultResolve?.(applied)
+        parentResultResolve = null
+        pendingParentChange = null
+      }
+    }
+  )
+
+  function runParentMutation(): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      parentResultResolve = resolve
+      submitParentForm()
+    })
+  }
+
+  function retryParentChange() {
+    const change = diffParents(initialParents, splitSpaceSeparated($form.parent ?? ""))
+    if (!change.add.length && !change.remove.length) return
+    pendingParentChange = change
+    propertiesReport = {
+      state: "saving",
+      step: "parent",
+      message: "Applying the page-tree move…"
+    }
+    void runParentMutation().then((applied) => {
+      if (applied) {
+        goto(resolve(`${params.slug}`), {
+          reset: false
+        })
+      }
+    })
+  }
 
   // For a new page there is no stored title yet: mirror live Wikidot's
   // editor, which pre-fills the title field -- with the title carried in
@@ -181,6 +316,16 @@
   $form.wikitext = untrack(() => data.wikitext)
   $form.tags = untrack(() => data.page_revision?.tags?.join(" ") ?? "")
   $form.comments = untrack(() => data.page_revision?.comments ?? "")
+  $form.parent = ""
+
+  const propertiesErrors = $derived(
+    validateProperties({
+      tags: $form.tags,
+      parent: $form.parent ?? "",
+      selfSlug: params.slug,
+      parentReady
+    })
+  )
 </script>
 
 {#if leaseRequired && leaseSnapshot.status === "acquiring"}
@@ -242,37 +387,27 @@
     {/if}
 
     <form id="editor" class="editor" action="?/edit" method="POST" use:enhance>
-      <input
-        name="title"
-        class="editor-title"
-        placeholder={data.internationalization?.title}
-        type="text"
-        bind:value={$form.title}
-      />
-      <input
-        name="altTitle"
-        class="editor-alt-title"
-        placeholder={data.internationalization?.["alt-title"]}
-        type="text"
-        bind:value={$form.altTitle}
-      />
-      <WikitextEditor
-        name="wikitext"
-        label={data.internationalization?.["wiki-page-source"] ?? "Page source"}
-        bind:value={$form.wikitext}
-      />
-      <input
-        name="tags"
-        class="editor-tags"
-        placeholder={data.internationalization?.tags}
-        type="text"
-        bind:value={$form.tags}
-      />
-      <textarea
-        name="comments"
-        class="editor-comments"
-        placeholder={data.internationalization?.["wiki-page-revision-comments"]}
-        bind:value={$form.comments}></textarea>
+      <EditorPropertiesPanel
+        bind:title={$form.title}
+        bind:altTitle={$form.altTitle}
+        bind:tags={$form.tags}
+        bind:comments={$form.comments}
+        bind:parent={$form.parent}
+        bind:initialParent={initialParents}
+        bind:parentReady
+        bind:canMove={canMoveParent}
+        bind:report={propertiesReport}
+        errors={propertiesErrors}
+        {currentLayoutLabel}
+        onRetryParent={retryParentChange}
+        slug={params.slug}
+      >
+        <WikitextEditor
+          name="wikitext"
+          label={data.internationalization?.["wiki-page-source"] ?? "Page source"}
+          bind:value={$form.wikitext}
+        />
+      </EditorPropertiesPanel>
       {#if pageLayoutContext.current === Layout.WIKIDOT}
         <div class="buttons alignleft">
           <input
@@ -304,6 +439,14 @@
         </div>
       {/if}
     </form>
+    <form
+      id="ed6-parent-mutation"
+      action="?/parentSet"
+      method="POST"
+      use:parentEnhance
+      hidden
+      aria-hidden="true"
+    ></form>
     <WikitextPreviewPane
       siteId={data.site.site_id}
       title={$form.title}

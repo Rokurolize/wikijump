@@ -9,15 +9,26 @@
   import { pageMutationDestinationSlug } from "$lib/page-mutation-destination"
   import { createPageDeniedMessage } from "$lib/wikidot/wikidot-locale"
   import { defaultPageTitleFromSlug } from "$lib/wikidot/wikidot-page-title"
+  import {
+    classifyPropertyActionError,
+    firstPropertyError,
+    hasPropertyErrors,
+    IDLE_PROPERTIES_REPORT,
+    parentReportMessage,
+    splitSpaceSeparated,
+    validateProperties
+  } from "$lib/wikidot/editor-properties"
   import { superForm } from "sveltekit-superforms"
   import { untrack } from "svelte"
   import type { PageErrorData } from "$lib/page-error-data"
 
+  import EditorPropertiesPanel from "$lib/component/EditorPropertiesPanel.svelte"
   import WikitextEditor from "$lib/component/WikitextEditor.svelte"
   import WikitextPreviewPane from "$lib/component/WikitextPreviewPane.svelte"
 
   import DataFormEditor from "./[slug]/[...extra]/DataFormEditor.svelte"
 
+  import type { PropertiesReport } from "$lib/wikidot/editor-properties"
   import type { PageDeletedGet } from "$lib/server/deepwell/page"
   let { errorData }: { errorData: PageErrorData } = $props()
 
@@ -59,11 +70,30 @@
     }
   })
 
+  let propertiesReport = $state<PropertiesReport>({ ...IDLE_PROPERTIES_REPORT })
+  const initialParents = untrack(() =>
+    splitSpaceSeparated(errorData.options?.parent ?? "")
+  )
+
   const { form: editForm, enhance: editEnhance } = superForm(
     untrack(() => errorData.forms.pageEditForm),
     {
       dataType: "json",
-      onSubmit: async ({ jsonData }) => {
+      onSubmit: async ({ jsonData, cancel }) => {
+        const errors = propertiesErrors
+        if (hasPropertyErrors(errors)) {
+          propertiesReport = {
+            state: "invalid",
+            message: firstPropertyError(errors) ?? "Check the page properties."
+          }
+          cancel()
+          return
+        }
+        propertiesReport = {
+          state: "saving",
+          step: "content",
+          message: "Creating the page with its properties…"
+        }
         const submitForm = {
           ...$editForm,
           siteId: errorData.site.site_id,
@@ -92,6 +122,14 @@
           })
         }
         if (result.type === "failure" && result.data) {
+          propertiesReport = {
+            state: "failed",
+            step: "content",
+            message: parentReportMessage(
+              false,
+              classifyPropertyActionError(result.data, "content")
+            )
+          }
           errorPopupState.current = {
             state: true,
             message: result.data.message,
@@ -124,6 +162,22 @@
   // creation. An explicitly emptied title still stores "" on save (matching
   // live), because this only sets the initial value.
   $editForm.title = untrack(() => missingPageTitle)
+  $editForm.tags = untrack(() => errorData.options?.tags ?? "")
+  $editForm.parent = untrack(() => errorData.options?.parent ?? "")
+
+  const propertiesErrors = $derived(
+    validateProperties({
+      tags: $editForm.tags,
+      parent: $editForm.parent ?? "",
+      selfSlug: missingPageSlug,
+      parentReady: true
+    })
+  )
+  const templateLabel = $derived(
+    errorData.page_templates?.find(
+      (template) => template.page_id === selectedTemplatePageId
+    )?.title ?? ""
+  )
   const canRestore = $derived(errorData.restore_available === true)
   const defaultMissingMessage = $derived(
     errorData.compiled_body_html.replace(/^\s*<p>/, '<p id="404-message">')
@@ -246,47 +300,26 @@
             </select>
           </div>
         {/if}
-        <input
-          name="title"
-          class="editor-title"
-          placeholder={errorData.internationalization?.title}
-          type="text"
-          bind:value={$editForm.title}
-        />
-        <input
-          name="altTitle"
-          class="editor-alt-title"
-          placeholder={errorData.internationalization?.["alt-title"]}
-          type="text"
-          bind:value={$editForm.altTitle}
-        />
-        <WikitextEditor
-          name="wikitext"
-          label={errorData.internationalization?.["wiki-page-source"] ?? "Page source"}
-          bind:value={$editForm.wikitext}
-        />
-        <input
-          name="tags"
-          class="editor-tags"
-          placeholder={errorData.internationalization?.tags}
-          type="text"
-          bind:value={$editForm.tags}
-        />
-        <select name="layout" class="editor-layout" bind:value={$editForm.layout}>
-          <option value={null}>
-            {errorData.internationalization?.["wiki-page-layout.default"]}
-          </option>
-          {#each Object.values(Layout) as layoutOption (layoutOption.toString())}
-            <option value={layoutOption}>
-              {errorData.internationalization?.[`wiki-page-layout.${layoutOption}`]}
-            </option>
-          {/each}
-        </select>
-        <textarea
-          name="comments"
-          class="editor-comments"
-          placeholder={errorData.internationalization?.["wiki-page-revision-comments"]}
-          bind:value={$editForm.comments}></textarea>
+        <EditorPropertiesPanel
+          bind:title={$editForm.title}
+          bind:altTitle={$editForm.altTitle}
+          bind:tags={$editForm.tags}
+          bind:comments={$editForm.comments}
+          bind:parent={$editForm.parent}
+          bind:layout={$editForm.layout}
+          bind:report={propertiesReport}
+          errors={propertiesErrors}
+          creating={true}
+          initialParent={initialParents}
+          {templateLabel}
+          slug={missingPageSlug}
+        >
+          <WikitextEditor
+            name="wikitext"
+            label={errorData.internationalization?.["wiki-page-source"] ?? "Page source"}
+            bind:value={$editForm.wikitext}
+          />
+        </EditorPropertiesPanel>
         {#if pageLayoutContext.current === Layout.WIKIDOT}
           <div class="buttons">
             <input

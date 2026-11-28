@@ -115,6 +115,17 @@ export const handlePageEditRpc = ({
     headers: requestContextHeaders(request),
     params: rpcRequest.params
   })
+  if (fixtureState.propertiesFailure?.step === "content") {
+    const failure = fixtureState.propertiesFailure
+    fixtureState.propertiesFailure = null
+    sendRpcError(
+      response,
+      rpcRequest.id,
+      failure.code,
+      "Fixture content property save failure"
+    )
+    return { responded: true }
+  }
   if (typeof rpcRequest.params.wikitext === "string") {
     let effectiveWikitext = rpcRequest.params.wikitext
     if (lease?.mode === "append") {
