@@ -15,9 +15,7 @@ RUN apt-get update && \
 
 # Install system dependencies
 RUN apt update
-RUN apt install -y build-essential libmagic-dev pkg-config musl-tools
-
-RUN rustup target add x86_64-unknown-linux-musl
+RUN apt install -y build-essential libmagic-dev pkg-config
 
 # Keep migration execution in the immutable standing image.  The runtime
 # wrapper runs this binary before the prebuilt Deepwell server starts.  It does
@@ -33,7 +31,6 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry,sharing=locked \
     --mount=type=cache,target=/tmp/sqlx-target,sharing=locked \
     CARGO_TARGET_DIR=/tmp/sqlx-target \
     cargo install sqlx-cli --version 0.9.0 --locked \
-    --target x86_64-unknown-linux-musl \
     --root /tmp/sqlx-root \
     --no-default-features --features rustls,postgres
 
