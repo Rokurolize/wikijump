@@ -16,8 +16,10 @@
     placeholder as editorPlaceholder,
     rectangularSelection
   } from "@codemirror/view"
+  import { diagnosticCount, setDiagnosticsEffect } from "@codemirror/lint"
   import { classHighlighter } from "@lezer/highlight"
   import WikitextEditorToolbar from "$lib/component/WikitextEditorToolbar.svelte"
+  import { wikitextAssistExtensions } from "$lib/wikidot/wikitext-editor-assist"
   import {
     applyToolbarOperation,
     toolbarOperations,
@@ -42,12 +44,21 @@
 
   let host: HTMLDivElement
   let enhanced = $state(false)
+  let hintCount = $state(0)
   let view: EditorView | undefined
   let mirroredValue = value
   const synchronizeValue = EditorView.updateListener.of((update) => {
-    if (!update.docChanged) return
-    mirroredValue = update.state.doc.toString()
-    value = mirroredValue
+    if (update.docChanged) {
+      mirroredValue = update.state.doc.toString()
+      value = mirroredValue
+    }
+    if (
+      update.transactions.some((transaction) =>
+        transaction.effects.some((effect) => effect.is(setDiagnosticsEffect))
+      )
+    ) {
+      hintCount = diagnosticCount(update.state)
+    }
   })
 
   const runToolbarOperation = (operation: ToolbarOperationId) => {
@@ -115,6 +126,7 @@
           highlightSelectionMatches(),
           wikitextEditorLanguage.extension,
           syntaxHighlighting(classHighlighter),
+          wikitextAssistExtensions,
           EditorView.lineWrapping,
           EditorView.contentAttributes.of({
             "role": "textbox",
@@ -164,6 +176,11 @@
     onfocus={focusEnhancedEditor}
     bind:value></textarea>
   <div class="wikitext-editor-cm" bind:this={host}></div>
+  {#if enhanced && hintCount > 0}
+    <p class="wikitext-editor-hint-notice" role="status">
+      {hintCount} editor heuristic warning{hintCount === 1 ? "" : "s"} — not render errors.
+    </p>
+  {/if}
 </div>
 
 <style global lang="scss">
@@ -326,6 +343,46 @@
 
   .wikitext-editor .tok-meta {
     color: rgb(0, 132, 143);
+  }
+
+  .wikitext-editor .cm-wikitext-heuristic {
+    text-decoration: underline dotted rgb(190, 130, 20);
+    text-decoration-thickness: 2px;
+    background: rgb(255, 220, 120, 0.22);
+  }
+
+  .wikitext-editor .cm-tooltip {
+    max-width: min(28rem, 90vw);
+    color: var(--col-text, rgb(20, 20, 20));
+    background: var(--col-background-dim, rgb(255, 255, 255));
+    border: 1px solid var(--col-border, rgb(150, 150, 150));
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgb(0, 0, 0, 0.18);
+  }
+
+  .wikitext-editor .cm-tooltip-autocomplete ul li[aria-selected] {
+    color: var(--col-background-dim, rgb(255, 255, 255));
+    background: rgb(50, 100, 180);
+  }
+
+  .wikitext-assist-hover {
+    padding: 0.45rem 0.6rem;
+    font-size: 0.88em;
+    line-height: 1.4;
+  }
+
+  .wikitext-assist-hover-title {
+    font-weight: 700;
+  }
+
+  .wikitext-assist-hover-detail {
+    color: var(--col-text-dim, rgb(80, 80, 80));
+  }
+
+  .wikitext-editor-hint-notice {
+    margin: 0.25rem 0 0;
+    font-size: 0.82em;
+    color: rgb(120, 78, 10);
   }
 
   @media (width <= 480px) {
