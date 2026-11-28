@@ -181,7 +181,7 @@ test.describe("authorized existing-page Append and Parent options", () => {
     await page.locator("#edit-append-button").click()
 
     await expect(page.locator("#page-append")).toBeVisible()
-    await expect(page.locator("#page-append-input")).toBeVisible()
+    await expect(page.locator("#page-append .cm-content")).toBeVisible()
     await expect(page.locator("#odialog-container")).toHaveCount(0)
     expect(permissionRequests).toHaveLength(1)
   })

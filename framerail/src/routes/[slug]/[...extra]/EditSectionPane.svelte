@@ -9,6 +9,7 @@
     editPermissionDeniedDialog,
     editPermissionDeniedMessage
   } from "$lib/wikidot/wikidot-locale"
+  import WikitextEditor from "$lib/component/WikitextEditor.svelte"
   import { superForm } from "sveltekit-superforms"
   import { onDestroy, onMount, untrack } from "svelte"
 
@@ -258,8 +259,11 @@
       </p>
     {/if}
     <form id="editor" class="editor" action="?/edit" method="POST" use:enhance>
-      <textarea name="wikitext" class="editor-wikitext" bind:value={$form.wikitext}
-      ></textarea>
+      <WikitextEditor
+        name="wikitext"
+        label={data.internationalization?.["wiki-page-source"] ?? "Page source"}
+        bind:value={$form.wikitext}
+      />
       <textarea
         name="comments"
         class="editor-comments"
@@ -311,9 +315,5 @@
     flex-direction: column;
     gap: 15px;
     align-items: stretch;
-  }
-
-  .editor-wikitext {
-    height: 40vh;
   }
 </style>

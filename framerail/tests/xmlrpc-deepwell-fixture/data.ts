@@ -524,6 +524,62 @@ x^2 + y^2 = z^2
       "<p>%%title%% {$fixture_variable}</p>"
     ].join("\n")
   },
+  "editor-codemirror-section-probe": {
+    page_id: 3000610,
+    revision_id: 9000610,
+    page_created_at: "2026-11-28T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-11-28T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Editor CodeMirror Section Probe",
+    slug: "editor-codemirror-section-probe",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: [
+      "Intro bytes áβ中 🚀",
+      "",
+      "+ Alpha section",
+      "Alpha body **bold**.",
+      "",
+      "++ Child section",
+      "Child body with [[[page-workflow-probe|a link]]].",
+      "",
+      "++ Second child",
+      "Second child body.",
+      "",
+      "+ Beta section",
+      "Beta body."
+    ].join("\n"),
+    compiled_body_html: [
+      "<p>Intro bytes áβ中 🚀</p>",
+      '<h1 id="toc0">Alpha section</h1>',
+      "<p>Alpha body <strong>bold</strong>.</p>",
+      '<h2 id="toc1">Child section</h2>',
+      "<p>Child body with a link.</p>",
+      '<h2 id="toc2">Second child</h2>',
+      "<p>Second child body.</p>",
+      '<h1 id="toc3">Beta section</h1>',
+      "<p>Beta body.</p>"
+    ].join("")
+  },
+  "editor-codemirror-append-probe": {
+    page_id: 3000611,
+    revision_id: 9000611,
+    page_created_at: "2026-11-28T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-11-28T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Editor CodeMirror Append Probe",
+    slug: "editor-codemirror-append-probe",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "Append base áβ中 🚀\nwith **bold** base.",
+    compiled_body_html: "<p>Append base áβ中 🚀<br>with <strong>bold</strong> base.</p>"
+  },
   "page-workflow-probe": {
     page_id: 3000340,
     revision_id: 9000340,

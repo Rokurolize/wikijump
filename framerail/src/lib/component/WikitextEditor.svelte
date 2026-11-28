@@ -84,6 +84,10 @@
     }
   })
 
+  const focusEnhancedEditor = () => {
+    if (enhanced) view?.focus()
+  }
+
   $effect(() => {
     if (!view || value === mirroredValue) return
     mirroredValue = value
@@ -102,6 +106,7 @@
     aria-hidden={enhanced ? "true" : undefined}
     tabindex={enhanced ? -1 : undefined}
     {placeholder}
+    onfocus={focusEnhancedEditor}
     bind:value></textarea>
   <div class="wikitext-editor-cm" bind:this={host}></div>
 </div>
@@ -122,7 +127,13 @@
   }
 
   .wikitext-editor-enhanced .wikitext-editor-fallback {
-    display: none;
+    position: absolute;
+    width: 0;
+    height: 0;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    opacity: 0;
   }
 
   .wikitext-editor-cm {

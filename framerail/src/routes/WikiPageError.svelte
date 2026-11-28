@@ -13,6 +13,8 @@
   import { untrack } from "svelte"
   import type { PageErrorData } from "$lib/page-error-data"
 
+  import WikitextEditor from "$lib/component/WikitextEditor.svelte"
+
   import DataFormEditor from "./[slug]/[...extra]/DataFormEditor.svelte"
 
   import type { PageDeletedGet } from "$lib/server/deepwell/page"
@@ -257,8 +259,11 @@
           type="text"
           bind:value={$editForm.altTitle}
         />
-        <textarea name="wikitext" class="editor-wikitext" bind:value={$editForm.wikitext}
-        ></textarea>
+        <WikitextEditor
+          name="wikitext"
+          label={errorData.internationalization?.["wiki-page-source"] ?? "Page source"}
+          bind:value={$editForm.wikitext}
+        />
         <input
           name="tags"
           class="editor-tags"

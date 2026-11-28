@@ -4,6 +4,7 @@
   import { errorPopupState } from "$lib/layout/stores.svelte"
   import { PagePane } from "$lib/types"
   import { classifyEditLeaseSaveError } from "$lib/wikidot/wikidot-edit-lease.js"
+  import WikitextEditor from "$lib/component/WikitextEditor.svelte"
   import { onDestroy, onMount, untrack } from "svelte"
 
   import EditLeaseDialog from "./EditLeaseDialog.svelte"
@@ -209,8 +210,12 @@
     <label class="page-append-label" for="page-append-input">
       {appendLabel}
     </label>
-    <textarea id="page-append-input" name="append" bind:value={appendedWikitext}
-    ></textarea>
+    <WikitextEditor
+      id="page-append-input"
+      name="append"
+      label={appendLabel}
+      bind:value={appendedWikitext}
+    />
     <div class="buttons">
       <input
         class="btn btn-danger"
@@ -251,12 +256,6 @@
 <style lang="scss">
   .page-append-form {
     padding-bottom: 2em;
-  }
-
-  #page-append-input {
-    box-sizing: border-box;
-    width: 100%;
-    min-height: 12em;
   }
 
   .page-append-label {

@@ -121,12 +121,14 @@ test("authorized direct /edit/true on a missing page opens the editor and create
   const response = await page.goto(`/${slug}/edit/true`)
   expect(response?.status()).toBe(404)
 
-  await expect(page.locator("textarea[name='wikitext']")).toBeVisible()
+  await expect(page.locator(".wikitext-editor .cm-content")).toBeVisible()
+  await expect(page.locator("textarea[name='wikitext']")).toBeHidden()
   await waitForNativeEventListener(page, "#editor", "submit")
   await expect(page.getByText(CREATE_DENIED_MESSAGE)).toHaveCount(0)
 
   await page.locator("input[name='title']").fill("Authorized create probe")
-  await page.locator("textarea[name='wikitext']").fill("Authorized body")
+  await page.locator(".wikitext-editor .cm-content").click()
+  await page.keyboard.type("Authorized body")
   await page.getByRole("button", { name: "save", exact: true }).click()
 
   await expect.poll(async () => (await pageCreateWritesFor(request, slug)).length).toBe(1)

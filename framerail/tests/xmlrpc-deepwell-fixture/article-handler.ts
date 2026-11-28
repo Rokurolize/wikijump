@@ -647,6 +647,25 @@ const fixtureCanCreatePage = (sessionToken: string | undefined | null) =>
   sessionToken === "fixture-session-token" ||
   sessionToken === "fixture-authenticated-session-token"
 
+const EDITOR_CREATE_TEMPLATE_ALPHA =
+  "+ Template Alpha heading\n\nTemplate **alpha** body."
+const EDITOR_CREATE_TEMPLATE_BETA =
+  "+ Template Beta heading\n\n[[[page-workflow-probe|Template link]]]"
+const EDITOR_CREATE_TEMPLATES = [
+  {
+    page_id: 3000620,
+    slug: "template:editor-codemirror-alpha",
+    title: "Editor template alpha",
+    wikitext: EDITOR_CREATE_TEMPLATE_ALPHA
+  },
+  {
+    page_id: 3000621,
+    slug: "template:editor-codemirror-beta",
+    title: "Editor template beta",
+    wikitext: EDITOR_CREATE_TEMPLATE_BETA
+  }
+]
+
 const missingPageArticleViewResult = (
   route: { slug: string; extra: string },
   sessionToken: string | undefined | null
@@ -683,9 +702,14 @@ const missingPageArticleViewResult = (
       compiled_body_styles: [],
       compiled_top_bar_html: null,
       compiled_side_bar_html: null,
-      new_page_wikitext: null,
-      page_templates: [],
-      selected_template_page_id: null,
+      new_page_wikitext:
+        route.slug === "editor-codemirror-create-probe"
+          ? EDITOR_CREATE_TEMPLATE_ALPHA
+          : null,
+      page_templates:
+        route.slug === "editor-codemirror-create-probe" ? EDITOR_CREATE_TEMPLATES : [],
+      selected_template_page_id:
+        route.slug === "editor-codemirror-create-probe" ? 3000620 : null,
       can_create: fixtureCanCreatePage(sessionToken),
       data_form: !fixtureCanCreatePage(sessionToken)
         ? null
