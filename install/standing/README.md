@@ -106,6 +106,8 @@ The `.env` in the runtime home is the sticker: keep it with the runtime and use 
 
 Rendering does not mutate the running stack. A routine Tier 1 refresh uses the already materialized home; a topology change uses Tier 2.
 
+Stafflab shares the standing topology but publishes its edge on the stafflab port. `stafflab.compose.override.yaml` is the source-owned list of those host publications, including the existing Tailscale binding and both loopback families for HTTPS. `roll-stafflab.py` appends that repository-owned overlay after the runtime home's Compose file and optional local override on every Compose invocation; its `!override` port list replaces only Caddy's port-publication list, so the rendered stafflab edge is the repository definition rather than a copy drifting in the installed home. The installed stafflab home is not edited by the overlay, and replacing its topology remains Tier 2 maintenance.
+
 ## Tier 2: topology, volume, network, or edge maintenance
 
 Tier 2 is the controlled maintenance ceremony for changes to named volume attachments, the Compose project name, the network name, or edge routing. Routine source updates do not use Tier 2. The old `runtime50x-*` identities must never be introduced into a newly rendered standing home.
