@@ -1,4 +1,5 @@
 import { fixtureState, hasExactKeys, requestContextHeaders } from "./context.ts"
+import { pages } from "./data.ts"
 import { renderFixtureWikitext } from "./render-fixture.ts"
 
 export const handleWikidotPagePreviewRpc = ({
@@ -23,10 +24,19 @@ export const handleWikidotPagePreviewRpc = ({
     headers: requestContextHeaders(request),
     params: rpcRequest.params
   })
+  const contextPage = request.headers["x-deepwell-page"]
+  const savedTags =
+    typeof contextPage === "string" ? (pages[contextPage]?.tags ?? []) : []
+  const styles = rpcRequest.params.wikitext.includes("live-preview-css-probe")
+    ? [
+        "body { background-color: rgb(12, 34, 56); }",
+        ".live-preview-css-target { color: rgb(1, 2, 3); }"
+      ]
+    : []
   return {
     result: {
-      body: renderFixtureWikitext(rpcRequest.params.wikitext),
-      styles: [],
+      body: renderFixtureWikitext(rpcRequest.params.wikitext, savedTags),
+      styles,
       legacy_actions: [],
       membership_actions: []
     }

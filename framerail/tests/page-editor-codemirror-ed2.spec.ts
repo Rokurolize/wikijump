@@ -229,6 +229,7 @@ test("creation keeps template and layout behavior while submitting exact typed b
   expect(response?.status()).toBe(404)
 
   const surface = await expectEditorReady(page, "#editor")
+  await expect(page.locator(".wikitext-live-preview")).toHaveCount(1)
   await expect(surface.locator("textarea[name='wikitext']")).toHaveValue(templateAlpha)
   await expect(surface.locator(".tok-heading").first()).toHaveText(
     "+ Template Alpha heading"
@@ -288,6 +289,7 @@ test("section editing submits the typed replacement and reconstructs the full so
   await page.locator("#edit-section-b-1").click()
 
   const surface = await expectEditorReady(page, "#edit-section-content")
+  await expect(page.locator(".wikitext-live-preview")).toHaveCount(0)
   await expect(surface.locator("textarea[name='wikitext']")).toHaveValue(initialSection)
   await expect(surface.locator(".tok-heading").first()).toHaveText("++ Child section")
   await expect(surface.locator(".tok-link").first()).toContainText(
@@ -347,6 +349,7 @@ test("append submits the typed addition and preserves byte-identical composition
   await openAppendPane(page)
 
   const surface = await expectEditorReady(page, "#page-append")
+  await expect(page.locator(".wikitext-live-preview")).toHaveCount(0)
   await focusEditorByKeyboard(page, "#page-append")
   await page.keyboard.type(addition)
   await expect(surface.locator("textarea[name='append']")).toHaveValue(addition)

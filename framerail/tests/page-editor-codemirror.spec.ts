@@ -81,21 +81,17 @@ test("CodeMirror preview and save use the exact typed wikitext and the server pa
   await typeEditorText(page, typedWikitext)
   await expect(page.locator("textarea[name='wikitext']")).toHaveValue(typedWikitext)
 
-  const previewResponse = page.waitForResponse(
-    (response) =>
-      response.url().includes("?/preview") && response.request().method() === "POST"
-  )
-  await page.locator("#edit-preview-button").click()
-  expect((await previewResponse).status()).toBe(200)
-  await expect(page.locator("#page-content")).toContainText(
+  await expect(page.locator("#live-preview-body")).toContainText(
     "Included editor fixture text."
   )
-  const previewHtml = await page.locator("#page-content").innerHTML()
+  await expect(page.locator("#edit-preview-status")).toHaveText("Preview is up to date.")
+  const previewHtml = await page.locator("#live-preview-body").innerHTML()
 
   const previewRequests = await request
     .get(`${FIXTURE_URL}/last-page-preview-requests`)
     .then((response) => response.json())
-  expect(previewRequests).toEqual([
+  expect(previewRequests.length).toBeGreaterThan(0)
+  expect(previewRequests.at(-1)).toEqual(
     expect.objectContaining({
       params: expect.objectContaining({
         site_id: 6000005,
@@ -104,7 +100,7 @@ test("CodeMirror preview and save use the exact typed wikitext and the server pa
         syntax_only: false
       })
     })
-  ])
+  )
 
   await page.locator("textarea[name='comments']").fill("codemirror exact save")
   await page
@@ -170,25 +166,27 @@ test("keyboard-only editing reaches the editor, preview, and save without Tab tr
   await page.keyboard.press("Tab")
   await expect(page.locator("textarea[name='comments']")).toBeFocused()
 
-  let previewFocused = false
-  for (let index = 0; index < 8; index += 1) {
-    await page.keyboard.press("Tab")
-    previewFocused =
-      (await page.evaluate(
-        () => document.activeElement?.id === "edit-preview-button"
-      )) === true
-    if (previewFocused) break
-  }
-  expect(previewFocused).toBe(true)
+  await expect(page.locator("#live-preview-body")).toContainText(keyboardText)
+  await expect(page.locator("#edit-preview-status")).toHaveText("Preview is up to date.")
 
-  const previewResponse = page.waitForResponse((response) =>
-    response.url().includes("?/preview")
+  let pauseFocused = false
+  for (let index = 0; index < 10; index += 1) {
+    await page.keyboard.press("Tab")
+    pauseFocused =
+      (await page.evaluate(
+        () => document.activeElement?.id === "edit-preview-pause-button"
+      )) === true
+    if (pauseFocused) break
+  }
+  expect(pauseFocused).toBe(true)
+  await page.keyboard.press("Enter")
+  await expect(page.locator("#edit-preview-status")).toHaveText(
+    "Preview paused. Changes are not being rendered."
   )
   await page.keyboard.press("Enter")
-  expect((await previewResponse).status()).toBe(200)
-  await expect(page.locator("#page-content")).toContainText(keyboardText)
+  await expect(page.locator("#edit-preview-status")).toHaveText("Preview is up to date.")
 
-  await page.keyboard.press("Tab")
+  await page.keyboard.press("Shift+Tab")
   const saveFocused = await page.evaluate(() => {
     const element = document.activeElement
     return (
