@@ -26,7 +26,7 @@ test("promotion candidate topology uses isolated volumes and only loopback non-4
     caddyGeneratorPath: "/tmp/generate.sh",
   });
   assert.deepEqual(Object.keys(compose.services).sort(), ["cache", "caddy", "database", "deepwell", "files", "framerail", "wws"]);
-  assert.deepEqual(compose.services.caddy.ports, ["127.0.0.1:20443:443"]);
+  assert.deepEqual(compose.services.caddy.ports, ["127.0.0.1:20443:443", "[::1]:20443:443"]);
   assert.deepEqual(compose.services.deepwell.ports, ["127.0.0.1:22747:2747"]);
   assert.deepEqual(compose.services.files.ports, ["127.0.0.1:29000:9000"]);
   assert.equal(JSON.stringify(compose).includes("runtime50x"), false);

@@ -167,7 +167,7 @@ export function candidateCompose({
     caddy: {
       ...common("caddy"),
       environment: {DEEPWELL_RPC_TOKEN: "${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}"},
-      ports: [`127.0.0.1:${publicPort}:443`],
+      ports: [`127.0.0.1:${publicPort}:443`, `[::1]:${publicPort}:443`],
       volumes: [
         {type: "bind", source: caddyRequestPath, target: "/etc/caddy-request.json", read_only: true},
         {type: "bind", source: caddyGeneratorPath, target: "/opt/wikijump-candidate/generate-caddyfile.sh", read_only: true},
