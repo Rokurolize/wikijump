@@ -29,7 +29,7 @@ use crate::models::forum_category::{
 use crate::models::forum_group::{self, Entity as ForumGroup, Model as ForumGroupModel};
 use crate::services::ServiceContext;
 use crate::utils::now;
-use paste::paste;
+use pastey::paste;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, Set,
 };

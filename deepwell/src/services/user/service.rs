@@ -47,7 +47,7 @@ use crate::utils::confusable_skeleton;
 use crate::utils::contains_invisible_format_characters;
 use crate::utils::now;
 use crate::utils::regex_replace_in_place;
-use paste::paste;
+use pastey::paste;
 use redis::AsyncCommands;
 use sea_orm::sea_query::Expr;
 use sea_orm::{

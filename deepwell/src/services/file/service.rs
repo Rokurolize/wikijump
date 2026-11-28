@@ -47,7 +47,7 @@ use crate::types::{Action, FileOrder, FileRevisionType, Permission, Resource};
 use crate::types::{Maybe, Reference};
 use crate::utils::now;
 use crate::utils::trim_spaces_in_place;
-use paste::paste;
+use pastey::paste;
 use sea_orm::ActiveValue;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, ConnectionTrait, DbErr, EntityTrait,

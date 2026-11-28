@@ -1138,7 +1138,7 @@ dependencies = [
  "maplit",
  "missive",
  "notify",
- "paste",
+ "pastey",
  "pretty_assertions",
  "quick-xml 0.42.0",
  "rand 0.10.3",
@@ -3238,12 +3238,6 @@ dependencies = [
  "getrandom 0.4.3",
  "phc",
 ]
-
-[[package]]
-name = "paste"
-version = "1.0.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "pastey"

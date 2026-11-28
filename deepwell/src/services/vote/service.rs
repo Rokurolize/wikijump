@@ -26,7 +26,7 @@ use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page_vote::{self, Entity as PageVote, Model as PageVoteModel};
 use crate::services::ServiceContext;
 use crate::utils::now;
-use paste::paste;
+use pastey::paste;
 use sea_orm::sea_query::Expr;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter,

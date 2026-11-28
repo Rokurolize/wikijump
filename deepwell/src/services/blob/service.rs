@@ -42,7 +42,7 @@ use crate::utils::assert_is_csprng;
 use crate::utils::{ConvertToI64, ConvertToU64, ConvertToUsize, now};
 use bytes::Bytes;
 use cuid2::cuid;
-use paste::paste;
+use pastey::paste;
 use rand::distr::{Alphanumeric, SampleString};
 use s3::request::request_trait::ResponseData;
 use s3::serde_types::HeadObjectResult;

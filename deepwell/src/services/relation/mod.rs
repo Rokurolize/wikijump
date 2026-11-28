@@ -59,7 +59,7 @@ use crate::services::ServiceContext;
 use crate::services::permission::PermissionCache;
 use crate::types::{RelationObjectType, RelationType};
 use crate::utils::now;
-use paste::paste;
+use pastey::paste;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, QueryOrder, Set,
 };

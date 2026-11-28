@@ -32,7 +32,7 @@ use crate::types::RerenderDepth;
 use crate::types::{Maybe, Reference};
 use crate::utils::get_category_name;
 use crate::utils::now;
-use paste::paste;
+use pastey::paste;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter,
     QueryOrder, QuerySelect, Set,

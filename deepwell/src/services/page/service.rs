@@ -51,7 +51,7 @@ use crate::types::{
 use crate::utils::now;
 use crate::utils::{get_category_name, trim_default};
 use exn::Frame;
-use paste::paste;
+use pastey::paste;
 use ref_map::OptionRefMap;
 use sea_orm::ActiveValue;
 use sea_orm::{

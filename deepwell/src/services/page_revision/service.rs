@@ -58,7 +58,7 @@ use crate::utils::{locale_for_ftml, split_category, split_category_name, trim_de
 use ftml::data::{PageInfo, PageRef};
 use ftml::layout::Layout;
 use ftml::parsing::ParseError;
-use paste::paste;
+use pastey::paste;
 use ref_map::OptionRefMap;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, JoinType,

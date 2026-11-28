@@ -26,7 +26,7 @@ use axum::body::Body;
 use axum::http::header::{self, HeaderMap};
 use axum::http::status::StatusCode;
 use axum::response::{IntoResponse, Response};
-use paste::paste;
+use pastey::paste;
 
 pub use crate::deepwell::BasicErrorHtml;
 
