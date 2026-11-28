@@ -107,7 +107,7 @@ test("the registration legal disclosure is localized in English and Japanese", a
   }
 })
 
-test("English fallback and Japanese catalogs define the exact page action labels", async () => {
+test("English fallback and localized catalogs define the exact page action labels", async () => {
   const baseEn = await readFile(
     new URL("../../locales/fluent/base/en.ftl", import.meta.url),
     "utf8"
@@ -157,12 +157,9 @@ test("English fallback and Japanese catalogs define the exact page action labels
     assert.match(wikiEn, new RegExp(`^${key} = .+$`, "mu"), `en: ${key}`)
     assert.match(wikiJa, new RegExp(`^${key} = ${label}$`, "mu"), `ja: ${key}`)
   }
-  // zh-Hans localizes the existing lock pane; its action-button label falls
-  // back to English. Do not reintroduce the extra action-lock message that
-  // Fluent's parent-catalog validation rejected (#2500).
   assert.match(wikiZhHans, /^wiki-page-lock = 锁定页面$/mu)
   assert.match(wikiZhHans, /^ {2}\.permission-only = 仅权限用户$/mu)
-  assert.doesNotMatch(wikiZhHans, /^wiki-page-action-lock\s*=/mu)
+  assert.match(wikiZhHans, /^wiki-page-action-lock = 锁定页面$/mu)
   assert.match(wikiZhHans, /^wiki-page-action-rename-move = 移动$/mu)
 })
 

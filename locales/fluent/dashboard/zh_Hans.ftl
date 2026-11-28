@@ -8,7 +8,7 @@ dashboard-profile = 公开个人简介
   .save = 保存修改
   .toast = 您的修改已保存。
 
-dashboard-account = 账户
+dashboard-account = 账号
   .username = 用户名
   .language = 语言
   .allow-messages = 接受来自其他用户的信息

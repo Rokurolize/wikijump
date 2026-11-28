@@ -17,7 +17,10 @@ emails-reset-password =
   .greeting = 重置您的密码
   .intro = 您收到此封电子邮件的原因是我们收到了您账号的密码重置请求。点击下方的按钮以重置您的密码。
   .action = 重置密码
-  .expires = 此密码重置链接将于 { $count } 分钟后过期。
+  .expires = 此密码重置链接将于 { $count ->
+    [1] 1 分钟后过期。
+    *[other] { $count } 分钟后过期。
+  }
   .outro = 若您并未请求密码重置，则无需做出任何操作。
 
 emails-delete-account =

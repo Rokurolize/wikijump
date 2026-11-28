@@ -2,7 +2,7 @@
 
 footer-powered-by = 由 { -service-name } 提供技术支持
 
-footer-part-of = Part of { $name }
+footer-part-of = { $name } 的一部分
 
 footer-menu =
   .report-bug = 报告漏洞
