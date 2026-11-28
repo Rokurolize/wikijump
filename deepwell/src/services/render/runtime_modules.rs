@@ -420,6 +420,14 @@ impl MemberGatedModuleAccess {
         }
     }
 
+    pub(super) fn current_site_id(&self) -> Option<i64> {
+        self.current_site_id
+    }
+
+    pub(super) fn viewer_user_id(&self) -> Option<i64> {
+        self.viewer_user_id
+    }
+
     pub(super) async fn visible(&self, ctx: &ServiceContext<'_>) -> Result<bool> {
         let visible = self
             .visible
@@ -1399,8 +1407,6 @@ impl RenderService {
             ctx,
             wikitext,
             settings,
-            options.current_site_id,
-            options.viewer_user_id,
             options.member_gated_module_access,
             compat_html,
             compat_text,

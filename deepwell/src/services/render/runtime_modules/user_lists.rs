@@ -58,8 +58,6 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         wikitext: String,
         settings: &WikitextSettings,
-        current_site_id: Option<i64>,
-        viewer_user_id: Option<i64>,
         member_gated_module_access: &MemberGatedModuleAccess,
         compat_html: &mut CompatHtmlFragments,
         compat_text: &mut CompatTextFragments,
@@ -70,6 +68,8 @@ impl RenderService {
 
         let literal_regions =
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let current_site_id = member_gated_module_access.current_site_id();
+        let viewer_user_id = member_gated_module_access.viewer_user_id();
         let Some(site_id) = current_site_id else {
             return Ok(Self::expand_list_drafts_without_site(
                 wikitext,
