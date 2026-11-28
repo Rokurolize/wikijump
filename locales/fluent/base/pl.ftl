@@ -11,44 +11,75 @@
 # Shows whenever a message is still being loaded
 message-loading = Ładowanie...
 
-goto-home = Wróć na stronę główną
+goto-home = Przejdź na stronę główną
 
-goto-service = Wejdź na { -service-name }
+goto-service = Przejdź do serwisu { -service-name }
 
 base-title = { $title } | { -service-name }
 
-navigated-to = Przejdź do { $path }
+navigated-to = Przejście do { $path }
 
 ## Generic
 
-about = O witrynie
+about = Informacje
+
+about-info = Informacje o platformie
+    .backend = Backend
+    .frontend = Frontend
+    .package-name = Nazwa pakietu
+    .package-description = Opis pakietu
+    .package-license = Licencja pakietu
+    .package-repository = Repozytorium pakietu
+    .package-version = Wersja pakietu
+    .rustc-version = Wersja Rustc
+    .cargo-version = Wersja Cargo
+    .built-at = Zbudowano
+    .git-commit = Commit Git
+    .ftml-commit = Commit FTML
+    .blurb = Wikijump to wolna, otwartoźródłowa platforma do wspólnego tworzenia fikcji i światów: nowoczesny zamiennik Wikidotu rozwijany przez zespół Wikijump i społeczność SCP.
+    .blog = Blog Wikijump
+    .node-version = Wersja Node
+    .pnpm-version = Wersja Pnpm
 account = Konto
+alt-title = Tytuł alternatywny
 applications = Aplikacje
 avatar = Awatar
 breadcrumbs = Nawigacja okruszkowa
-change = Zmiany
+cancel = Anuluj
+change = Zmień
+children = Strony podrzędne
 clear = Wyczyść
 close = Zamknij
+confirm = Potwierdź
 dashboard = Panel sterowania
+delete = Usuń
 docs = Dokumentacja
 download = Pobierz
 edit = Edytuj
 editor = Edytor
+error = Błąd
+files = Pliki
 footer = Stopka strony
-general = Główne
+general = Ogólne
 header = Nagłówek strony
 help = Pomoc
+history = Historia
 inbox = Skrzynka odbiorcza
 invitations = Zaproszenia
-load = Ładuj
+layout = Układ
+load = Wczytaj
 main-content = Główna zawartość
-messages = Wiadomość
+messages = Wiadomości
+move = Przenieś
 navigation = Nawigacja
 notifications = Powiadomienia
+options = Opcje
+parents = Strony nadrzędne
 preview = Podgląd
 privacy = Prywatność
 profile = Profil
-publish = Publikacja
+publish = Opublikuj
+restore = Przywróć
 reveal-sidebar = Rozwiń pasek boczny
 save = Zapisz
 security = Bezpieczeństwo
@@ -57,37 +88,41 @@ sent = Wysłano
 settings = Ustawienia
 sidebar = Pasek boczny
 tags = Tagi
-terms-conditions = Warunki
-upload = Przekaż plik
+terminology = Terminologia
+terms-conditions = Regulamin
+title = Tytuł
+upload = Prześlij
+view = Zobacz
+vote = Oceń
 
 search = Szukaj
-  .placeholder = Wyszukiwanie...
-
+  .placeholder = Szukaj...
 
 ## Generic Authentication
 
 login = Zaloguj się
-  .toast = Zostałeś zalogowany.
+  .toast = Zalogowano.
 
 logout = Wyloguj się
-  .toast = Zostałeś wylogowany.
+  .toast = Wylogowano.
 
 register = Zarejestruj się
-  .toast = Utworzyłeś konto.
+  .toast = Utworzono konto.
+  .disabled-notice = Tworzenie kont nie jest dostępne w tej instancji Wikijump. Konta są tworzone przez administratorów instancji.
   .legal-notice = Tworząc konto, akceptujesz nasz{ " " }
   .legal-terms = Regulamin
   .legal-conjunction = { " " }oraz{ " " }
   .legal-privacy = Politykę prywatności
   .legal-suffix = .
 
-specifier = Email lub Nazwa Użytkownika
+specifier = Email lub nazwa użytkownika
   .placeholder = Wprowadź email lub nazwę użytkownika...
 
 mfa-code = Kod MFA
 
 username = Nazwa użytkownika
   .placeholder = Wprowadź nazwę użytkownika...
-  .info = Możesz to później zmienić.
+  .info = Możesz ją później zmienić.
 
 email = Email
   .placeholder = Wprowadź adres email...
@@ -98,10 +133,10 @@ password = Hasło
 
 confirm-password = Potwierdź hasło
 
-forgot-password = Zapomniałem hasła
-  .question = Zapomniałeś hasła?
+forgot-password = Nie pamiętam hasła
+  .question = Nie pamiętasz hasła?
 
-reset-password = Resetuj hasło
+reset-password = Zresetuj hasło
 
 remember-me = Zapamiętaj mnie
 
@@ -111,7 +146,7 @@ field-required = To pole jest wymagane
 
 characters-left = { $count ->
   [1] Pozostał 1 znak
-  *[other] Pozostało { $count } znaków
+  *[other] Liczba pozostałych znaków: { $count }
 }
 
 hold-to-show-password = Przytrzymaj, aby pokazać hasło
@@ -119,38 +154,40 @@ hold-to-show-password = Przytrzymaj, aby pokazać hasło
 ## Errors
 
 error-404 =
-  .generic = Żądana treść nie została odnaleziona.
-  .page = Wybrana strona nie została odnaleziona.
-  .user = Wybrany użytkownik nie został odnaleziony.
+  .generic = Żądana treść nie została znaleziona.
+  .page = Żądana strona nie została znaleziona.
+  .user = Żądany użytkownik nie został znaleziony.
 
 error-form =
-  .missing-fields = Proszę wypełnij wszystkie wymagane pola.
+  .missing-fields = Wypełnij wszystkie wymagane pola.
   .password-mismatch = Hasła się nie zgadzają.
+  .password-too-short = Hasło musi zawierać co najmniej 15 znaków.
+  .email-invalid = Adres email jest nieprawidłowy.
 
 error-api =
-  .GENERIC = Coś poszło nie tak.
-  .INTERNAL = Wystąpił problem wewnętrzny serwera. Proszę spróbować ponownie później.
-  .NO_CONNECTION = Brak połączenia internetowego.
-  .BAD_SYNTAX = Żądanie nie zostało rozpoznane przez serwer.
-  .FORBIDDEN = Nie jesteś upoważniony do wykonania tej czynności.
-  .NOT_FOUND = Żądana treść nie została odnaleziona.
+  .GENERIC = Coś poszło nie tak z Twoim żądaniem.
+  .INTERNAL = Wystąpił wewnętrzny błąd serwera. Spróbuj ponownie później.
+  .NO_CONNECTION = Brak połączenia z internetem.
+  .BAD_SYNTAX = Serwer nie mógł zrozumieć żądania.
+  .FORBIDDEN = Nie masz uprawnień do wykonania tej czynności.
+  .NOT_FOUND = Żądana treść nie została znaleziona.
   .CONFLICT = Żądana treść jest w konflikcie z inną treścią.
 
-  .ACCOUNT_ALREADY_VERIFIED = Konto zostało już wcześniej zweryfikowane.
-  .ACCOUNT_NO_EMAIL = Konto nie ma załączonego adresu email.
-  .ALREADY_LOGGED_IN = Już jesteś zalogowany.
-  .FAILED_TO_UPDATE_PROFILE = Nie udało się aktualizować profilu.
-  .INVALID_AVATAR = Wczytywany plik nie jest prawidłowym zdjęciem.
-  .INVALID_EMAIL = Nieprawidłowy adres email.
-  .INVALID_LANGUAGE_CODE = Język kodu źródłowego jest nieprawidłowy.
-  .INVALID_PASSWORD = Nieprawidłowe hasło.
+  .ACCOUNT_ALREADY_VERIFIED = To konto zostało już zweryfikowane.
+  .ACCOUNT_NO_EMAIL = To konto nie ma przypisanego adresu email.
+  .ALREADY_LOGGED_IN = Już zalogowano.
+  .FAILED_TO_UPDATE_PROFILE = Nie udało się zaktualizować profilu.
+  .INVALID_AVATAR = Przesłany plik nie jest prawidłowym obrazem.
+  .INVALID_EMAIL = Adres email jest nieprawidłowy.
+  .INVALID_LANGUAGE_CODE = Kod języka jest nieprawidłowy.
+  .INVALID_PASSWORD = Hasło jest nieprawidłowe.
   .INVALID_SESSION = Sesja wygasła. Zaloguj się ponownie.
-  .INVALID_SPECIFIER = Nieprawidłowy adres email lub nazwa użytkownika.
-  .INVALID_USERNAME = Nieprawdiłowa nazwa użytkownika.
-  .LOGIN_FAILED = Nie udało się zalogować. Sprawdź swoje dane konta.
-  .NOT_LOGGED_IN = Nie jesteś zalogowany.
-  .UNKNOWN_EMAIL = Nie istnieje konto o takim adresie email.
-  .UNKNOWN_USER = Nie istnieje konto o takiej nazwie użytkownika.
-  .WRONG_PASSWORD = Nieprawidłowe hasło.
+  .INVALID_SPECIFIER = Podano nieprawidłowy adres email lub nieprawidłową nazwę użytkownika.
+  .INVALID_USERNAME = Nazwa użytkownika jest nieprawidłowa.
+  .LOGIN_FAILED = Nie udało się zalogować. Sprawdź dane logowania.
+  .NOT_LOGGED_IN = Musisz się zalogować.
+  .UNKNOWN_EMAIL = Nie istnieje konto przypisane do tego adresu email.
+  .UNKNOWN_USER = Nie istnieje konto z taką nazwą użytkownika.
+  .WRONG_PASSWORD = Hasło jest niepoprawne.
 
 error-418 = Jestem czajnikiem

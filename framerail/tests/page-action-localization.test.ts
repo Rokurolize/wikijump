@@ -136,6 +136,14 @@ test("English fallback and localized catalogs define the exact page action label
     new URL("../../locales/fluent/wiki-page/ko.ftl", import.meta.url),
     "utf8"
   )
+  const basePl = await readFile(
+    new URL("../../locales/fluent/base/pl.ftl", import.meta.url),
+    "utf8"
+  )
+  const wikiPl = await readFile(
+    new URL("../../locales/fluent/wiki-page/pl.ftl", import.meta.url),
+    "utf8"
+  )
 
   const baseLabels: Record<string, string> = {
     delete: "削除",
@@ -195,6 +203,33 @@ test("English fallback and localized catalogs define the exact page action label
   }
   for (const [key, label] of Object.entries(koreanPageLabels)) {
     assert.match(wikiKo, new RegExp(`^${key} = ${label}$`, "mu"), `ko: ${key}`)
+  }
+
+  const polishBaseLabels: Record<string, string> = {
+    delete: "Usuń",
+    edit: "Edytuj",
+    files: "Pliki",
+    history: "Historia",
+    layout: "Układ",
+    options: "Opcje",
+    parents: "Strony nadrzędne",
+    vote: "Oceń"
+  }
+  const polishPageLabels: Record<string, string> = {
+    "wiki-page-view-source": "Zobacz źródło",
+    "wiki-page-action-append": "Dopisz",
+    "wiki-page-action-edit-sections": "Edytuj sekcje",
+    "wiki-page-action-edit-meta": "Edytuj metatagi",
+    "wiki-page-action-watchers": "Obserwujący",
+    "wiki-page-action-backlinks": "Linki zwrotne",
+    "wiki-page-action-lock": "Zablokuj stronę",
+    "wiki-page-action-rename-move": "Przenieś"
+  }
+  for (const [key, label] of Object.entries(polishBaseLabels)) {
+    assert.match(basePl, new RegExp(`^${key} = ${label}$`, "mu"), `pl: ${key}`)
+  }
+  for (const [key, label] of Object.entries(polishPageLabels)) {
+    assert.match(wikiPl, new RegExp(`^${key} = ${label}$`, "mu"), `pl: ${key}`)
   }
 })
 

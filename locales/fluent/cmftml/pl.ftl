@@ -1,110 +1,112 @@
 ### CodeMirror FTML Extension
 
-cmftml-undocumented-block = Podany blok jest prawidłowy, ale nie istnieje jeszcze jego dokumentacja.
+cmftml-undocumented-block = Ten blok jest prawidłowy, ale nie ma jeszcze dokumentacji.
 
 ## Linting
 
 cmftml-lint =
   .warning-source = ftml({ $rule } = { $kind } w { $token }) [{ NUMBER($from, useGrouping: 0) }, { NUMBER($to, useGrouping: 0) }]
 
-  .recursion-depth-exceeded = Zbyt dużo rekurencji w znaczniku.
+  .recursion-depth-exceeded = Zbyt dużo rekurencji w znacznikach.
 
-  .end-of-input = Reguła typu '{ $rule }' nie mogła zostać przetworzona przed osiągnięciem końca dokumentu.
+  .end-of-input = Reguły typu „{ $rule }” nie udało się przetworzyć przed końcem dokumentu.
 
-  .no-rules-matched = Wyszukiwanie '{ $slice }' nie zgadza się z żadnym źródłem, więc zostanie pokazane jako czysty tekst.
+  .no-rules-matched = Ciąg „{ $slice }” niczemu nie odpowiada i zostanie wyrenderowany jako zwykły tekst.
 
-  .rule-failed = Reguła '{ $rule }' nie wyszukała nic w tym miejscu i musiała wycofać inną regułę.
+  .rule-failed = Reguła „{ $rule }” nie dopasowała niczego w tym miejscu i trzeba było użyć innej reguły.
 
-  .not-start-of-line = Reguła '{ $rule }' nie wyszukała nic w tym miejscu, bo może szukać jedynie zaczynając od początku nowego wiersza.
+  .not-start-of-line = Reguła „{ $rule }” nie dopasowała niczego w tym miejscu, ponieważ może dopasowywać tylko od początku nowego wiersza.
 
-  .invalid-include = To włączenie jest nieprawidłowe i nie zostanie wygenerowane.
+  .invalid-include = To włączenie jest nieprawidłowe i nie zostanie wyrenderowane.
 
-  .list-empty = W tej liście nic się nie znajduje.
+  .list-empty = Ta lista nie zawiera żadnych elementów.
 
-  .list-contains-non-item = Lista ma bezpośrednie węzły potomne, które nie są blokami list-item.
+  .list-contains-non-item = Ta lista ma bezpośrednie węzły potomne, które nie są blokami list-item.
 
-  .list-item-outside-list = Ten obiekt list-item nie jest w liście.
+  .list-item-outside-list = Ten element list-item nie znajduje się w liście.
 
-  .list-depth-exceeded = Lista jest zagnieżdżona zbyt głęboko i nie może być wygenerowana.
+  .list-depth-exceeded = Ta lista jest zagnieżdżona zbyt głęboko i nie może zostać wyrenderowana.
 
-  .table-contains-non-row = Tabela ma bezpośrednie węzły potomne, które nie są wierszami tabeli.
+  .table-contains-non-row = Ta tabela ma bezpośrednie węzły potomne, które nie są wierszami tabeli.
 
-  .table-row-contains-non-cell = Wiersz tabeli ma bezpośrednie węzły potomne, które nie są komórkamk tabeli.
+  .table-row-contains-non-cell = Ten wiersz tabeli ma bezpośrednie węzły potomne, które nie są komórkami.
 
-  .table-row-outside-table = Wiesz nie znajduje się w tabeli.
+  .table-row-outside-table = Ten wiersz tabeli nie znajduje się w tabeli.
 
-  .table-cell-outside-table = Komórka tabeli nie znajduje się w wierszu.
+  .table-cell-outside-table = Ta komórka tabeli nie znajduje się w wierszu tabeli.
 
-  .footnotes-nested = Przypis jest nieprawidłowy, ponieważ znajduje się w innym przypisie.
+  .footnotes-nested = Ten przypis jest nieprawidłowy, ponieważ znajduje się wewnątrz innego przypisu.
 
-  .blockquote-depth-exceeded = Blockquote jest zagnieżdżony zbyt głęboko i nie może zostać wygenerowany.
-  .no-such-block = Unknown block '{ $slice }'.
+  .blockquote-depth-exceeded = Ten cytat blokowy jest zagnieżdżony zbyt głęboko i nie może zostać wyrenderowany.
 
-  .block-disallows-star = Blok '{ $slice }' nie obsługuje gwiazdek. (rozpoczynających się znakiem '*')
+  .no-such-block = Nieznany blok „{ $slice }”.
 
-  .block-disallows-score = Blok '{ $slice }' nie obsługuje wyników. (rozpoczynających się zmakiem '_')
+  .block-disallows-star = Blok „{ $slice }” nie obsługuje wywołania z gwiazdką (początkowym znakiem „*”).
 
-  .block-missing-name = Blok '{ $slice }' wymaga nazwy lub wartości, której nie podano.
+  .block-disallows-score = Blok „{ $slice }” nie obsługuje wywołania z podkreśleniem (początkowym znakiem „_”).
 
-  .block-missing-close-brackets = W bloku brakuje nawiasów zamykających ']]'.
+  .block-missing-name = Blok „{ $slice }” wymaga nazwy lub wartości, ale nie podano żadnej.
 
-  .black-malformed-arguments = Blok '{ $slice }' zniekształcił argumenty.
+  .block-missing-close-brackets = W tym bloku brakuje zamykających nawiasów „]]”.
 
-  .block-missing-arguments = W bloku '{ $slice }' brakuje jednego lub więcej wymaganych argumentów.
+  .black-malformed-arguments = Blok „{ $slice }” ma nieprawidłowo zbudowane argumenty.
 
-  .block-expected-end = Blok typu '{ $rule }' powinien zakończyć się w tym miejscu.
-  .block-end-mismatch = Blok typu '{ $rule }' powinien zakończyć się tutaj, a nie w '{ $slice }'.
+  .block-missing-arguments = W bloku „{ $slice }” brakuje co najmniej jednego wymaganego argumentu.
 
-  .no-such-module = Nieznany moduł '{ $slice }'.
+  .block-expected-end = Blok typu „{ $rule }” powinien zakończyć się najpóźniej w tym miejscu.
 
-  .module-missing-name = Moduł powinien zawierać nazwę.
+  .block-end-mismatch = Blok typu „{ $rule }” powinien zakończyć się tutaj, a nie w „{ $slice }”.
 
-  .no-such-page = Strona '{ $slice }' nie istnieje.
+  .no-such-module = Nieznany moduł „{ $slice }”.
 
-  .invalid-url = Adres URL '{ $slice }' jest nieprawidłowy.
+  .module-missing-name = Należy podać nazwę modułu.
+
+  .no-such-page = Strona „{ $slice }” nie istnieje.
+
+  .invalid-url = Adres URL „{ $slice }” jest nieprawidłowy.
 
 ## Block Acceptance
 
 cmftml-accepts =
   .star =
-    Blok akceptuje prefiks '*' (gwiazdek).
+    Ten blok akceptuje prefiks „*” (gwiazdkę).
     Efekt użycia tego prefiksu zależy od bloku.
 
   .score =
-    Blok akceptuje sufiks '_' (wyniku),
-    który usunie wiodące i końcowe znaki nowych linii.
+    Ten blok akceptuje sufiks „_” (podkreślenie),
+    który usuwa początkowe i końcowe znaki nowego wiersza.
 
   .newlines =
-    Blok akceptuje nowe linie między początkiem a końcem węzła (node).
+    Ten blok akceptuje znaki nowego wiersza między węzłem początkowym i końcowym.
 
   .html-attributes =
-    Blok akceptuje atrybuty/argumenty HTML.
-    Atrybuty HTML są obiektem na białej liście, ale większości z nich można użyć niezależnie.
+    Ten blok akceptuje ogólne atrybuty/argumenty HTML.
+    Atrybuty HTML są ograniczane listą dozwolonych, ale mimo to można używać większości z nich.
 
 ## Block Argument Types
 
-cmftml-argument-none = BRAK
+cmftml-argument-none = NONE
   .info = Ten blok nie akceptuje żadnych argumentów.
 
-cmftml-argument-value = WARTOŚĆ
-  .info = Ten blok akceptuje tekst między początkiem a końcem węzła (node).
+cmftml-argument-value = VALUE
+  .info = Ten blok akceptuje tekst między początkiem i końcem węzła.
 
-cmftml-argument-map = MAPA
+cmftml-argument-map = MAP
   .info = Ten blok akceptuje argumenty.
 
-cmftml-argument-value-map = WARTOŚĆ+MAPA
-  .info = Ten blok akceptuje tekst oraz argumenty, które są po spacji.
+cmftml-argument-value-map = VALUE+MAP
+  .info = Ten blok akceptuje tekst, a po spacji argumenty.
 
 ## Block Body Types
 
-cmftml-body-none = BRAK
-  .info = Ten blok nie zawiera ciała (body) i nie wymaga końcowego węzła (node).
+cmftml-body-none = NONE
+  .info = Ten blok nie ma treści i nie wymaga węzła końcowego.
 
-cmftml-body-raw = CZYSTY-TEKST
-  .info = Ten blok akceptuje ciało (body), ale interpretuje je jako czysty tekst.
+cmftml-body-raw = RAW
+  .info = Ten blok akceptuje treść, ale interpretuje ją jako surowy tekst.
 
-cmftml-body-elements = ELEMENTY
-  .info = Ten blok akceptuje ciało (body) i może zagnieździć w nim dodatkowe elementy.
+cmftml-body-elements = ELEMENTS
+  .info = Ten blok akceptuje treść i może zagnieżdżać w niej dodatkowe elementy.
 
-cmftml-body-other = INNE
-  .info = Ten blok używa specjalnej składni, która nie może być skategoryzowana.
+cmftml-body-other = OTHER
+  .info = Ten blok używa specjalnej składni, której nie można łatwo skategoryzować.
