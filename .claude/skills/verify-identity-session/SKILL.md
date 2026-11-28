@@ -74,7 +74,7 @@ Four specs, one promise each. `extract.py` reads the anchors on every run and wr
 | `StepsMonotone` | A repeated TOTP step does not complete a second time. |
 | `CookieFollows` | A live session keeps the cookie and is used. A dead or missing session clears the cookie and is anonymous. A fault keeps the cookie and is not used. |
 | `Create`, `Rename`, `Delete`, `Reregister`, `Verify` | `create_internal`, `update_name`, `delete`, and `displace_pending_email_claims` from `update`. Re-register is create after `deleted_at` is set. |
-| `SlugUnique`, `EmailUnique` | `user_slug_active_unique_idx` and `user_email_active_unique_idx` are unique indexes. Both predicates keep `deleted_at IS NULL`. The email index also requires a regular user and a non-empty address. |
+| `SlugUnique`, `EmailUnique` | `user_slug_active_unique_idx` and `user_email_active_unique_idx` are unique indexes. Both predicates keep `deleted_at IS NULL`. The email index also requires a regular user and a non-empty address, and its key is `lower(normalize(email, nfkc))`; the model's email values are those folded ownership keys. |
 | `DeleteMarks` | `delete` sets `deleted_at` to now when the row is still live. |
 | `LiveUnique` | Two live users do not share a slug or a non-empty email. |
 | `DeleteFrees` | A delete leaves the user deleted, unless a later re-register made that user live again. |
@@ -95,7 +95,7 @@ Four specs, one promise each. `extract.py` reads the anchors on every run and wr
 
 - **Session:** one account, one browser cookie, TOTP steps 1 and 2, at most two re-logins. Revoke and expiry are one miss at `get_optional`. The five-failure MFA budget, recovery codes, session cap, and prune are outside this spec.
 - **Cookie fault:** a thrown error that is not an invalid-token error. The model does not include a second tab.
-- **Accounts:** two users, slugs `a` and `b`, emails `e` and `f`. The email index compares `lower(email)`. This bound does not include two spellings of one address. Aliases, bots, and the verified-email index are outside this spec. `delete` and the partial indexes are what free a slug for re-register.
+- **Accounts:** two users, slugs `a` and `b`, emails `e` and `f`. The email values are already folded by `lower(normalize(email, nfkc))`; extractor anchors require that key in the index, create lookup, and pending-claim displacement. The concrete spelling of a legacy non-NFKC keeper is outside this spec. Aliases, bots, and the verified-email index are outside this spec. `delete` and the partial indexes are what free a slug for re-register.
 - **Tokens:** one link and one grant. Reset and deletion share `redeem_as` and `redeem_grant`. Cooldown, expiry, purpose strings other than the grant purposes, and email rotation are outside this spec.
 - **Permission fence:** one reader, one revoker, one stale writer, fence values 0, 1, and 2. Site and user versions are one counter. TTL, the pub/sub payload, and a second concurrent reader are outside this spec.
 - **Article cache:** `ArticleCacheFence.tla` still owns the public-content fence. This check does not run that spec.
@@ -111,6 +111,7 @@ It did if the diff touches any of these:
 - `deepwell/src/services/user/service.rs`
 - `deepwell/migrations/20261105010000_user_slug_active_unique.sql`
 - `deepwell/migrations/20261105020000_user_email_active_unique.sql`
+- `deepwell/migrations/20261128010000_user_email_nfkc_active_unique.sql`
 - `deepwell/src/services/email/email_token.rs`
 - `deepwell/src/endpoints/email.rs`
 - `deepwell/src/services/permission/cache.rs`
@@ -130,6 +131,7 @@ git diff --stat "$(git log -1 --format=%h -- .claude/skills/verify-identity-sess
   deepwell/src/services/user/service.rs \
   deepwell/migrations/20261105010000_user_slug_active_unique.sql \
   deepwell/migrations/20261105020000_user_email_active_unique.sql \
+  deepwell/migrations/20261128010000_user_email_nfkc_active_unique.sql \
   deepwell/src/services/email/email_token.rs \
   deepwell/src/endpoints/email.rs \
   deepwell/src/services/permission/cache.rs \

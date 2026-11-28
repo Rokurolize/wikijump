@@ -63,6 +63,7 @@ const SLUG_UNIQUE_INDEX: &str = "user_slug_active_unique_idx";
 const EMAIL_UNIQUE_INDEX: &str = "user_email_active_unique_idx";
 const SLUG_MIGRATION: &str = "20261105010000_user_slug_active_unique.sql";
 const EMAIL_MIGRATION: &str = "20261105020000_user_email_active_unique.sql";
+const NFKC_EMAIL_MIGRATION: &str = "20261128010000_user_email_nfkc_active_unique.sql";
 
 async fn test_state() -> ServerState {
     build_server_state_without_workers(
@@ -740,7 +741,8 @@ async fn concurrent_mfa_setup_enrolls_exactly_one_secret() {
 const MIGRATION_SEED: &str = r#"
 INSERT INTO known_user (user_id) VALUES
     (910001), (910002), (910003), (910004), (910005),
-    (910006), (910007), (910008), (910009);
+    (910006), (910007), (910008), (910009), (910010),
+    (910011), (910012);
 
 INSERT INTO "user" (
     user_id, user_type, name, slug, name_changes_left,
@@ -758,6 +760,12 @@ INSERT INTO "user" (
      'G3-Dupe@Example.invalid', '2026-01-01T00:00:00Z', '!', ARRAY['en'], NULL),
     (910005, 'regular', 'Mail Loser', 'g3-mail-loser', 2,
      'g3-dupe@example.invalid', '2026-01-01T00:00:00Z', '!', ARRAY['en'], NULL),
+    (910010, 'regular', 'NFKC Keeper', 'g3-nfkc-keeper', 2,
+     'mailﬁ１@example.invalid', '2026-01-01T00:00:00Z', '!', ARRAY['en'], NULL),
+    (910011, 'regular', 'NFKC Loser', 'g3-nfkc-loser', 2,
+     'mailfi1@example.invalid', '2026-01-01T00:00:00Z', '!', ARRAY['en'], NULL),
+    (910012, 'regular', 'NFKC Placeholder', 'g3-nfkc-placeholder', 2,
+     'duplicate-910011@invalid', '2026-01-01T00:00:00Z', '!', ARRAY['en'], NULL),
     (910006, 'bot', 'Mail Bot', 'g3-mail-bot', 2,
      'g3-dupe@example.invalid', NULL, '!', ARRAY['en'], NULL),
     (910007, 'regular', 'Empty One', 'g3-empty-one', 2,
@@ -810,7 +818,7 @@ async fn run_migration_scenario(database_url: &str, scratch_name: &str) {
         .await
         .expect("scratch database connection should open");
 
-    let new_migrations = [SLUG_MIGRATION, EMAIL_MIGRATION];
+    let new_migrations = [SLUG_MIGRATION, EMAIL_MIGRATION, NFKC_EMAIL_MIGRATION];
     for file in migration_files() {
         let name = file
             .file_name()
@@ -888,6 +896,21 @@ async fn run_migration_scenario(database_url: &str, scratch_name: &str) {
         mail_loser.email_verified_at.is_none(),
         "displaced email claims lose verification",
     );
+    let nfkc_keeper = scratch_user(&scratch, 910010).await;
+    assert_eq!(nfkc_keeper.email, "mailﬁ１@example.invalid");
+    assert!(nfkc_keeper.email_verified_at.is_some());
+    let nfkc_loser = scratch_user(&scratch, 910011).await;
+    assert_eq!(nfkc_loser.email, "duplicate-910011@invalid");
+    assert!(
+        nfkc_loser.email_verified_at.is_none(),
+        "an NFKC-fold duplicate loses its email claim",
+    );
+    let nfkc_placeholder = scratch_user(&scratch, 910012).await;
+    assert_eq!(nfkc_placeholder.email, "duplicate-910012@invalid");
+    assert!(
+        nfkc_placeholder.email_verified_at.is_none(),
+        "a displaced email that lands on a taken placeholder is displaced again",
+    );
     let mail_bot = scratch_user(&scratch, 910006).await;
     assert_eq!(
         mail_bot.email, "g3-dupe@example.invalid",
@@ -941,6 +964,21 @@ async fn run_migration_scenario(database_url: &str, scratch_name: &str) {
     assert!(
         is_index_violation(&email_error, EMAIL_UNIQUE_INDEX),
         "post-migration email insert should hit {EMAIL_UNIQUE_INDEX}, got: {email_error:?}",
+    );
+
+    let nfkc_user_id = next_user_id(&scratch).await;
+    let nfkc_error = raw_user(
+        nfkc_user_id,
+        "Post Migration NFKC Mail",
+        "g3-post-nfkc-mail",
+        "mailfi1@example.invalid",
+    )
+    .insert(&scratch)
+    .await
+    .expect_err("an NFKC-fold live email insert should fail after migration");
+    assert!(
+        is_index_violation(&nfkc_error, EMAIL_UNIQUE_INDEX),
+        "post-migration NFKC email insert should hit {EMAIL_UNIQUE_INDEX}, got: {nfkc_error:?}",
     );
 }
 

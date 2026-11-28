@@ -1170,6 +1170,7 @@ dependencies = [
  "unic-langid",
  "unicase",
  "unicode-general-category",
+ "unicode-normalization",
  "uuid",
  "wikidot-normalize",
  "wikidot-path",

@@ -2222,6 +2222,193 @@ async fn user_create_and_email_change_reject_duplicate_emails() {
 }
 
 #[tokio::test]
+async fn user_edit_rejects_nfkc_fold_variants_of_occupied_email() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let tag = cuid();
+
+    for (label, occupied_local, folded_local) in [
+        (
+            "digit",
+            format!("nfkc-{tag}-digit-1"),
+            format!("nfkc-{tag}-digit-１"),
+        ),
+        (
+            "ligature",
+            format!("nfkc-{tag}-fi-user"),
+            format!("nfkc-{tag}-ﬁ-user"),
+        ),
+        (
+            "zeta",
+            format!("nfkc-{tag}-z-user"),
+            format!("nfkc-{tag}-ｚ-user"),
+        ),
+        (
+            "latin",
+            format!("nfkc-{tag}-latin"),
+            format!("ｎｆｋｃ-{tag}-ｌａｔｉｎ"),
+        ),
+    ] {
+        let occupied_email = format!("{occupied_local}@example.invalid");
+        let folded_email = format!("{folded_local}@example.invalid");
+        run_endpoint!(
+            runner,
+            user_create,
+            json!({
+                "user_type": "regular",
+                "name": format!("NFKC Occupied {label} {tag}"),
+                "email": occupied_email,
+                "locales": ["en"],
+                "password": "password-fixture",
+                "bypass_email_verification": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        let editor_email = format!("nfkc-editor-{label}-{tag}@example.invalid");
+        let editor = run_endpoint!(
+            runner,
+            user_create,
+            json!({
+                "user_type": "regular",
+                "name": format!("NFKC Editor {label} {tag}"),
+                "email": editor_email,
+                "locales": ["en"],
+                "password": "password-fixture",
+                "bypass_email_verification": true,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+
+        let error = run_endpoint_err!(
+            runner,
+            user_edit,
+            json!({
+                "user": editor.user_id,
+                "email": folded_email,
+                "ip_address": common::IP_ADDRESS,
+            }),
+        );
+        assert_contains_error!(error, ErrorType::InvalidEmail);
+        let stored = user::Entity::find_by_id(editor.user_id)
+            .one(runner.context().transaction())
+            .await
+            .expect("editor should remain readable")
+            .expect("editor should exist");
+        assert_eq!(stored.email, editor_email, "{label} variant was stored");
+    }
+}
+
+#[tokio::test]
+async fn user_edit_rejects_ascii_equivalent_of_stored_nfkc_folded_email() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let tag = cuid();
+
+    let occupied = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": format!("NFKC Edit Occupied {tag}"),
+            "email": format!("nfkc-edit-provisional-{tag}@example.invalid"),
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    force_user_email(
+        &runner,
+        occupied.user_id,
+        &format!("ｎｆｋｃ-ｅｄｉｔ-ｌｅｇａｃｙ-{tag}@example.invalid"),
+    )
+    .await;
+
+    let editor_email = format!("nfkc-edit-editor-{tag}@example.invalid");
+    let editor = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": format!("NFKC Edit Editor {tag}"),
+            "email": editor_email,
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+
+    let error = run_endpoint_err!(
+        runner,
+        user_edit,
+        json!({
+            "user": editor.user_id,
+            "email": format!("nfkc-edit-legacy-{tag}@example.invalid"),
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::UserExists);
+    let stored = user::Entity::find_by_id(editor.user_id)
+        .one(runner.context().transaction())
+        .await
+        .expect("editor should remain readable")
+        .expect("editor should exist");
+    assert_eq!(stored.email, editor_email);
+}
+
+#[tokio::test]
+async fn user_create_rejects_ascii_equivalent_of_stored_nfkc_folded_email() {
+    let mut runner = TestRunner::setup().await;
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        ..Default::default()
+    });
+    let tag = cuid();
+
+    let legacy = run_endpoint!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": format!("NFKC Legacy {tag}"),
+            "email": format!("nfkc-legacy-provisional-{tag}@example.invalid"),
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    force_user_email(
+        &runner,
+        legacy.user_id,
+        &format!("ｎｆｋｃ-ｌｅｇａｃｙ-{tag}@example.invalid"),
+    )
+    .await;
+
+    let error = run_endpoint_err!(
+        runner,
+        user_create,
+        json!({
+            "user_type": "regular",
+            "name": format!("NFKC ASCII Claimant {tag}"),
+            "email": format!("nfkc-legacy-{tag}@example.invalid"),
+            "locales": ["en"],
+            "password": "password-fixture",
+            "bypass_email_verification": true,
+            "ip_address": common::IP_ADDRESS,
+        }),
+    );
+    assert_contains_error!(error, ErrorType::UserExists);
+}
+
+#[tokio::test]
 async fn user_create_and_email_change_reject_invisible_format_emails() {
     let mut runner = TestRunner::setup().await;
     runner.set_request_context(RequestContext {

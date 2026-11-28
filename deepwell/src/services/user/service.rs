@@ -36,6 +36,7 @@ use crate::services::audit::{AuditEvent, AuditService, ObjectScope};
 use crate::services::blob::{BlobService, FinalizeBlobUploadOutput};
 use crate::services::email::{
     EmailClassification, EmailService, EmailTokenService, EmailValidationOutput,
+    check_email_nfkc,
 };
 use crate::services::filter::{FilterClass, FilterType};
 use crate::services::{
@@ -49,7 +50,7 @@ use crate::utils::now;
 use crate::utils::regex_replace_in_place;
 use pastey::paste;
 use redis::AsyncCommands;
-use sea_orm::sea_query::Expr;
+use sea_orm::sea_query::{Expr, SimpleExpr};
 use sea_orm::{
     ActiveModelTrait, ActiveValue, ColumnTrait, Condition, ConnectionTrait, DbErr,
     EntityTrait, ExprTrait, FromQueryResult, NotSet, QueryFilter, QuerySelect, Set,
@@ -280,6 +281,7 @@ impl UserService {
                 ErrorType::InvalidEmail,
             ));
         }
+        check_email_nfkc(&email)?;
 
         if should_check_filter(bypass_filter, user_type, None) {
             let object = ObjectScope::User(user_id);
@@ -414,7 +416,7 @@ impl UserService {
 
         if user_type == UserType::Regular {
             let mut condition = Condition::all()
-                .add(user::Column::Email.eq(email.as_str()))
+                .add(nfkc_email_eq(&email))
                 .add(user::Column::UserType.eq(UserType::Regular))
                 .add(user::Column::DeletedAt.is_null());
 
@@ -1081,6 +1083,7 @@ impl UserService {
                     ErrorType::InvalidEmail,
                 ));
             }
+            check_email_nfkc(&email)?;
 
             if should_check_filter {
                 Self::run_email_filter(
@@ -1342,7 +1345,7 @@ impl UserService {
         exclude_user_id: Option<i64>,
     ) -> Result<bool> {
         let mut condition = Condition::all()
-            .add(user::Column::Email.eq(email))
+            .add(nfkc_email_eq(email))
             .add(user::Column::UserType.eq(UserType::Regular))
             .add(user::Column::DeletedAt.is_null());
 
@@ -1406,7 +1409,7 @@ impl UserService {
         exclude_user_id: Option<i64>,
     ) -> Result<bool> {
         let mut condition = Condition::all()
-            .add(user::Column::Email.eq(email))
+            .add(nfkc_email_eq(email))
             .add(user::Column::UserType.eq(UserType::Regular))
             .add(user::Column::EmailVerifiedAt.is_not_null())
             .add(user::Column::DeletedAt.is_null());
@@ -1434,7 +1437,7 @@ impl UserService {
         let displaced = WikijumpUser::find()
             .filter(
                 Condition::all()
-                    .add(user::Column::Email.eq(email))
+                    .add(nfkc_email_eq(email))
                     .add(user::Column::UserType.eq(UserType::Regular))
                     .add(user::Column::DeletedAt.is_null())
                     .add(user::Column::UserId.ne(keeper_user_id)),
@@ -2101,6 +2104,13 @@ fn check_user_name(config: &Config, slug: &str, name: &str) -> Result<()> {
     }
 
     Ok(())
+}
+
+fn nfkc_email_eq(email: &str) -> SimpleExpr {
+    Expr::cust_with_values(
+        "lower(normalize(email, nfkc)) = lower(normalize($1, nfkc))",
+        [email.to_owned()],
+    )
 }
 
 fn check_email_validation(

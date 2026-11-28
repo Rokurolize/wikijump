@@ -35,6 +35,7 @@ use crate::utils::{
 use fluent::{FluentArgs, FluentValue};
 use missive::{Address, DeliveryResult, Email};
 use unic_langid::LanguageIdentifier;
+use unicode_normalization::is_nfkc;
 
 #[derive(Debug)]
 pub struct EmailService;
@@ -552,9 +553,22 @@ impl EmailService {
     }
 }
 
+pub(crate) fn check_email_nfkc(email: &str) -> Result<()> {
+    if !is_nfkc(email) {
+        error!("User email is not in Unicode NFKC form");
+        bail!(Error::new(
+            "cannot use email, it is not in Unicode NFKC form",
+            ErrorType::InvalidEmail,
+        ));
+    }
+
+    Ok(())
+}
+
 pub(crate) fn is_well_formed_email(email: &str) -> bool {
     if email.chars().any(|c| c.is_whitespace() || c.is_control())
         || contains_invisible_format_characters(email)
+        || !is_nfkc(email)
     {
         return false;
     }
@@ -625,6 +639,9 @@ mod tests {
             "a@b@example.com",
             "someone@example..com",
             "someone@.example.com",
+            "ｎｆｋｃ@example.invalid",
+            "user＠example.invalid",
+            "ﬁsh@example.invalid",
         ] {
             assert!(!is_well_formed_email(email), "{email}");
         }
