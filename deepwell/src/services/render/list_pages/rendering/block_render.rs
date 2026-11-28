@@ -65,6 +65,7 @@ fn list_pages_total_query<'a>(
     total_query.pagination.limit = Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS));
     total_query.fields = FoundPageFields {
         page_category_id: true,
+        slug: true,
         tags: exact_visible_tags,
         ..FoundPageFields::default()
     };
@@ -2011,6 +2012,7 @@ mod tests {
             Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
         );
         assert!(total_query.fields.page_category_id);
+        assert!(total_query.fields.slug);
         assert!(!total_query.fields.title);
     }
 }

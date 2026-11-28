@@ -29,6 +29,7 @@ impl RenderService {
         let CountPagesExpansionOptions {
             current_site_id,
             current_page_id,
+            viewer_user_id,
         } = options;
         let Some(current_site_id) = current_site_id else {
             return Ok(wikitext);
@@ -63,6 +64,7 @@ impl RenderService {
             },
             page_info,
             page_context,
+            viewer_user_id,
             &mut permission_cache,
         )
         .await?;
@@ -190,6 +192,7 @@ impl RenderService {
             let rendered = Self::render_count_pages_block(
                 ctx,
                 page_context,
+                viewer_user_id,
                 page_info,
                 arguments,
                 body,
@@ -224,6 +227,7 @@ impl RenderService {
         source: CountPagesRequiredTagSource<'_>,
         page_info: &PageInfo<'_>,
         page_context: ListPagesPageContext<'_>,
+        viewer_user_id: Option<i64>,
         permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
     ) -> Result<BTreeMap<(Vec<String>, String), CountPagesRequiredTagBatchResult>> {
         let ListPagesPageContext {
@@ -302,7 +306,7 @@ impl RenderService {
             match PermissionService::check_user_can(
                 ctx,
                 &CheckPermissionContext {
-                    user_id: None,
+                    user_id: viewer_user_id,
                     site_id: current_site_id,
                     page_reference: current_page_identity.map(Reference::Id),
                 },

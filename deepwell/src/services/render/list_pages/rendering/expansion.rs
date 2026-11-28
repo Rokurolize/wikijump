@@ -635,6 +635,7 @@ impl RenderService {
                     ctx,
                     current_site_id,
                     current_page_id,
+                    viewer_user_id,
                     &batch_key,
                     &slugs,
                     fields,

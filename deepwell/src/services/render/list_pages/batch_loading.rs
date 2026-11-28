@@ -40,6 +40,7 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         current_site_id: i64,
         current_page_id: i64,
+        viewer_user_id: Option<i64>,
         key: &ExactNameListPagesBatchKey,
         slugs: &[Cow<'_, str>],
         fields: FoundPageFields,
@@ -104,7 +105,7 @@ impl RenderService {
             },
             fields,
         };
-        let found = RenderRuntime::new(ctx)
+        let found = RenderRuntime::for_viewer(ctx, viewer_user_id)
             .find_viewable_list_pages_rows(
                 query,
                 batch_scan_target,
