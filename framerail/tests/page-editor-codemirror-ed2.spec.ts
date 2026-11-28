@@ -200,11 +200,13 @@ const openSectionControls = async (page: import("@playwright/test").Page) => {
 
 test.beforeEach(async ({ request }) => {
   await request.post(`${FIXTURE_URL}/clear-page-edit-locks`)
+  await request.post(`${FIXTURE_URL}/clear-page-drafts`)
   await request.get(`${FIXTURE_URL}/last-page-write-requests`)
 })
 
 test.afterEach(async ({ request }) => {
   await request.post(`${FIXTURE_URL}/clear-page-edit-locks`)
+  await request.post(`${FIXTURE_URL}/clear-page-drafts`)
   for (const slug of [CREATE_SLUG, SECTION_SLUG, APPEND_SLUG]) {
     await request.post(
       `${FIXTURE_URL}/reset-fixture-page?slug=${encodeURIComponent(slug)}`

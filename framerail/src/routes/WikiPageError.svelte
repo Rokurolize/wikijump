@@ -19,7 +19,7 @@
     validateProperties
   } from "$lib/wikidot/editor-properties"
   import { superForm } from "sveltekit-superforms"
-  import { untrack } from "svelte"
+  import { onDestroy, onMount, untrack } from "svelte"
   import type { PageErrorData } from "$lib/page-error-data"
 
   import EditorPropertiesPanel from "$lib/component/EditorPropertiesPanel.svelte"
@@ -27,15 +27,109 @@
   import WikitextPreviewPane from "$lib/component/WikitextPreviewPane.svelte"
 
   import DataFormEditor from "./[slug]/[...extra]/DataFormEditor.svelte"
+  import EditDraftDialog from "./[slug]/[...extra]/EditDraftDialog.svelte"
+  import {
+    discardPageDraft,
+    getPageDraft,
+    synchronizePageDraft
+  } from "./[slug]/[...extra]/edit-lease-client"
 
   import type { PropertiesReport } from "$lib/wikidot/editor-properties"
   import type { PageDeletedGet } from "$lib/server/deepwell/page"
+  import type {
+    PageDraftContent,
+    PageDraftPayload
+  } from "./[slug]/[...extra]/edit-lease-client"
   let { errorData }: { errorData: PageErrorData } = $props()
 
   const pageLayoutContext = getPageLayoutContext()
 
   let showRestoreAction = $state<boolean>(false)
   let deletedPages = $state<PageDeletedGet[]>([])
+
+  let draftDialog = $state<PageDraftContent | null>(null)
+  let draftCheckState = $state<"idle" | "checking" | "ready" | "error">("idle")
+  let draftSyncError = $state<string | null>(null)
+  let draftBaselineFingerprint: string | null = null
+  let initialDraftFingerprint: string | null = null
+  let draftSyncInFlight = false
+  let draftDebounce: ReturnType<typeof setTimeout> | undefined
+  let stopDraftInterval: (() => void) | undefined
+  const draftsEnabled = untrack(() => !errorData.data_form)
+
+  const draftPayload = (): PageDraftPayload => ({
+    title: $editForm.title ?? "",
+    wikitext: $editForm.wikitext ?? "",
+    comments: $editForm.comments ?? ""
+  })
+  const draftFingerprint = (payload: PageDraftPayload = draftPayload()) =>
+    JSON.stringify(payload)
+  const canSynchronizeDraft = () =>
+    draftsEnabled && draftCheckState === "ready" && draftDialog === null
+
+  async function ensureDraftChecked() {
+    if (!draftsEnabled || draftCheckState !== "idle") return
+    draftCheckState = "checking"
+    try {
+      const draft = (await getPageDraft(undefined)) as PageDraftContent | null
+      if (draft) draftDialog = draft
+      else draftBaselineFingerprint = initialDraftFingerprint
+      draftCheckState = "ready"
+    } catch (error) {
+      draftSyncError =
+        error instanceof Error ? error.message : "The page draft could not be checked."
+      draftCheckState = "error"
+    }
+  }
+
+  async function synchronizeDraft(force = false): Promise<boolean> {
+    if (!canSynchronizeDraft() || draftSyncInFlight) return false
+    const payload = draftPayload()
+    const fingerprint = draftFingerprint(payload)
+    if (!force && fingerprint === draftBaselineFingerprint) return true
+    draftSyncInFlight = true
+    try {
+      await synchronizePageDraft(payload)
+      draftBaselineFingerprint = fingerprint
+      draftSyncError = null
+      return true
+    } catch (error) {
+      draftSyncError =
+        error instanceof Error
+          ? error.message
+          : "The page draft could not be synchronized."
+      return false
+    } finally {
+      draftSyncInFlight = false
+    }
+  }
+
+  const restoreDraft = () => {
+    const draft = draftDialog
+    if (!draft) return
+    $editForm.title = draft.title
+    $editForm.wikitext = draft.wikitext
+    $editForm.comments = draft.comments
+    draftDialog = null
+    draftBaselineFingerprint = draftFingerprint({
+      title: draft.title,
+      wikitext: draft.wikitext,
+      comments: draft.comments
+    })
+    draftSyncError = null
+  }
+
+  const discardDraft = async () => {
+    try {
+      await discardPageDraft(undefined)
+      draftDialog = null
+      draftBaselineFingerprint = initialDraftFingerprint
+      draftSyncError = null
+    } catch (error) {
+      draftSyncError =
+        error instanceof Error ? error.message : "The page draft could not be discarded."
+    }
+  }
 
   function cancelCreate() {
     goto(resolve(`${page.params.slug}`), {
@@ -178,6 +272,30 @@
       (template) => template.page_id === selectedTemplatePageId
     )?.title ?? ""
   )
+  initialDraftFingerprint = untrack(() => draftFingerprint())
+
+  $effect(() => {
+    if (!canSynchronizeDraft()) return
+    const fingerprint = draftFingerprint()
+    if (fingerprint === draftBaselineFingerprint) return
+    clearTimeout(draftDebounce)
+    draftDebounce = setTimeout(() => {
+      void synchronizeDraft()
+    }, 2000)
+  })
+
+  onMount(() => {
+    const interval = setInterval(() => {
+      void synchronizeDraft()
+    }, 15000)
+    stopDraftInterval = () => clearInterval(interval)
+    void ensureDraftChecked()
+  })
+
+  onDestroy(() => {
+    stopDraftInterval?.()
+    clearTimeout(draftDebounce)
+  })
   const canRestore = $derived(errorData.restore_available === true)
   const defaultMissingMessage = $derived(
     errorData.compiled_body_html.replace(/^\s*<p>/, '<p id="404-message">')
@@ -284,6 +402,11 @@
         </h2>
       {/if}
 
+      {#if draftSyncError}
+        <p class="edit-draft-sync-error" role="alert">
+          The page draft is not synchronized: {draftSyncError}
+        </p>
+      {/if}
       <form id="editor" class="editor" action="?/edit" method="POST" use:editEnhance>
         {#if errorData.page_templates?.length}
           <div class="page-template-selector">
@@ -554,6 +677,14 @@
 {:else}
   {errorData.internationalization?.["error-api.GENERIC"] ??
     "Something went wrong while handling your request."}
+{/if}
+
+{#if draftDialog}
+  <EditDraftDialog
+    title={draftDialog.title}
+    onDiscard={discardDraft}
+    onRestore={restoreDraft}
+  />
 {/if}
 
 <style global lang="scss">

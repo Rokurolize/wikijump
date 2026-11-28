@@ -48,7 +48,9 @@ use crate::services::page::{
     PageLifecycleIdentity, PageMovePermissionOutput, RestorePage, RestorePageOutput,
     RollbackPage, SetPageLayout,
 };
-use crate::services::page_draft::{PageDraftIdentity, PageDraftService, SavePageDraft};
+use crate::services::page_draft::{
+    PageDraftContent, PageDraftIdentity, PageDraftService, SavePageDraft,
+};
 use crate::services::page_query::PageQueryService;
 use crate::services::page_revision::RerenderType;
 use crate::services::permission::{CheckPermissionContext, PermissionService};
@@ -939,6 +941,16 @@ pub async fn page_draft_save(
         .await
         .map(|_| true)
         .or_raise(|| Error::new("failed to save page draft", ErrorType::Page))
+}
+
+pub async fn page_draft_get(
+    ctx: &ServiceContext<'_>,
+    params: Params<'static>,
+) -> Result<Option<PageDraftContent>> {
+    let input: PageDraftIdentity = parse!(params, Page);
+    PageDraftService::get(ctx, input)
+        .await
+        .or_raise(|| Error::new("failed to get page draft", ErrorType::Page))
 }
 
 pub async fn page_draft_exists(

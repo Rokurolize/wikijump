@@ -276,6 +276,7 @@ export async function handlePageDraftEvents({
     slug: string
     title: string
     wikitext: string
+    comments: string
   }) => Promise<void>
   pageDraftExists?: (input: {
     siteId: number
@@ -367,7 +368,8 @@ export async function handlePageDraftEvents({
         ...(pageId === undefined ? {} : { pageId }),
         slug,
         title: fieldValue(fields, "title"),
-        wikitext: fieldValue(fields, "source")
+        wikitext: fieldValue(fields, "source"),
+        comments: fieldValue(fields, "comments")
       })
       if (!renewPageEditLock) {
         return jsonResponse({ status: "ok", savedDraft: true })

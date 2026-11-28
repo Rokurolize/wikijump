@@ -57,7 +57,10 @@ import {
   pageEditLockAcquireAction,
   pageEditLockForceAcquireAction,
   pageEditLockReleaseAction,
-  pageEditLockRenewAction
+  pageEditLockRenewAction,
+  pageEditDraftDiscardAction,
+  pageEditDraftGetAction,
+  pageEditDraftSynchronizeAction
 } from "$lib/server/load/page/page-edit-lock-actions"
 
 export const pageActions = {
@@ -68,6 +71,9 @@ export const pageActions = {
   editLockForceAcquire: pageEditLockForceAcquireAction,
   editLockRenew: pageEditLockRenewAction,
   editLockRelease: pageEditLockReleaseAction,
+  editDraftGet: pageEditDraftGetAction,
+  editDraftDiscard: pageEditDraftDiscardAction,
+  editDraftSynchronize: pageEditDraftSynchronizeAction,
   createPermission: pageCreatePermissionAction,
   editPermission: pageEditPermissionAction,
   movePermission: pageMovePermissionAction,

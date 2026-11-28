@@ -5,6 +5,7 @@ import {
   pageEdit,
   pageEditPermission,
   pageGet,
+  pageDraftRemove,
   pageLayout,
   pageMove,
   pageMovePermission,
@@ -359,6 +360,19 @@ export async function pageEditAction(event: RequestEvent) {
           },
           context.requestContext
         )
+    if (lease === undefined || lease.mode === "page") {
+      try {
+        await pageDraftRemove(
+          {
+            siteId,
+            userId,
+            pageId: pageId > 0 ? pageId : undefined,
+            slug: slug ?? ""
+          },
+          { ...context.requestContext, page: slug }
+        )
+      } catch {}
+    }
     if (!pageId && parent) {
       const createdSlug = (res as { slug?: string }).slug
       if (!createdSlug) {

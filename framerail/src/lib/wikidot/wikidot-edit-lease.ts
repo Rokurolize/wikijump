@@ -65,6 +65,7 @@ export class WikidotEditLeaseSession {
   expiresAt: string | null = null
   conflicts: EditLeaseConflict[] = []
   conflictsAt = 0
+  lastRenewError: unknown = null
 
   constructor(transport: EditLeaseTransport) {
     this.transport = transport
@@ -137,8 +138,10 @@ export class WikidotEditLeaseSession {
       this.baseRevisionId = output.base_revision_id ?? this.baseRevisionId
       this.expiresAt = output.expires_at ?? null
       this.status = "held"
+      this.lastRenewError = null
       return true
     } catch (error) {
+      this.lastRenewError = error
       if (errorCode(error) === EDIT_LEASE_OTHER_LOCKS_CODE) {
         this.status = "superseded"
       }

@@ -11,7 +11,7 @@
  */
 
 use super::structs::{
-    PageDraftIdentity, PageDraftPageType, PageDraftView, SavePageDraft,
+    PageDraftContent, PageDraftIdentity, PageDraftPageType, PageDraftView, SavePageDraft,
 };
 use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::page_draft::{self, Entity as PageDraft, Model as PageDraftModel};
@@ -196,6 +196,7 @@ impl PageDraftService {
                 updated_at: Set(Some(now())),
                 title: Set(input.title),
                 wikitext: Set(input.wikitext),
+                comments: Set(input.comments),
                 ..Default::default()
             }
             .update(txn)
@@ -208,6 +209,7 @@ impl PageDraftService {
                 slug: Set(input.slug),
                 title: Set(input.title),
                 wikitext: Set(input.wikitext),
+                comments: Set(input.comments),
                 created_at: Set(now()),
                 updated_at: Set(None),
                 ..Default::default()
@@ -395,6 +397,28 @@ impl PageDraftService {
             },
         )
         .await
+    }
+
+    pub async fn get(
+        ctx: &ServiceContext<'_>,
+        identity: PageDraftIdentity,
+    ) -> Result<Option<PageDraftContent>> {
+        Self::require_actor(ctx, identity.site_id, identity.user_id)?;
+        let make_error = || Error::new("failed to get page draft", ErrorType::Page);
+        let slug = normalize_draft_slug(identity.slug);
+        let mut query = PageDraft::find()
+            .filter(page_draft::Column::SiteId.eq(identity.site_id))
+            .filter(page_draft::Column::UserId.eq(identity.user_id))
+            .filter(page_draft::Column::Slug.eq(slug));
+        query = match identity.page_id {
+            Some(page_id) => query.filter(page_draft::Column::PageId.eq(page_id)),
+            None => query.filter(page_draft::Column::PageId.is_null()),
+        };
+        query
+            .one(ctx.transaction())
+            .await
+            .or_raise(make_error)
+            .map(|draft| draft.map(PageDraftContent::from))
     }
 
     pub async fn exists(

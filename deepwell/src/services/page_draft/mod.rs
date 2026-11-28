@@ -15,5 +15,5 @@ mod structs;
 
 pub use self::service::PageDraftService;
 pub use self::structs::{
-    PageDraftIdentity, PageDraftPageType, PageDraftView, SavePageDraft,
+    PageDraftContent, PageDraftIdentity, PageDraftPageType, PageDraftView, SavePageDraft,
 };

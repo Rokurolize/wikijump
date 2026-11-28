@@ -10,7 +10,10 @@ type EditLeaseActionFailure = {
   data?: Record<string, unknown>
 }
 
-const postEditLeaseAction = async (action: string, payload: Record<string, unknown>) => {
+export const postPageEditorAction = async (
+  action: string,
+  payload: Record<string, unknown>
+) => {
   const text = await fetch(`?/${action}`, {
     method: "POST",
     body: JSON.stringify(payload)
@@ -28,17 +31,67 @@ const postEditLeaseAction = async (action: string, payload: Record<string, unkno
 }
 
 export const createPageEditLeaseSession = (): WikidotEditLeaseSession =>
-  new WikidotEditLeaseSession(createEditLeaseTransport(postEditLeaseAction))
+  new WikidotEditLeaseSession(createEditLeaseTransport(postPageEditorAction))
+
+export type PageDraftPayload = {
+  pageId?: number
+  title: string
+  wikitext: string
+  comments: string
+}
+
+export type PageDraftContent = {
+  slug: string
+  title: string
+  wikitext: string
+  comments: string
+}
+
+export const createPageDraftEditLeaseSession = (
+  draftPayload: () => PageDraftPayload
+): WikidotEditLeaseSession => {
+  const transport = createEditLeaseTransport(postPageEditorAction)
+  return new WikidotEditLeaseSession({
+    acquire: transport.acquire,
+    release: transport.release,
+    renew: (credentials) =>
+      postPageEditorAction("editDraftSynchronize", {
+        ...draftPayload(),
+        lockId: credentials.lockId,
+        "lockSecret": credentials.lockSecret,
+        mode: credentials.mode,
+        sectionIndex: credentials.sectionIndex ?? null
+      })
+  })
+}
+
+export const synchronizePageDraft = (payload: PageDraftPayload) =>
+  postPageEditorAction("editDraftSynchronize", {
+    ...payload,
+    mode: "page",
+    sectionIndex: null
+  })
+
+export const getPageDraft = (pageId: number | undefined) =>
+  postPageEditorAction("editDraftGet", {
+    ...(pageId === undefined ? {} : { pageId })
+  }) as Promise<PageDraftContent | null>
+
+export const discardPageDraft = (pageId: number | undefined) =>
+  postPageEditorAction("editDraftDiscard", {
+    ...(pageId === undefined ? {} : { pageId })
+  })
 
 export const startEditLeaseTimers = (
   session: WikidotEditLeaseSession,
-  sync: () => void
+  sync: () => void,
+  renew: () => Promise<boolean> = () => session.renew()
 ): (() => void) => {
   let seconds = 0
   const timer = setInterval(() => {
     seconds += 1
     if (seconds % 60 === 0 && session.status === "held") {
-      void session.renew().then(sync)
+      void renew().then(sync)
     }
     sync()
   }, 1000)

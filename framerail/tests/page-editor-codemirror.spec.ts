@@ -27,6 +27,7 @@ const openEditor = async (
   request: import("@playwright/test").APIRequestContext
 ) => {
   await request.post(`${FIXTURE_URL}/clear-page-edit-locks`)
+  await request.post(`${FIXTURE_URL}/clear-page-drafts`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto(EDITOR_PATH)
   await expect(page.locator(".wikitext-editor .cm-content")).toBeVisible({

@@ -13136,8 +13136,23 @@ async fn listdrafts_module_reads_persisted_drafts_and_enforces_target_filters() 
             "slug": EXISTING_SLUG.to_owned(),
             "title": "Existing draft v1".to_owned(),
             "wikitext": "existing draft source v1".to_owned(),
+            "comments": "existing draft comments v1".to_owned(),
         })
     ));
+    let stored = run_endpoint!(
+        runner,
+        page_draft_get,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": Some(existing_page_id),
+            "slug": EXISTING_SLUG.to_owned(),
+        })
+    )
+    .expect("the persisted draft content should be readable");
+    assert_eq!(stored.title, "Existing draft v1");
+    assert_eq!(stored.wikitext, "existing draft source v1");
+    assert_eq!(stored.comments, "existing draft comments v1");
     assert!(run_endpoint!(
         runner,
         page_draft_save,
