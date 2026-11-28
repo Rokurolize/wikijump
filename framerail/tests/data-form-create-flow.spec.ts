@@ -534,13 +534,17 @@ test("data-form checkbox and wiki controls match live DOM and storage", async ({
       )
   ).toEqual(["PRE ", "INPUT", " POST", "SPAN"])
 
-  const wiki = page.locator("textarea[name='field-wiki']")
-  await expect(wiki).toHaveClass("form-control form-wiki")
-  await expect(wiki).toHaveAttribute("cols", "40")
-  await expect(wiki).toHaveAttribute("rows", "2")
-  await expect(wiki).toHaveAttribute("placeholder", "enter wiki \\#source")
-  await expect(wiki).toHaveValue("**Default**")
-  await expect(page.locator(".field-wiki")).toContainText("**Before** //After//")
+  const wiki = page.locator(".field-wiki .cm-content")
+  const wikiFallback = page.locator("textarea[name='field-wiki']")
+  await expect(page.locator(".field-wiki .wikitext-editor")).toHaveClass(
+    /wikitext-editor-enhanced/u
+  )
+  await expect(page.locator(".field-wiki .wikitext-editor-toolbar")).toHaveCount(1)
+  await expect(wiki).toBeVisible()
+  await expect(wikiFallback).toHaveAttribute("placeholder", "enter wiki \\#source")
+  await expect(wikiFallback).toHaveValue("**Default**")
+  await expect(page.locator(".field-wiki")).toContainText("**Before**")
+  await expect(page.locator(".field-wiki")).toContainText("//After//")
   expect(
     await page
       .locator(".field-wiki")
@@ -551,7 +555,7 @@ test("data-form checkbox and wiki controls match live DOM and storage", async ({
             node.nodeType === Node.TEXT_NODE ? node.textContent : node.nodeName
           )
       )
-  ).toEqual(["**Before** ", "TEXTAREA", " //After//", "SPAN"])
+  ).toEqual(["**Before** ", "DIV", " //After//", "SPAN"])
 
   const wikiOneLine = page.locator("input[name='field-wiki_one_line']")
   await expect(wikiOneLine).toHaveClass("form-control form-wiki")
@@ -559,7 +563,10 @@ test("data-form checkbox and wiki controls match live DOM and storage", async ({
 
   await unchecked.check()
   await checked.uncheck()
-  await wiki.fill("**Bold**\n[[[start|Home]]]")
+  await wiki.click()
+  await page.keyboard.press("ControlOrMeta+A")
+  await page.keyboard.type("**Bold**\n[[[start|Home]]]")
+  await expect(wikiFallback).toHaveValue("**Bold**\n[[[start|Home]]]")
   await wikiOneLine.fill("//italic//")
   await page.locator("#edit-save-button").click()
 
