@@ -14,6 +14,7 @@
   import type { PageErrorData } from "$lib/page-error-data"
 
   import WikitextEditor from "$lib/component/WikitextEditor.svelte"
+  import WikitextPreviewPane from "$lib/component/WikitextPreviewPane.svelte"
 
   import DataFormEditor from "./[slug]/[...extra]/DataFormEditor.svelte"
 
@@ -318,6 +319,12 @@
           </div>
         {/if}
       </form>
+      <WikitextPreviewPane
+        siteId={errorData.site.site_id}
+        title={$editForm.title}
+        wikitext={$editForm.wikitext}
+        label={errorData.internationalization?.preview ?? "Preview"}
+      />
     {/if}
   {:else}
     <!--

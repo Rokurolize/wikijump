@@ -524,6 +524,34 @@ x^2 + y^2 = z^2
       "<p>%%title%% {$fixture_variable}</p>"
     ].join("\n")
   },
+  "editor-live-preview-probe": {
+    page_id: 3000602,
+    revision_id: 9000602,
+    page_created_at: "2026-11-28T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-11-28T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Editor Live Preview Probe",
+    slug: "editor-live-preview-probe",
+    tags: ["fixture", "live-preview-tag"],
+    rating: 0,
+    wikitext: [
+      "+ Live preview fixture",
+      "",
+      "[[include component:editor-codemirror-include]]",
+      "",
+      "[[iftags +live-preview-tag]]Saved tag visible[[/iftags]]",
+      "",
+      "[[iftags -live-preview-tag]]Saved tag missing[[/iftags]]"
+    ].join("\n"),
+    compiled_body_html: [
+      "<h1>Live preview fixture</h1>",
+      "<p>Included editor fixture text.</p>",
+      "<p>Saved tag visible</p>"
+    ].join("\n")
+  },
   "editor-codemirror-section-probe": {
     page_id: 3000610,
     revision_id: 9000610,

@@ -131,8 +131,11 @@ export const handlePageEditRpc = ({
       }
       effectiveWikitext = spliced
     }
+    const effectiveTags = Array.isArray(rpcRequest.params.tags)
+      ? rpcRequest.params.tags
+      : page.tags
     page.wikitext = effectiveWikitext
-    page.compiled_body_html = renderFixtureWikitext(effectiveWikitext)
+    page.compiled_body_html = renderFixtureWikitext(effectiveWikitext, effectiveTags)
   }
   if (typeof rpcRequest.params.title === "string") page.title = rpcRequest.params.title
   if (Array.isArray(rpcRequest.params.tags)) page.tags = rpcRequest.params.tags

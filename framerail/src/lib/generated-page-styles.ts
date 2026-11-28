@@ -39,8 +39,13 @@ const cjkFontFileForLocale = (locale: string): string => {
   return "NotoSansJP-VF.woff2"
 }
 
-export function buildGeneratedPageStylesHead(styles: readonly string[]): string {
-  return styles.map((css) => `<style>${escapeStyleRawText(css)}</style>`).join("")
+export function buildGeneratedPageStylesHead(
+  styles: readonly string[],
+  styleAttributes = ""
+): string {
+  return styles
+    .map((css) => `<style${styleAttributes}>${escapeStyleRawText(css)}</style>`)
+    .join("")
 }
 
 export function getCjkFontPreloadHref(

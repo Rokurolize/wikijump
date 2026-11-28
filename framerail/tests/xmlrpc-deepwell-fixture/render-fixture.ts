@@ -25,9 +25,28 @@ const renderInline = (value: string) =>
     .replace(/\*\*([^*\n]+)\*\*/gu, "<strong>$1</strong>")
     .replace(/(^|[^:])\/\/([^/\n]+)\/\//gu, "$1<em>$2</em>")
 
-export const renderFixtureWikitext = (source: string) => {
+const evaluateIftags = (expression: string, tags: readonly string[]) => {
+  const terms = expression.trim().split(/\s+/u).filter(Boolean)
+  const positive = terms.filter((term) => !term.startsWith("-"))
+  const negative = terms
+    .filter((term) => term.startsWith("-"))
+    .map((term) => term.slice(1))
+  return (
+    positive.every((term) => tags.includes(term.replace(/^\+/u, ""))) &&
+    negative.every((term) => !tags.includes(term))
+  )
+}
+
+const expandIftags = (source: string, tags: readonly string[]) =>
+  source.replace(
+    /\[\[iftags\s+([^\]\n]+)\]\]([\s\S]*?)\[\[\/iftags\]\]/gu,
+    (_match, expression: string, body: string) =>
+      evaluateIftags(expression, tags) ? body : ""
+  )
+
+export const renderFixtureWikitext = (source: string, tags: readonly string[] = []) => {
   const withoutComments = source.replace(/\[!--[\s\S]*?--\]/gu, "")
-  return expandIncludes(withoutComments)
+  return expandIncludes(expandIftags(withoutComments, tags))
     .split(/\n{2,}/u)
     .map((block) => block.trim())
     .filter((block) => block.length > 0)
