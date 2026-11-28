@@ -1294,6 +1294,7 @@ impl UserService {
     pub async fn change_password(
         ctx: &ServiceContext<'_>,
         user_id: i64,
+        current_password: &str,
         session_token: &str,
         new_password: String,
         ip_address: IpAddr,
@@ -1303,6 +1304,14 @@ impl UserService {
         let user = Self::get_real_for_update(ctx, Reference::Id(user_id))
             .await
             .or_raise(|| Error::new("failed to change the password", ErrorType::User))?;
+
+        if !PasswordService::matches_stored_hash(current_password, &user.password).await?
+        {
+            bail!(Error::new(
+                "the current password does not match the locked account row",
+                ErrorType::InvalidAuthentication,
+            ));
+        }
 
         if PasswordService::matches_stored_hash(&new_password, &user.password).await? {
             return Ok(PasswordChangeOutcome {
