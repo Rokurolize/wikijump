@@ -360,7 +360,7 @@ export async function pageEditAction(event: RequestEvent) {
           },
           context.requestContext
         )
-    if (lease === undefined || lease.mode === "page") {
+    if (lease?.mode === "page" || (lease === undefined && !pageId)) {
       try {
         await pageDraftRemove(
           {
