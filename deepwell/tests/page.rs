@@ -25177,14 +25177,14 @@ async fn listpages_aggregate_generated_output_budget_preserves_overflowing_modul
 }
 
 #[tokio::test]
-async fn listpages_content_fragment_restoration_counts_toward_generated_output_budget() {
+async fn listpages_content_fragment_restoration_counts_toward_expanded_byte_budget() {
     const INDEX_SLUG: &str = "fixture-listpages-content-fragment-budget-index";
     const TARGET_SLUG: &str = "fixture-listpages-content-fragment-budget-target";
     const SENTINEL: &str = "CONTENT_FRAGMENT_BUDGET_SENTINEL";
     const DIRECTIVE_BYTES: usize = 2 * 1024;
-    const GENERATED_BYTE_BUDGET: usize = 16 * 1024 * 1024;
+    const EXPANDED_BYTE_BUDGET: usize = 4 * 1024 * 1024;
     const CONTENT_VARIABLE: &str = "%%content{1}%%";
-    const CONTENT_REPETITIONS: usize = GENERATED_BYTE_BUDGET / DIRECTIVE_BYTES + 1;
+    const CONTENT_REPETITIONS: usize = EXPANDED_BYTE_BUDGET / DIRECTIVE_BYTES + 1;
 
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
@@ -25222,8 +25222,8 @@ async fn listpages_content_fragment_restoration_counts_toward_generated_output_b
     assert!(body.len() <= 256 * 1024);
     const {
         assert!(
-            DIRECTIVE_BYTES * CONTENT_REPETITIONS > GENERATED_BYTE_BUDGET,
-            "restored content must exceed the render-wide generated-output budget",
+            DIRECTIVE_BYTES * CONTENT_REPETITIONS > EXPANDED_BYTE_BUDGET,
+            "restored content must exceed the render-wide expanded byte budget",
         );
     }
     let source = format!(
@@ -25245,7 +25245,7 @@ async fn listpages_content_fragment_restoration_counts_toward_generated_output_b
         page_id: page.page_id,
     };
 
-    let output = RenderService::render_page(
+    let error = RenderService::render_page(
         runner.context(),
         source,
         &page_info,
@@ -25254,12 +25254,10 @@ async fn listpages_content_fragment_restoration_counts_toward_generated_output_b
         UrlArguments::default(),
     )
     .await
-    .expect("restored content overflow should preserve the complete module");
-    let html = output.html_output.body;
+    .expect_err("restored content behind compact compatibility markers still counts toward the expanded byte budget");
     assert!(
-        html.contains(SENTINEL) && html.contains(CONTENT_VARIABLE),
-        "escaped content hidden behind compact compatibility markers must still count toward the generated-output budget:\n{}",
-        &html[..html.len().min(4_096)],
+        format!("{error:?}").contains("render cost budget exhausted"),
+        "the failure must be the expanded byte budget: {error:?}",
     );
 }
 
@@ -31544,4 +31542,210 @@ async fn members_module_arguments_follow_live_leniency() {
             && !inline.contains(r#"id="ml-"#),
         "an inline Members invocation must stay literal like live:\n{inline}",
     );
+}
+
+#[tokio::test]
+async fn listpages_expanded_byte_budget_charges_every_selected_content_path() {
+    const INDEX_SLUG: &str = "fixture-expanded-budget-index";
+    const VICTIM_PREFIX: &str = "fixture-expanded-budget-victim-";
+    const DOUBLER_SLUG: &str = "component:expanded-budget-doubler";
+    const CELL_CHARS: usize = 166_667;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        DOUBLER_SLUG,
+        "Expanded Budget Doubler",
+        "{$payload}{$payload}",
+    )
+    .await;
+
+    let plain_cell = "\u{3042}".repeat(CELL_CHARS);
+    let doubled_cell = "\u{3042}".repeat(CELL_CHARS / 2);
+    let doubling_source = format!("[[include {DOUBLER_SLUG} | payload={doubled_cell}]]");
+    let victims = (0..9)
+        .map(|index| format!("{VICTIM_PREFIX}{index}"))
+        .collect::<Vec<_>>();
+    for (index, slug) in victims.iter().enumerate() {
+        let source = if index == 0 {
+            doubling_source.clone()
+        } else {
+            plain_cell.clone()
+        };
+        create_listpages_test_page(
+            &mut runner,
+            site_id,
+            slug,
+            &format!("Expanded Budget Victim {index}"),
+            &source,
+        )
+        .await;
+    }
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Expanded Budget Index",
+        "placeholder",
+    )
+    .await;
+
+    let index = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": INDEX_SLUG}),
+    )
+    .expect("expanded-budget index should exist");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(INDEX_SLUG))),
+    });
+    let page_info = PageInfo {
+        page: Cow::Borrowed(INDEX_SLUG),
+        category: None,
+        site: Cow::Borrowed("test"),
+        title: Cow::Borrowed("Expanded Budget Index"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_id = PageId {
+        site_id,
+        category_id: index.page_category_id,
+        page_id: index.page_id,
+    };
+
+    macro_rules! render {
+        ($source:expr) => {
+            RenderService::render_page(
+                runner.context(),
+                $source.to_owned(),
+                &page_info,
+                Layout::Wikidot,
+                page_id,
+                UrlArguments::default(),
+            )
+            .await
+        };
+    }
+    let module = |slug: &str, body: &str| {
+        format!(
+            "[[module ListPages fullname=\"{slug}\" separate=\"no\"]]\n{body}\n[[/module]]\n"
+        )
+    };
+
+    for (label, body) in [
+        ("block content", "%%content%%"),
+        ("default summary", ""),
+        ("raw content", "%%title%% %%content%%"),
+    ] {
+        let source = victims
+            .iter()
+            .map(|slug| module(slug, body))
+            .collect::<String>();
+        let error =
+            render!(source).expect_err(&format!("{label} path must trip the budget"));
+        assert!(
+            format!("{error:?}").contains("render cost budget exhausted"),
+            "{label} failure must be the expanded byte budget: {error:?}",
+        );
+    }
+
+    runner.teardown().await;
+}
+
+#[tokio::test]
+async fn listpages_cached_selected_content_replays_expanded_byte_charges() {
+    const INDEX_SLUG: &str = "fixture-expanded-budget-cache-index";
+    const VICTIM_SLUG: &str = "fixture-expanded-budget-cache-victim";
+    const CELL_CHARS: usize = 166_667;
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "test"}))
+        .expect("seeded test site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        VICTIM_SLUG,
+        "Expanded Budget Cache Victim",
+        &"\u{3042}".repeat(CELL_CHARS),
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        INDEX_SLUG,
+        "Expanded Budget Cache Index",
+        "placeholder",
+    )
+    .await;
+
+    let index = run_endpoint!(
+        runner,
+        page_get,
+        json!({"site_id": site_id, "page": INDEX_SLUG}),
+    )
+    .expect("expanded-budget cache index should exist");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        page_reference: Some(Reference::Slug(Cow::Borrowed(INDEX_SLUG))),
+    });
+    let page_info = PageInfo {
+        page: Cow::Borrowed(INDEX_SLUG),
+        category: None,
+        site: Cow::Borrowed("test"),
+        title: Cow::Borrowed("Expanded Budget Cache Index"),
+        alt_title: None,
+        score: ScoreValue::Integer(0),
+        tags: Vec::new(),
+        language: Cow::Borrowed("en"),
+    };
+    let page_id = PageId {
+        site_id,
+        category_id: index.page_category_id,
+        page_id: index.page_id,
+    };
+    let module = "[[module ListPages fullname=\"fixture-expanded-budget-cache-victim\" separate=\"no\"]]\n%%first_paragraph%%\n[[/module]]\n";
+
+    let within_budget = module.repeat(7);
+    RenderService::render_page(
+        runner.context(),
+        within_budget,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect("seven cached servings fit under the 4 MiB budget");
+
+    let over_budget = module.repeat(9);
+    let error = RenderService::render_page(
+        runner.context(),
+        over_budget,
+        &page_info,
+        Layout::Wikidot,
+        page_id,
+        UrlArguments::default(),
+    )
+    .await
+    .expect_err("the second and later cache hits must replay their expanded byte charge");
+    assert!(
+        format!("{error:?}").contains("render cost budget exhausted"),
+        "cached servings must be charged against the shared budget: {error:?}",
+    );
+
+    runner.teardown().await;
 }

@@ -80,6 +80,7 @@ pub(super) struct RenderedListPagesSource {
     pub(super) styles: Vec<String>,
     pub(super) included_pages: Vec<PageRef>,
     pub(super) expanded_include_count: usize,
+    pub(super) expanded_bytes_charged: usize,
 }
 
 #[derive(Clone, Copy)]
@@ -609,6 +610,8 @@ pub(super) async fn render_list_pages_default_summary_source(
     render_cost_budget
         .charge(1, "default-summary render")
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
+    charge_selected_content_source_bytes(&render_cost_budget, wikitext)?;
+    let expanded_bytes_charged = wikitext.len();
     let _nested_render_guard = render_cost_budget
         .enter_nested_render(MAX_SELECTED_CONTENT_RENDER_DEPTH)
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
@@ -650,6 +653,7 @@ pub(super) async fn render_list_pages_default_summary_source(
         styles: std::mem::take(&mut html_output.styles),
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
+        expanded_bytes_charged,
     })
 }
 
@@ -685,6 +689,8 @@ pub(super) async fn render_list_pages_block_content_source(
     render_cost_budget
         .charge(1, "block-content render")
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
+    charge_selected_content_source_bytes(&render_cost_budget, wikitext)?;
+    let expanded_bytes_charged = wikitext.len();
     let _nested_render_guard = render_cost_budget
         .enter_nested_render(MAX_SELECTED_CONTENT_RENDER_DEPTH)
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
@@ -725,6 +731,7 @@ pub(super) async fn render_list_pages_block_content_source(
         styles: std::mem::take(&mut html_output.styles),
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
+        expanded_bytes_charged,
     })
 }
 
@@ -759,6 +766,7 @@ pub(super) async fn render_list_pages_selected_content_source(
         .charge(1, "selected-content render")
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
     charge_selected_content_source_bytes(&render_cost_budget, wikitext)?;
+    let expanded_bytes_charged = wikitext.len();
     let _nested_render_guard = render_cost_budget
         .enter_nested_render(MAX_SELECTED_CONTENT_RENDER_DEPTH)
         .map_err(|error| Error::new(error.to_string(), ErrorType::Render))?;
@@ -825,6 +833,7 @@ pub(super) async fn render_list_pages_selected_content_source(
         styles: std::mem::take(&mut html_output.styles),
         included_pages: std::mem::take(&mut html_output.backlinks.included_pages),
         expanded_include_count: rendered.expanded_include_count,
+        expanded_bytes_charged,
     })
 }
 
