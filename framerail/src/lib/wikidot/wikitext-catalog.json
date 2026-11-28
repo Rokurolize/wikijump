@@ -1,0 +1,1382 @@
+{
+  "blocks": [
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Outputs: Element::Anchor / <a>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "anchor",
+      "names": [
+        "anchor",
+        "a"
+      ],
+      "newlines": false,
+      "score": true,
+      "special": "",
+      "star": true
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Output: Element::Audio / <audio>",
+      "head": "value+map",
+      "htmlAttributes": true,
+      "key": "audio",
+      "names": [
+        "audio"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Wikidot's syntax is to use ((bibcite ...)), but ftml also supports [[bibcite ...]], as that is more customary.",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "bibcite",
+      "names": [
+        "bibcite"
+      ],
+      "newlines": false,
+      "score": true,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Outputs: Element::BibliographyBlock / <div class=\"wj-bibliography\">",
+      "head": "map",
+      "htmlAttributes": false,
+      "key": "bibliography",
+      "names": [
+        "bibliography"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Outputs: Element::Container(ContainerType::Blockqote) / <blockquote>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "blockquote",
+      "names": [
+        "blockquote",
+        "quote"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Outputs: Element::Container(ContainerType::Bold) / <strong>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "bold",
+      "names": [
+        "bold",
+        "b",
+        "strong"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "button",
+      "names": [
+        "button"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Outputs: Element::Text",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "char",
+      "names": [
+        "char",
+        "character"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Outputs: Element::CheckBox / <input type=\"checkbox\">",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "checkbox",
+      "names": [
+        "checkbox"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": true
+    },
+    {
+      "arguments": [
+        {
+          "description": "(String) What language this block is in, both for its Content-Type and syntax highlighting.",
+          "name": "type",
+          "type": "string"
+        }
+      ],
+      "body": "raw",
+      "deprecated": false,
+      "description": "Outputs: Element::Code / <pre class=\"wj-code\"><code>",
+      "head": "map",
+      "htmlAttributes": false,
+      "key": "code",
+      "names": [
+        "code"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [
+        {
+          "default": true,
+          "description": "(Boolean) true means start collapsed (default), false means start expanded.",
+          "name": "folded",
+          "type": "bool"
+        },
+        {
+          "description": "(String) The text to present when text is expanded (i.e. can be hidden).",
+          "name": "hide",
+          "type": "string"
+        },
+        {
+          "default": "top",
+          "description": "(Enum: One of top (default), bottom, both, or neither) Shows in what locations the hide collapsible link in.",
+          "name": "hideLocation",
+          "type": "string",
+          "values": [
+            "top",
+            "both",
+            "bottom",
+            "neither"
+          ]
+        },
+        {
+          "description": "(String) The text to present when text is collapsed (i.e. can be shown).",
+          "name": "show",
+          "type": "string"
+        }
+      ],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Collapsible / <div class=\"wj-collapsible-block\">",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "collapsible",
+      "names": [
+        "collapsible"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Output: Element::Date / <span class=\"wj-date\">",
+      "head": "value+map",
+      "htmlAttributes": false,
+      "key": "date",
+      "names": [
+        "date"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Deletion) / <del>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "del",
+      "names": [
+        "del",
+        "deletion"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Div) / <div>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "div",
+      "names": [
+        "div"
+      ],
+      "newlines": true,
+      "score": true,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Output: Element::Embed / <div class=\"wj-embed\"> (varies)",
+      "head": "value+map",
+      "htmlAttributes": false,
+      "key": "embed",
+      "names": [
+        "embed"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "raw",
+      "deprecated": false,
+      "description": "",
+      "head": "none",
+      "htmlAttributes": false,
+      "key": "embedaudio",
+      "names": [
+        "embedaudio"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "raw",
+      "deprecated": false,
+      "description": "",
+      "head": "none",
+      "htmlAttributes": false,
+      "key": "embedvideo",
+      "names": [
+        "embedvideo"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Output: Element::EquationReference / <span>",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "equation-ref",
+      "names": [
+        "equation",
+        "eref",
+        "eqref"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Output: Element::FileLink / <a>",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "file",
+      "names": [
+        "file"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Footnote",
+      "head": "none",
+      "htmlAttributes": false,
+      "key": "footnote",
+      "names": [
+        "footnote"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Output: Element::FootnoteBlock",
+      "head": "map",
+      "htmlAttributes": false,
+      "key": "footnote-block",
+      "names": [
+        "footnoteblock"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "raw",
+      "deprecated": false,
+      "description": "",
+      "head": "map",
+      "htmlAttributes": false,
+      "key": "form",
+      "names": [
+        "form"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "raw",
+      "deprecated": false,
+      "description": "",
+      "head": "map",
+      "htmlAttributes": false,
+      "key": "gallery",
+      "names": [
+        "gallery"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Hidden) / <span class=\"wj-hidden\">",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "hidden",
+      "names": [
+        "hidden"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "raw",
+      "deprecated": false,
+      "description": "Output: Element::Html / <iframe>",
+      "head": "none",
+      "htmlAttributes": false,
+      "key": "html",
+      "names": [
+        "html"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::IfCategory",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "ifcategory",
+      "names": [
+        "ifcategory"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Output: Element::Iframe / <iframe>",
+      "head": "value+map",
+      "htmlAttributes": false,
+      "key": "iframe",
+      "names": [
+        "iframe"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::IfTags",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "iftags",
+      "names": [
+        "iftags"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Output: Element::Image / <img>",
+      "head": "value+map",
+      "htmlAttributes": true,
+      "key": "image",
+      "names": [
+        "image",
+        "=image",
+        "<image",
+        ">image",
+        "f<image",
+        "f=image",
+        "f>image"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "This is not a typical block, as it is handled in the preprocessor.",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "include",
+      "names": [
+        "include"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "include",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "This injects all elements gathered from another page into the current one.",
+      "head": "value+map",
+      "htmlAttributes": false,
+      "key": "include-elements",
+      "names": [
+        "include-elements"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "include-elements",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Insertion) / <ins>",
+      "head": "map",
+      "htmlAttributes": false,
+      "key": "ins",
+      "names": [
+        "ins",
+        "insertion"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Invisible) / <span class=\"wj-invisible\">",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "invisible",
+      "names": [
+        "invisible"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Italics) / <em>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "italics",
+      "names": [
+        "italics",
+        "i",
+        "em",
+        "emphasis"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Output: Element::LineBreaks / <br>",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "lines",
+      "names": [
+        "lines",
+        "newlines"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Input: [[ul]], [[ol]], [[li]]",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "list-item",
+      "names": [
+        "li"
+      ],
+      "newlines": true,
+      "score": true,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Input: [[ul]], [[ol]], [[li]]",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "list-ordered",
+      "names": [
+        "ol"
+      ],
+      "newlines": true,
+      "score": true,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Input: [[ul]], [[ol]], [[li]]",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "list-unordered",
+      "names": [
+        "ul"
+      ],
+      "newlines": true,
+      "score": true,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Mark) / <mark>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "mark",
+      "names": [
+        "mark",
+        "highlight"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "raw",
+      "deprecated": false,
+      "description": "Output: Element::Math / <div class=\"wj-math-block\">",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "math",
+      "names": [
+        "math"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "other",
+      "deprecated": false,
+      "description": "Output: Element::Module / Depends on module type",
+      "head": "value+map",
+      "htmlAttributes": false,
+      "key": "module",
+      "names": [
+        "module",
+        "module654"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "module",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Monospace) / <tt>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "monospace",
+      "names": [
+        "monospace",
+        "tt",
+        "mono"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Note) / <div class=\"wj-note\"> in Layout::Wikijump. Layout::Wikidot does not recognize note as a block, so the source remains escaped literal text, matching anonymous edit/PagePreviewModule behavior.",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "note",
+      "names": [
+        "note"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Paragraph) / <p>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "paragraph",
+      "names": [
+        "paragraph",
+        "p"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Accepts star (*): Element starts selected.",
+      "head": "value+map",
+      "htmlAttributes": true,
+      "key": "radio",
+      "names": [
+        "radio",
+        "radio-button"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": true
+    },
+    {
+      "arguments": [],
+      "body": "raw",
+      "deprecated": false,
+      "description": "Outputs: Element::Raw / <span class=\"wj-raw\">",
+      "head": "map",
+      "htmlAttributes": false,
+      "key": "raw",
+      "names": [
+        "raw"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "See also: <ruby> block on MDN",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "ruby",
+      "names": [
+        "ruby"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "A shorter form of [[ruby]] and [[rt]], when specialized styling is not needed.",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "ruby-short",
+      "names": [
+        "rb",
+        "ruby2"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Only permitted within a [[ruby]] block. See above for example.",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "ruby-text",
+      "names": [
+        "rt",
+        "rubytext"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Size) / <span style=\"font-size: XXX;\">",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "size",
+      "names": [
+        "size"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output:Element::Span / <span>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "span",
+      "names": [
+        "span"
+      ],
+      "newlines": false,
+      "score": true,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Strikethrough) / <s>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "strikethrough",
+      "names": [
+        "strikethrough",
+        "s"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Subscript) / <sub>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "subscript",
+      "names": [
+        "subscript",
+        "sub"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Superscript) / <sup>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "superscript",
+      "names": [
+        "superscript",
+        "sup",
+        "super"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Input: [[tabview]], [[tabs]], [[tab]]",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "tab",
+      "names": [
+        "tab"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Input: [[table]], [[row]], [[cell]], [[hcell]]",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "table",
+      "names": [
+        "table"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Input: [[table]], [[row]], [[cell]], [[hcell]]",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "table-cell-header",
+      "names": [
+        "hcell"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Input: [[table]], [[row]], [[cell]], [[hcell]]",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "table-cell-regular",
+      "names": [
+        "cell"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Input: [[table]], [[row]], [[cell]], [[hcell]]",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "table-row",
+      "names": [
+        "row"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Input: [[tabview]], [[tabs]], [[tab]]",
+      "head": "none",
+      "htmlAttributes": false,
+      "key": "tabview",
+      "names": [
+        "tabview",
+        "tabs"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Input: [[#]], [[target]], [[anchortarget]]",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "target",
+      "names": [
+        "target",
+        "anchortarget"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Name: Table of Contents",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "toc",
+      "names": [
+        "toc",
+        "f<toc",
+        "f>toc"
+      ],
+      "newlines": true,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "elements",
+      "deprecated": false,
+      "description": "Output: Element::Container(ContainerType::Underline) / <u>",
+      "head": "map",
+      "htmlAttributes": true,
+      "key": "underline",
+      "names": [
+        "underline",
+        "u"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Output: Element::User / <div class=\"wj-user-info\">",
+      "head": "value",
+      "htmlAttributes": false,
+      "key": "user",
+      "names": [
+        "user"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": true
+    },
+    {
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Output: Element::Video / <video>",
+      "head": "value+map",
+      "htmlAttributes": true,
+      "key": "video",
+      "names": [
+        "video"
+      ],
+      "newlines": false,
+      "score": false,
+      "special": "",
+      "star": false
+    }
+  ],
+  "modules": [
+    {
+      "argumentSource": "conf",
+      "arguments": [
+        {
+          "description": "(Optional) The page to retrieve the back links to. Default: current page.",
+          "name": "page",
+          "type": "string"
+        }
+      ],
+      "body": "none",
+      "deprecated": false,
+      "description": "Provides a list of pages which link to the page in question.",
+      "htmlAttributes": false,
+      "key": "Backlinks",
+      "names": [
+        "Backlinks"
+      ]
+    },
+    {
+      "argumentSource": "conf",
+      "arguments": [
+        {
+          "default": false,
+          "description": "(Optional, Boolean) Whether hidden categories (those beginning with _) should be shown. Default: false.",
+          "name": "includeHidden",
+          "type": "bool"
+        }
+      ],
+      "body": "none",
+      "deprecated": false,
+      "description": "Lists all categories on the site, and for each, a collapsible containing a list of each page within that category.",
+      "htmlAttributes": false,
+      "key": "Categories",
+      "names": [
+        "Categories"
+      ]
+    },
+    {
+      "argumentSource": "conf",
+      "arguments": [],
+      "body": "raw",
+      "deprecated": false,
+      "description": "Adds CSS styling that will be applied to the current page. An alias of [[css]].",
+      "htmlAttributes": false,
+      "key": "CSS",
+      "names": [
+        "CSS"
+      ]
+    },
+    {
+      "argumentSource": "conf",
+      "arguments": [
+        {
+          "default": "",
+          "description": "(Optional, String) The text that should be present on the button.",
+          "name": "button",
+          "type": "string"
+        }
+      ],
+      "body": "none",
+      "deprecated": false,
+      "description": "A button which permits users to join or apply to the current site.",
+      "htmlAttributes": true,
+      "key": "Join",
+      "names": [
+        "Join"
+      ]
+    },
+    {
+      "argumentSource": "conf",
+      "arguments": [],
+      "body": "raw",
+      "deprecated": false,
+      "description": "Preserves a ListPages invocation for delayed evaluation by application code.",
+      "htmlAttributes": false,
+      "key": "ListPages",
+      "names": [
+        "ListPages"
+      ]
+    },
+    {
+      "argumentSource": "conf",
+      "arguments": [
+        {
+          "default": 10000,
+          "description": "(Optional, Integer > 0) How deep the tree should span. Default: no limit.",
+          "minValue": 1,
+          "name": "depth",
+          "type": "int"
+        },
+        {
+          "description": "(Optional, Slug) The page to retrieve children for. Default: current page.",
+          "name": "root",
+          "type": "string"
+        },
+        {
+          "default": false,
+          "description": "(Optional, Boolean) Whether to show the root page in the tree. Default: false.",
+          "name": "showRoot",
+          "type": "bool"
+        }
+      ],
+      "body": "none",
+      "deprecated": false,
+      "description": "Lists all the child pages of the page in question, including their children, in a hierarchical tree.",
+      "htmlAttributes": false,
+      "key": "PageTree",
+      "names": [
+        "PageTree"
+      ]
+    },
+    {
+      "argumentSource": "conf",
+      "arguments": [],
+      "body": "none",
+      "deprecated": false,
+      "description": "Body: None",
+      "htmlAttributes": false,
+      "key": "Rate",
+      "names": [
+        "Rate"
+      ]
+    },
+    {
+      "argumentSource": "docs",
+      "arguments": [
+        {
+          "description": "(Optional, String) The page name or URL to redirect to. Preserved verbatim; None when the attribute is absent.",
+          "name": "destination",
+          "type": "string"
+        }
+      ],
+      "body": "none",
+      "deprecated": false,
+      "description": "Performs a \"301 Permanently Moved\" redirection to another page or URL.",
+      "htmlAttributes": false,
+      "key": "Redirect",
+      "names": [
+        "Redirect"
+      ]
+    },
+    {
+      "argumentSource": "docs",
+      "arguments": [
+        {
+          "description": "(Optional, String) Limits tags to the specified page category.",
+          "name": "category",
+          "type": "string"
+        },
+        {
+          "description": "(Optional, String) Dimensions of the 3D tag cloud.",
+          "name": "height",
+          "type": "string"
+        },
+        {
+          "description": "(Optional, String) How many tags to display.",
+          "name": "limit",
+          "type": "string"
+        },
+        {
+          "description": "(Optional, String) Colors for the most/least common tags (RRR,GGG,BBB each 0-255).",
+          "name": "maxcolor",
+          "type": "string"
+        },
+        {
+          "description": "(Optional, String) Font sizes for the most/least common tags (units of px, pt, em or %).",
+          "name": "maxfontsize",
+          "type": "string"
+        },
+        {
+          "description": "(Optional, String) Colors for the most/least common tags (RRR,GGG,BBB each 0-255).",
+          "name": "mincolor",
+          "type": "string"
+        },
+        {
+          "description": "(Optional, String) Font sizes for the most/least common tags (units of px, pt, em or %).",
+          "name": "minfontsize",
+          "type": "string"
+        },
+        {
+          "description": "(Optional, String) 3d turns on 3D mode.",
+          "name": "mode",
+          "type": "string"
+        },
+        {
+          "description": "(Optional, String) Shows tags starting with underscore.",
+          "name": "showhidden",
+          "type": "string"
+        },
+        {
+          "description": "(Optional, String) Omits the category parameter from generated tag URLs.",
+          "name": "skipcategoryfromurl",
+          "type": "string"
+        },
+        {
+          "description": "(Optional, String) Target page for tag links.",
+          "name": "target",
+          "type": "string"
+        },
+        {
+          "description": "(Optional, String) Prefix for parameters in generated tag URLs.",
+          "name": "urlattrprefix",
+          "type": "string"
+        },
+        {
+          "description": "(Optional, String) Dimensions of the 3D tag cloud.",
+          "name": "width",
+          "type": "string"
+        }
+      ],
+      "body": "none",
+      "deprecated": false,
+      "description": "Creates a customizable tag cloud for tagged pages, in 2D or 3D mode.",
+      "htmlAttributes": false,
+      "key": "TagCloud",
+      "names": [
+        "TagCloud"
+      ]
+    }
+  ],
+  "schemaVersion": 1,
+  "source": {
+    "files": [
+      "conf/blocks.toml",
+      "conf/modules.toml",
+      "docs/Blocks.md",
+      "docs/Modules.md",
+      "src/parsing/rule/impls/block/blocks/module/mapping.rs",
+      "src/parsing/rule/impls/bold.rs",
+      "src/parsing/rule/impls/italics.rs",
+      "src/parsing/rule/impls/link_triple.rs",
+      "src/parsing/rule/impls/comment.rs"
+    ],
+    "repository": "https://github.com/Rokurolize/ftml",
+    "revision": "1dbb9e8c2cc97d0d48db352b8d5761c4e42419f8"
+  },
+  "syntax": [
+    {
+      "description": "Bold (strong) inline text.",
+      "id": "bold",
+      "insert": "**${}**",
+      "label": "**strong text**",
+      "source": "src/parsing/rule/impls/bold.rs"
+    },
+    {
+      "description": "Italic (emphasized) inline text.",
+      "id": "italics",
+      "insert": "//${}//",
+      "label": "//emphasized text//",
+      "source": "src/parsing/rule/impls/italics.rs"
+    },
+    {
+      "description": "Internal page link with a label.",
+      "id": "page-link",
+      "insert": "[[[${page}|${label}]]]",
+      "label": "[[[page|label]]]",
+      "source": "src/parsing/rule/impls/link_triple.rs"
+    },
+    {
+      "description": "Wikidot comment, not rendered on the page.",
+      "id": "comment",
+      "insert": "[!-- ${} --]",
+      "label": "[!-- comment --]",
+      "source": "src/parsing/rule/impls/comment.rs"
+    }
+  ]
+}

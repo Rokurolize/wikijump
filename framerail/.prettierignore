@@ -18,3 +18,4 @@ yarn.lock
 
 # Frozen native revision-source evidence is sha-pinned; reformatting it breaks the pins.
 tests/fixtures/native-revision-source/
+src/lib/wikidot/wikitext-catalog.json
