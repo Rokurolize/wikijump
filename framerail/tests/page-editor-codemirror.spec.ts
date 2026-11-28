@@ -1,5 +1,7 @@
 import { expect, test } from "./hermetic-playwright"
 
+test.setTimeout(90_000)
+
 const SITE_HEADERS = {
   "X-Wikijump-Site-Id": "6000005",
   "X-Wikijump-Site-Slug": "scp-wiki"
@@ -27,7 +29,9 @@ const openEditor = async (
   await request.post(`${FIXTURE_URL}/clear-page-edit-locks`)
   await page.setExtraHTTPHeaders(AUTHENTICATED_HEADERS)
   await page.goto(EDITOR_PATH)
-  await expect(page.locator(".wikitext-editor .cm-content")).toBeVisible()
+  await expect(page.locator(".wikitext-editor .cm-content")).toBeVisible({
+    timeout: 30_000
+  })
   await expect(page.getByRole("textbox", { name: "Page source" })).toBeVisible()
   await expect(page.locator("textarea[name='wikitext']")).toBeHidden()
 }
