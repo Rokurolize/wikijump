@@ -52,6 +52,7 @@ impl RenderService {
         let page_context = ListPagesPageContext {
             site_id: current_site_id,
             page_id: current_page_id,
+            viewer_user_id,
             url: UrlArguments::default(),
         };
         let batched_required_tag_totals = Self::load_count_pages_required_tag_totals(
@@ -64,7 +65,6 @@ impl RenderService {
             },
             page_info,
             page_context,
-            viewer_user_id,
             &mut permission_cache,
         )
         .await?;
@@ -192,7 +192,6 @@ impl RenderService {
             let rendered = Self::render_count_pages_block(
                 ctx,
                 page_context,
-                viewer_user_id,
                 page_info,
                 arguments,
                 body,
@@ -227,12 +226,12 @@ impl RenderService {
         source: CountPagesRequiredTagSource<'_>,
         page_info: &PageInfo<'_>,
         page_context: ListPagesPageContext<'_>,
-        viewer_user_id: Option<i64>,
         permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
     ) -> Result<BTreeMap<(Vec<String>, String), CountPagesRequiredTagBatchResult>> {
         let ListPagesPageContext {
             site_id: current_site_id,
             page_id: current_page_identity,
+            viewer_user_id,
             url: _,
         } = page_context;
         let CountPagesRequiredTagSource {

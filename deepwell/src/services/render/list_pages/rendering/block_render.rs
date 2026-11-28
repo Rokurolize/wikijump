@@ -83,7 +83,6 @@ impl RenderService {
             module_offset,
             module_block_position,
             compat_html,
-            viewer_user_id,
             page_info,
             page_preview,
             settings,
@@ -105,6 +104,7 @@ impl RenderService {
         let ListPagesPageContext {
             site_id: current_site_id,
             page_id: current_page_identity,
+            viewer_user_id,
             url,
         } = page_context;
         let current_page_id = current_page_identity.unwrap_or(0);

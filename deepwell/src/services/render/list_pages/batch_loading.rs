@@ -19,7 +19,8 @@
  */
 
 use super::{
-    ExactNameListPagesBatchKey, ListPagesBatchDisplayRequirements, ListPagesBatchDisplays,
+    ExactNameListPagesBatchKey, ListPagesBatchDisplayRequirements,
+    ListPagesBatchDisplays, ListPagesPageContext,
 };
 use crate::error::prelude::Result;
 use crate::services::ServiceContext;
@@ -38,14 +39,19 @@ use std::collections::BTreeMap;
 impl RenderService {
     pub(in crate::services::render) async fn load_exact_name_list_pages_batch(
         ctx: &ServiceContext<'_>,
-        current_site_id: i64,
-        current_page_id: i64,
-        viewer_user_id: Option<i64>,
+        page_context: ListPagesPageContext<'_>,
         key: &ExactNameListPagesBatchKey,
         slugs: &[Cow<'_, str>],
         fields: FoundPageFields,
         permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
     ) -> Result<Option<BTreeMap<String, Vec<FoundPageRow>>>> {
+        let ListPagesPageContext {
+            site_id: current_site_id,
+            page_id: current_page_identity,
+            viewer_user_id,
+            url: _,
+        } = page_context;
+        let current_page_id = current_page_identity.unwrap_or(0);
         let categories = key
             .categories
             .iter()

@@ -18,7 +18,6 @@ impl RenderService {
     pub(in crate::services::render) async fn render_count_pages_block(
         ctx: &ServiceContext<'_>,
         page_context: ListPagesPageContext<'_>,
-        viewer_user_id: Option<i64>,
         page_info: &PageInfo<'_>,
         arguments: ListPagesArguments,
         body: &str,
@@ -31,6 +30,7 @@ impl RenderService {
         let ListPagesPageContext {
             site_id: current_site_id,
             page_id: current_page_identity,
+            viewer_user_id,
             url: _,
         } = page_context;
         let current_page_id = current_page_identity.unwrap_or(0);
@@ -205,9 +205,8 @@ impl RenderService {
             && !current_page_only
             && let Some(rendered) = Self::render_count_pages_exact_total(
                 ctx,
-                current_site_id,
+                page_context,
                 query.clone(),
-                viewer_user_id,
                 body,
                 exclude_current_page,
                 offset > 0 || offset_beyond_render_window.is_some(),
@@ -302,14 +301,18 @@ impl RenderService {
 
     async fn render_count_pages_exact_total(
         ctx: &ServiceContext<'_>,
-        current_site_id: i64,
+        page_context: ListPagesPageContext<'_>,
         mut query: PageQuery<'_>,
-        viewer_user_id: Option<i64>,
         body: &str,
         exclude_current_page: bool,
         post_query_offset_applied: bool,
         permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
     ) -> Result<Option<CountPagesBlockRenderResult>> {
+        let ListPagesPageContext {
+            site_id: current_site_id,
+            viewer_user_id,
+            ..
+        } = page_context;
         let categories = CategoryService::get_all(ctx, current_site_id).await?;
         let category_ids = categories
             .iter()

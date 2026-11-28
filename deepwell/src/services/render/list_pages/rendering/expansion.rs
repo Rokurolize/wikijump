@@ -94,7 +94,6 @@ impl RenderService {
             });
         };
         let requested_current_page_id = current_page_id;
-        let current_page_id = current_page_id.unwrap_or(0);
 
         if !settings.enable_page_syntax {
             return Ok(ListPagesExpansion {
@@ -633,9 +632,12 @@ impl RenderService {
                     .collect::<Vec<_>>();
                 let prefetched = Self::load_exact_name_list_pages_batch(
                     ctx,
-                    current_site_id,
-                    current_page_id,
-                    viewer_user_id,
+                    ListPagesPageContext {
+                        site_id: current_site_id,
+                        page_id: requested_current_page_id,
+                        viewer_user_id,
+                        url,
+                    },
                     &batch_key,
                     &slugs,
                     fields,
@@ -687,6 +689,7 @@ impl RenderService {
                             page_context: ListPagesPageContext {
                                 site_id: current_site_id,
                                 page_id: requested_current_page_id,
+                                viewer_user_id,
                                 url,
                             },
                             pager_route,
@@ -697,7 +700,6 @@ impl RenderService {
                                 block.end,
                             ),
                             compat_html,
-                            viewer_user_id,
                             page_info,
                             page_preview,
                             settings,
@@ -826,6 +828,7 @@ impl RenderService {
                             page_context: ListPagesPageContext {
                                 site_id: current_site_id,
                                 page_id: requested_current_page_id,
+                                viewer_user_id,
                                 url,
                             },
                             pager_route,
@@ -836,7 +839,6 @@ impl RenderService {
                                 block.end,
                             ),
                             compat_html,
-                            viewer_user_id,
                             page_info,
                             page_preview,
                             settings,
