@@ -13,6 +13,7 @@ wiki-page-revision-banner =
 wiki-page-file-upload =
   .select = ファイルを選択:
   .name = ファイル名:
+  .toast = ファイルをアップロードしました。
 
 ## Wiki page actions
 wiki-page-view-source = ページソース
@@ -28,6 +29,7 @@ wiki-page-layout = ページレイアウト
   .default = デフォルトレイアウト
   .wikidot = Wikidot (レガシー)
   .wikijump = Wikijump
+  .toast = ページレイアウトを保存しました。
 wiki-page-meta-tag-name = メタタグ名
 wiki-page-meta-tag-content = メタタグの内容
 
@@ -42,8 +44,11 @@ wiki-page-vote = ページの評価
   .cancel = 投票を取り消す
   .who-rated = 誰がこのページに評価したかを閲覧
   .user = ユーザー
+  .toast-set = 投票しました。
+  .toast-remove = 投票を取り消しました。
 
 wiki-page-file-delete =
+  .toast = ファイルを削除しました。
   .confirmation = ファイルを削除しますか？
   .filename = ファイル
   .page = ページ
@@ -97,21 +102,26 @@ wiki-page-source = ページソース
 wiki-page-no-render = コンテンツは表示されません。
 
 wiki-page-edit = ページの編集
+  .toast = ページを保存しました。
 
 wiki-page-parent = 親ページ
+  .toast = 親ページを保存しました。
 
 wiki-page-children = 子ページ
   .no-children = このページに子ページはありません。
 
 wiki-page-delete = ページの削除
+  .toast = ページを削除しました。
 
 wiki-page-move = ページの移動
   .new-slug = 新しいスラッグ
+  .toast = ページを移動しました。
 
 wiki-page-create = 新しいページを作成
 
 wiki-page-restore = ページを復元
   .select = 復元するページを選択
+  .toast = ページを復元しました。
 
 wiki-page-deleted = { $datetime }に削除されました
 
@@ -187,6 +197,7 @@ wiki-page-file-revision-type = 種類
 wiki-page-file-restore = 復元
   .new-page = 移動先ページ
   .new-name = 新しいファイル名
+  .toast = ファイルを復元しました。
 
 wiki-page-file-mirror-readonly =
   .title = PERMISSION ERROR
@@ -215,6 +226,9 @@ wiki-page-lock = ページロック
   .history-overridden = 上書き済み
   .history-none = このページのロック履歴はありません。
   .remove = 解除
+  .toast = ページをロックしました。
+  .toast-remove = ページのロックを解除しました。
+  .toast-override = ページのロックを上書きしました。
 
 ### Blueprint page fallback strings
 
