@@ -474,6 +474,56 @@ x^2 + y^2 = z^2
 <span class="equation-number">(1)</span>
 <div class="math-equation" id="equation-1">\begin{equation} x^2 + y^2 = z^2 \end{equation}</div>`
   },
+  "component:editor-codemirror-include": {
+    page_id: 3000600,
+    revision_id: 9000600,
+    page_created_at: "2026-11-28T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-11-28T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Editor CodeMirror Include",
+    slug: "component:editor-codemirror-include",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: "Included editor fixture text.",
+    compiled_body_html: "<p>Included editor fixture text.</p>"
+  },
+  "editor-codemirror-probe": {
+    page_id: 3000601,
+    revision_id: 9000601,
+    page_created_at: "2026-11-28T00:00:00Z",
+    page_updated_at: null,
+    page_revision_count: 1,
+    revision_created_at: "2026-11-28T00:00:00Z",
+    revision_user_id: 123,
+    creator_user_id: 123,
+    title: "Editor CodeMirror Probe",
+    slug: "editor-codemirror-probe",
+    tags: ["fixture"],
+    rating: 0,
+    wikitext: [
+      "+ Editor fixture heading",
+      "",
+      "[[include component:editor-codemirror-include]]",
+      "",
+      "**Bold fixture** //italic fixture//",
+      "",
+      "[[[page-workflow-probe|Fixture link]]]",
+      "",
+      "[!-- hidden fixture comment --]",
+      "",
+      "%%title%% {$fixture_variable}"
+    ].join("\n"),
+    compiled_body_html: [
+      "<h1>Editor fixture heading</h1>",
+      "<p>Included editor fixture text.</p>",
+      "<p><strong>Bold fixture</strong> <em>italic fixture</em></p>",
+      "<p>[[[page-workflow-probe|Fixture link]]]</p>",
+      "<p>%%title%% {$fixture_variable}</p>"
+    ].join("\n")
+  },
   "page-workflow-probe": {
     page_id: 3000340,
     revision_id: 9000340,

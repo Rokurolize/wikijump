@@ -121,6 +121,12 @@ const handleDiagnosticRequest = (request: IncomingMessage, response: ServerRespo
     sendJson(response, snapshot)
     return true
   }
+  if (request.url === "/last-page-preview-requests") {
+    const snapshot = structuredClone(fixtureState.pagePreviewRequests)
+    fixtureState.pagePreviewRequests.length = 0
+    sendJson(response, snapshot)
+    return true
+  }
   if (request.url === "/last-page-write-requests") {
     const snapshot = structuredClone(fixtureState.pageWriteRequests)
     resetRequestGroups(fixtureState.pageWriteRequests)

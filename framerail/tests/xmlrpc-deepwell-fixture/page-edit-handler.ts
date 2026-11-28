@@ -1,5 +1,6 @@
 import { fixtureState, pageById, requestContextHeaders } from "./context.ts"
 import { pages } from "./data.ts"
+import { renderFixtureWikitext } from "./render-fixture.ts"
 import { sendRpcError } from "./response.ts"
 
 export const handlePageEditRpc = ({
@@ -64,7 +65,7 @@ export const handlePageEditRpc = ({
   })
   if (typeof rpcRequest.params.wikitext === "string") {
     page.wikitext = rpcRequest.params.wikitext
-    page.compiled_body_html = `<p>${rpcRequest.params.wikitext}</p>`
+    page.compiled_body_html = renderFixtureWikitext(rpcRequest.params.wikitext)
   }
   if (typeof rpcRequest.params.title === "string") page.title = rpcRequest.params.title
   if (Array.isArray(rpcRequest.params.tags)) page.tags = rpcRequest.params.tags

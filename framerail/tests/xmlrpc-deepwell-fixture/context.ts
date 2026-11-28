@@ -81,6 +81,7 @@ export const fixtureState = {
     voteList: [],
     pageGetScore: []
   } as Record<string, unknown[]>,
+  pagePreviewRequests: [] as RecordedRpcRequest[],
   forumModuleRequests: [] as {
     headers: Record<string, string | string[] | undefined>
     params: RpcParams
