@@ -173,7 +173,7 @@ services:
     restart: unless-stopped
     network_mode: "service:caddy"
     environment:
-      DEEPWELL_HOST: 127.0.0.1
+      DEEPWELL_HOST: ::1
       DEEPWELL_PORT: "2747"
       DEEPWELL_RPC_TOKEN: ${DEEPWELL_RPC_TOKEN:?DEEPWELL_RPC_TOKEN is required}
       # Largest page source Wikidot accepts is 200,001 characters

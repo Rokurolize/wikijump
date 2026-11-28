@@ -1,5 +1,7 @@
 import { setTimeout as delay } from "node:timers/promises"
 
+import { deepwellJsonRpcUrl } from "./src/lib/server/deepwell/url.ts"
+
 // Deployment opt-in: keep the ordinary handler (including its response cache)
 // inaccessible until the dependency has answered a real authenticated RPC.
 export interface StartupReadiness {
@@ -51,7 +53,10 @@ export const probeStartupDeepwell = async (signal: AbortSignal): Promise<boolean
   const token = process.env.DEEPWELL_RPC_TOKEN ?? ""
   if (!/^[0-9a-f]{64}$/.test(token)) return false
   const response = await fetch(
-    `http://${process.env.DEEPWELL_HOST ?? "localhost"}:${process.env.DEEPWELL_PORT ?? "2747"}/jsonrpc`,
+    deepwellJsonRpcUrl(
+      process.env.DEEPWELL_HOST ?? "localhost",
+      process.env.DEEPWELL_PORT ?? "2747"
+    ),
     {
       method: "POST",
       redirect: "error",
