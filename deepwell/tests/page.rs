@@ -321,6 +321,153 @@ async fn documented_ftml_owned_syntax_has_public_preview_regressions() {
     assert!(!escaping.body.contains("@<"));
 }
 
+#[tokio::test]
+async fn site_tools_modules_require_site_membership_in_page_preview() {
+    const ORPHAN_SLUG: &str = "fixture-preview-gate-orphan";
+    const WANTED_LINKER_SLUG: &str = "fixture-preview-gate-wanted-linker";
+    const WANTED_MISSING_SLUG: &str = "fixture-preview-gate-missing-target";
+    const DRAFT_SLUG: &str = "fixture-preview-gate-draft-target";
+
+    let mut runner = TestRunner::setup().await;
+    let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
+        .expect("seeded SCP Wiki site should exist");
+    let site_id = site.site.site_id;
+
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        ORPHAN_SLUG,
+        "Preview Gate Orphaned Metadata",
+        "orphaned registry fixture",
+    )
+    .await;
+    create_listpages_test_page(
+        &mut runner,
+        site_id,
+        WANTED_LINKER_SLUG,
+        "Preview Gate Wanted Source Metadata",
+        &format!("[[[{WANTED_MISSING_SLUG}]]]"),
+    )
+    .await;
+    set_mutation_request_context(
+        &mut runner,
+        ADMIN_USER_ID,
+        site_id,
+        Reference::Slug(Cow::Borrowed(DRAFT_SLUG)),
+    );
+    assert!(run_endpoint!(
+        runner,
+        page_draft_save,
+        json!({
+            "site_id": site_id,
+            "user_id": ADMIN_USER_ID,
+            "page_id": null,
+            "slug": DRAFT_SLUG,
+            "title": "Preview Gate Draft Metadata",
+            "wikitext": "draft body must not render in this fixture",
+        })
+    ));
+
+    let wikitext = concat!(
+        "PUBLIC_PREVIEW_CONTROL\n",
+        "[[module Join]]\n",
+        "[[module ListDrafts]]\n",
+        "[[module WantedPages]]\n",
+        "[[module OrphanedPages]]",
+    );
+    let registry_markers = [
+        "Preview Gate Draft Metadata",
+        "Preview Gate Wanted Source Metadata",
+        "Preview Gate Orphaned Metadata",
+    ];
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: None,
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let anonymous = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "site tools anonymous preview gate",
+            "wikitext": wikitext,
+        }),
+    );
+    assert!(anonymous.body.contains("PUBLIC_PREVIEW_CONTROL"));
+    assert!(anonymous.body.contains(r#"class="join-box""#));
+    for marker in registry_markers {
+        assert!(
+            !anonymous.body.contains(marker),
+            "anonymous preview disclosed {marker:?}:\n{}",
+            anonymous.body,
+        );
+    }
+
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(SAMPLE_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let nonmember = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "site tools nonmember preview gate",
+            "wikitext": wikitext,
+        }),
+    );
+    for marker in registry_markers {
+        assert!(
+            !nonmember.body.contains(marker),
+            "nonmember preview disclosed {marker:?}:\n{}",
+            nonmember.body,
+        );
+    }
+
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: SAMPLE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("preview gate fixture actor should become a member");
+    runner.set_request_context(RequestContext {
+        session: None,
+        user_id: Some(SAMPLE_USER_ID),
+        site_id: Some(site_id),
+        page_reference: None,
+    });
+    let member = run_endpoint!(
+        runner,
+        wikidot_page_preview,
+        json!({
+            "site_id": site_id,
+            "title": "site tools member preview gate",
+            "wikitext": wikitext,
+        }),
+    );
+    assert!(member.body.contains("PUBLIC_PREVIEW_CONTROL"));
+    for marker in registry_markers {
+        assert!(
+            member.body.contains(marker),
+            "member preview omitted {marker:?}:\n{}",
+            member.body,
+        );
+    }
+}
+
 fn set_mutation_request_context(
     runner: &mut TestRunner,
     user_id: i64,
@@ -12931,16 +13078,42 @@ async fn request_argument_page_views_do_not_persist_hosted_text_blocks() {
 }
 
 #[tokio::test]
-async fn listdrafts_module_matches_live_empty_draft_state() {
+async fn listdrafts_module_matches_member_empty_draft_state() {
     let mut runner = TestRunner::setup().await;
     let site = run_endpoint!(runner, site_get, json!({"site": "scp-wiki"}))
         .expect("seeded SCP Wiki site should exist");
     let site_id = site.site.site_id;
     let source = "DRAFTS_START\n[[module ListDrafts pageType=\"exists\"]]\nDRAFTS_END";
 
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: SAMPLE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("ListDrafts viewer should become a member");
+    let sample_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: SAMPLE_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "ListDrafts empty member view test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("ListDrafts member session should be created");
+
     runner.set_request_context(RequestContext {
         session: None,
-        user_id: None,
+        user_id: Some(SAMPLE_USER_ID),
         site_id: Some(site_id),
         page_reference: None,
     });
@@ -13030,12 +13203,36 @@ async fn listdrafts_module_matches_live_empty_draft_state() {
     )
     .await;
 
-    let view = run_endpoint!(
+    let anonymous_view = run_endpoint!(
         runner,
         page_view,
         json!({
             "site_id": site_id,
             "session_token": null,
+            "route": {"slug": "fixture-listdrafts-empty", "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let anonymous_body = match anonymous_view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected found anonymous ListDrafts view, got {other:?}"),
+    };
+    assert!(
+        anonymous_body.contains("DRAFTS_START")
+            && anonymous_body.contains("DRAFTS_END")
+            && !anonymous_body.contains(r#"<div class="list-drafts-box">"#)
+            && !anonymous_body.contains("[[module ListDrafts"),
+        "anonymous page view should suppress the member-gated ListDrafts module:\n{anonymous_body}",
+    );
+
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": sample_session_token,
             "route": {"slug": "fixture-listdrafts-empty", "extra": ""},
             "locales": ["en-US", "en"],
         }),
@@ -13214,8 +13411,23 @@ async fn listdrafts_module_reads_persisted_drafts_and_enforces_target_filters() 
         BTreeSet::from([EXISTING_SLUG, PRIVATE_SLUG]),
     );
 
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: SAMPLE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("ListDrafts persisted-draft viewer should become a member");
+
     runner.set_request_context(RequestContext {
-        user_id: None,
+        user_id: Some(SAMPLE_USER_ID),
         site_id: Some(site_id),
         ..Default::default()
     });

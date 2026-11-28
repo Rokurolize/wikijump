@@ -28,6 +28,7 @@ use std::sync::LazyLock;
 
 use regex::Regex;
 use sea_orm::{ConnectionTrait, FromQueryResult, Statement, Value};
+use tokio::sync::OnceCell;
 
 use super::compat::CompatHtmlFragments;
 use super::compat::text_fragments::CompatTextFragments;
@@ -403,6 +404,50 @@ impl MembershipByPasswordResultCache {
     }
 }
 
+#[derive(Debug)]
+pub(super) struct MemberGatedModuleAccess {
+    current_site_id: Option<i64>,
+    viewer_user_id: Option<i64>,
+    visible: OnceCell<bool>,
+}
+
+impl MemberGatedModuleAccess {
+    pub(super) fn new(current_site_id: Option<i64>, viewer_user_id: Option<i64>) -> Self {
+        MemberGatedModuleAccess {
+            current_site_id,
+            viewer_user_id,
+            visible: OnceCell::new(),
+        }
+    }
+
+    pub(super) fn current_site_id(&self) -> Option<i64> {
+        self.current_site_id
+    }
+
+    pub(super) fn viewer_user_id(&self) -> Option<i64> {
+        self.viewer_user_id
+    }
+
+    pub(super) async fn visible(&self, ctx: &ServiceContext<'_>) -> Result<bool> {
+        let visible = self
+            .visible
+            .get_or_try_init(|| async {
+                let (Some(site_id), Some(user_id)) =
+                    (self.current_site_id, self.viewer_user_id)
+                else {
+                    return Ok(false);
+                };
+                RelationService::site_member_exists(
+                    ctx,
+                    GetSiteMember { site_id, user_id },
+                )
+                .await
+            })
+            .await?;
+        Ok(*visible)
+    }
+}
+
 pub(super) struct RuntimeModuleExpansionState<'a> {
     pub(super) module_query_cache: &'a mut super::categories::ModuleQueryCache,
     pub(super) compat_text: &'a mut CompatTextFragments,
@@ -420,6 +465,7 @@ pub(super) struct SecondaryRuntimeModuleExpansionOptions<'a> {
     pub(super) current_site_id: Option<i64>,
     pub(super) current_page_id: Option<i64>,
     pub(super) viewer_user_id: Option<i64>,
+    pub(super) member_gated_module_access: &'a MemberGatedModuleAccess,
     pub(super) page_preview: bool,
     pub(super) view_independent_compiled: bool,
     pub(super) url: UrlArguments<'a>,
@@ -1361,8 +1407,7 @@ impl RenderService {
             ctx,
             wikitext,
             settings,
-            options.current_site_id,
-            options.viewer_user_id,
+            options.member_gated_module_access,
             compat_html,
             compat_text,
         )

@@ -30,6 +30,38 @@
 use super::*;
 use ftml::parsing::{ParseErrorKind, Token};
 
+async fn sample_member_session(
+    runner: &TestRunner,
+    site_id: i64,
+    user_agent: &str,
+) -> String {
+    RelationService::create_site_member(
+        runner.context(),
+        CreateSiteMember {
+            site_id,
+            user_id: SAMPLE_USER_ID,
+            metadata: SiteMemberData {
+                accepted: SiteMemberAccepted::SelfJoined,
+            },
+            created_by: SYSTEM_USER_ID,
+        },
+        common::IP_ADDRESS,
+    )
+    .await
+    .expect("sample viewer should become a site member");
+    SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: SAMPLE_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: user_agent.to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("sample member session should be created")
+}
+
 /// Live capture (sandbox-for-codex, 2026-07-25): `[[module Pages]]` emits
 /// `div.list-pages-box` with 20 title-linked rows per page and a Wikidot pager.
 /// `/p/999` clamps to the final page.
@@ -4962,7 +4994,35 @@ async fn orphanedpages_module_lists_pages_without_incoming_internal_links() {
         }),
     );
 
-    let html = load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let anonymous_html =
+        load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    assert!(anonymous_html.contains("ORPHANED_START"));
+    assert!(anonymous_html.contains("ORPHANED_END"));
+    assert!(!anonymous_html.contains("<h1>List of orphaned pages</h1>"));
+    assert!(!anonymous_html.contains("Fixture OrphanedPages Orphan"));
+
+    let member_session_token =
+        sample_member_session(&runner, site_id, "OrphanedPages member view test").await;
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": member_session_token,
+            "route": {"slug": HOLDER_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found OrphanedPages member view, got {other:?}"),
+    };
 
     for expected in [
         "ORPHANED_START",
@@ -5077,13 +5137,24 @@ async fn orphanedpages_module_refreshes_after_linker_soft_delete() {
         "[[module OrphanedPages]]",
     )
     .await;
+    let admin_session_token = SessionService::create(
+        runner.context(),
+        CreateSession {
+            user_id: ADMIN_USER_ID,
+            ip_address: common::IP_ADDRESS,
+            user_agent: "OrphanedPages lifecycle member view test".to_owned(),
+            restricted: false,
+        },
+    )
+    .await
+    .expect("OrphanedPages lifecycle member session should be created");
 
     let before_delete = run_endpoint!(
         runner,
         page_view,
         json!({
             "site_id": site_id,
-            "session_token": null,
+            "session_token": admin_session_token.clone(),
             "route": {"slug": HOLDER_SLUG, "extra": ""},
             "locales": ["en-US", "en"],
         }),
@@ -5118,19 +5189,12 @@ async fn orphanedpages_module_refreshes_after_linker_soft_delete() {
         }),
     );
 
-    let stored_after_delete =
-        load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
-    assert!(
-        !stored_after_delete.contains(DELETED_TARGET_SLUG),
-        "the saved artifact predates the link-graph mutation"
-    );
-
     let after_delete = run_endpoint!(
         runner,
         page_view,
         json!({
             "site_id": site_id,
-            "session_token": null,
+            "session_token": admin_session_token.clone(),
             "route": {"slug": HOLDER_SLUG, "extra": ""},
             "locales": ["en-US", "en"],
         }),
@@ -5578,7 +5642,36 @@ async fn orphanedpages_module_renders_past_the_former_two_thousand_row_cap() {
         }),
     );
 
-    let html = load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let anonymous_html =
+        load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    assert!(anonymous_html.contains("BULK_ORPHANED_START"));
+    assert!(anonymous_html.contains("BULK_ORPHANED_END"));
+    assert!(!anonymous_html.contains("<h1>List of orphaned pages</h1>"));
+    assert!(!anonymous_html.contains(r#"href="/fixture-orphan-bulk-"#));
+
+    let member_session_token =
+        sample_member_session(&runner, site_id, "OrphanedPages bulk member view test")
+            .await;
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": member_session_token,
+            "route": {"slug": HOLDER_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found bulk OrphanedPages member view, got {other:?}"),
+    };
     assert!(
         html.contains("<h1>List of orphaned pages</h1>"),
         "OrphanedPages should render its live heading:\n{html}",
@@ -5664,7 +5757,35 @@ async fn wantedpages_module_groups_missing_internal_links_by_target() {
         }),
     );
 
-    let html = load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let anonymous_html =
+        load_listpages_test_compiled_html(&runner, site_id, HOLDER_SLUG).await;
+    assert!(anonymous_html.contains("WANTED_START"));
+    assert!(anonymous_html.contains("WANTED_END"));
+    assert!(!anonymous_html.contains(r#"<div class="wanted-pages-module">"#));
+    assert!(!anonymous_html.contains("Fixture WantedPages Linker"));
+
+    let member_session_token =
+        sample_member_session(&runner, site_id, "WantedPages member view test").await;
+    let view = run_endpoint!(
+        runner,
+        page_view,
+        json!({
+            "site_id": site_id,
+            "session_token": member_session_token,
+            "route": {"slug": HOLDER_SLUG, "extra": ""},
+            "locales": ["en-US", "en"],
+        }),
+    );
+    let html = match view {
+        GetPageViewOutput::Found {
+            compiled_body_html, ..
+        } => compiled_body_html,
+        other => panic!("expected a found WantedPages member view, got {other:?}"),
+    };
 
     for expected in [
         "WANTED_START",

@@ -3,9 +3,9 @@ use crate::services::PageDraftPageType;
 use super::{
     CompatHtmlFragments, CompatTextFragments, LISTDRAFTS_EMPTY_HTML,
     LISTDRAFTS_MODULE_REGEX, LISTUSERS_MODULE_REGEX, LISTUSERS_UNSUPPORTED_USERS_ERROR,
-    LiteralRegionIndex, PageDraftService, PageDraftView, RenderService, Result,
-    ServiceContext, WikidotModuleArgumentValueKind, WikitextSettings,
-    escape_list_pages_html_attr, escape_list_pages_html_text,
+    LiteralRegionIndex, MemberGatedModuleAccess, PageDraftService, PageDraftView,
+    RenderService, Result, ServiceContext, WikidotModuleArgumentValueKind,
+    WikitextSettings, escape_list_pages_html_attr, escape_list_pages_html_text,
     module_invocation_starts_line, resolve_list_users_viewer,
     substitute_list_users_variables, wikidot_module_argument, wikidot_module_arguments,
 };
@@ -58,8 +58,7 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         wikitext: String,
         settings: &WikitextSettings,
-        current_site_id: Option<i64>,
-        viewer_user_id: Option<i64>,
+        member_gated_module_access: &MemberGatedModuleAccess,
         compat_html: &mut CompatHtmlFragments,
         compat_text: &mut CompatTextFragments,
     ) -> Result<String> {
@@ -69,6 +68,8 @@ impl RenderService {
 
         let literal_regions =
             LiteralRegionIndex::new_wikidot_module_recognition(&wikitext);
+        let current_site_id = member_gated_module_access.current_site_id();
+        let viewer_user_id = member_gated_module_access.viewer_user_id();
         let Some(site_id) = current_site_id else {
             return Ok(Self::expand_list_drafts_without_site(
                 wikitext,
@@ -93,6 +94,10 @@ impl RenderService {
                 continue;
             }
             output.push_str(&wikitext[cursor..matched.start()]);
+            if !member_gated_module_access.visible(ctx).await? {
+                cursor = matched.end();
+                continue;
+            }
             let head = captures.name("head").map_or("", |head| head.as_str());
             let drafts = match list_drafts_page_type(head) {
                 Some(page_type) => {

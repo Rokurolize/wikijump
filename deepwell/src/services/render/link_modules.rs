@@ -20,6 +20,7 @@
 
 use super::compat::CompatHtmlFragments;
 use super::list_pages::list_pages_pager_window;
+use super::runtime_modules::MemberGatedModuleAccess;
 use super::runtime_page_queries::{ViewablePageRef, view_decisions_for_scanned_pages};
 use super::service::{
     RenderService, escape_list_pages_html_attr, escape_list_pages_html_text,
@@ -281,6 +282,7 @@ impl RenderService {
         wikitext: String,
         settings: &WikitextSettings,
         current_site_id: Option<i64>,
+        member_gated_module_access: &MemberGatedModuleAccess,
         compat_html: &mut CompatHtmlFragments,
     ) -> Result<String> {
         if !settings.enable_page_syntax {
@@ -297,11 +299,14 @@ impl RenderService {
             return Ok(wikitext);
         }
 
+        let member_gated_modules_visible =
+            member_gated_module_access.visible(ctx).await?;
         let mut pages_cache = LinkModulePagesCache::default();
         let wikitext = Self::expand_orphaned_pages_modules(
             ctx,
             wikitext,
             current_site_id,
+            member_gated_modules_visible,
             compat_html,
             &mut pages_cache,
         )
@@ -310,6 +315,7 @@ impl RenderService {
             ctx,
             wikitext,
             current_site_id,
+            member_gated_modules_visible,
             compat_html,
             &mut pages_cache,
         )
@@ -320,6 +326,7 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         wikitext: String,
         current_site_id: i64,
+        member_gated_modules_visible: bool,
         compat_html: &mut CompatHtmlFragments,
         pages_cache: &mut LinkModulePagesCache,
     ) -> Result<String> {
@@ -335,6 +342,10 @@ impl RenderService {
 
             if Self::is_inside_wikidot_literal_region(&wikitext, mtch.start()) {
                 expanded.push_str(mtch.as_str());
+                cursor = mtch.end();
+                continue;
+            }
+            if !member_gated_modules_visible {
                 cursor = mtch.end();
                 continue;
             }
@@ -359,6 +370,7 @@ impl RenderService {
         ctx: &ServiceContext<'_>,
         wikitext: String,
         current_site_id: i64,
+        member_gated_modules_visible: bool,
         compat_html: &mut CompatHtmlFragments,
         pages_cache: &mut LinkModulePagesCache,
     ) -> Result<String> {
@@ -374,6 +386,10 @@ impl RenderService {
 
             if Self::is_inside_wikidot_literal_region(&wikitext, mtch.start()) {
                 expanded.push_str(mtch.as_str());
+                cursor = mtch.end();
+                continue;
+            }
+            if !member_gated_modules_visible {
                 cursor = mtch.end();
                 continue;
             }
