@@ -624,7 +624,7 @@ class RefreshStandingTest(unittest.TestCase):
             compose,
         )
 
-    def test_standing_interior_uses_ipv6_with_database_url_as_sole_sqlx_exception(self) -> None:
+    def test_standing_interior_uses_ipv6_without_exceptions(self) -> None:
         compose = (SCRIPT.parent / "compose.yaml").read_text(encoding="utf-8")
         self.assertEqual(compose.count("REDIS_URL: redis://[::1]:6379"), 3)
         self.assertEqual(compose.count("S3_CUSTOM_ENDPOINT: http://[::1]:9000"), 2)
@@ -632,7 +632,8 @@ class RefreshStandingTest(unittest.TestCase):
         for service in ("deepwell", "framerail", "wws"):
             self.assertIn(f'"{service}=::1"', compose)
         self.assertIn("net.connect(3393,'::1'", compose)
-        self.assertIn("@127.0.0.1:5432/wikijump", compose)
+        self.assertIn("@127.0.0.1:5432/wikijump?hostaddr=::1", compose)
+        self.assertNotIn("@127.0.0.1:5432/wikijump\n", compose)
         self.assertIn("DEEPWELL_HOST: ::1", compose)
         self.assertNotRegex(compose, r"\n\s+HOST:\s*[\"']?0\.0\.0\.0")
         for publication in (
