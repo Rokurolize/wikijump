@@ -299,7 +299,7 @@ def fetch(host: str, path: str) -> tuple[int, str]:
             "curl",
             "-sk",
             "--resolve",
-            f"{host}:28443:127.0.0.1",
+            f"{host}:28443:[::1],127.0.0.1",
             "-w",
             "\n%{http_code}",
             f"https://{host}:28443{path}",

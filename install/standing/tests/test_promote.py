@@ -411,6 +411,17 @@ class SavedPageStalenessTest(unittest.TestCase):
         self.assertIn("slug = 'scp-wiki'", sql)
         self.assertIn("p.slug IN ('scp-9506', 'theme:it''s')", sql)
 
+    def test_saved_page_queries_use_ipv6_loopback_inside_the_database_container(self) -> None:
+        with mock.patch.object(promote, "run", return_value="0") as run:
+            promote.saved_page_staleness("db", "generator")
+        command = " ".join(run.call_args.args)
+        self.assertIn("psql -h ::1", command)
+        self.assertNotIn("psql -h 127.0.0.1", command)
+
+    def test_the_multiline_psql_helper_uses_ipv6_loopback(self) -> None:
+        self.assertIn("psql -q -h ::1", inspect.getsource(promote.psql))
+        self.assertNotIn("psql -q -h 127.0.0.1", inspect.getsource(promote.psql))
+
 
 class RehearsalObjectStoreTest(unittest.TestCase):
     def test_the_text_block_bucket_is_copied_into_the_upper_layer_read_only(self) -> None:
@@ -774,6 +785,12 @@ class RehearsalEvidenceTest(unittest.TestCase):
             self.assertIn("password authentication failed", log.read_text(encoding="utf-8"))
             args = run.call_args.args[0]
             self.assertEqual(args[args.index("--entrypoint") + 1], "pg_basebackup")
+            self.assertEqual(args[args.index("--host") + 1], "::1")
+
+    def test_the_rehearsal_canary_resolves_ipv6_loopback_before_ipv4(self) -> None:
+        self.assertIn(
+            'f"{origin}:[::1],127.0.0.1"', inspect.getsource(promote.rehearse)
+        )
 
     def test_the_clone_stage_writes_its_log_into_the_evidence_directory(self) -> None:
         source = inspect.getsource(promote.promote)
