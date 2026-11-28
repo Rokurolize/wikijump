@@ -1,42 +1,71 @@
 <script lang="ts">
+  import { currentEditorLabels } from "$lib/wikidot/editor-labels-client"
+  import type { EditorLabels } from "$lib/wikidot/editor-labels"
+  import { focusDialog } from "$lib/util/editor-focus"
+  import { onDestroy, onMount } from "svelte"
+
   let {
     title,
     onRestore,
-    onDiscard
+    onDiscard,
+    onDismiss,
+    labels = currentEditorLabels()
   }: {
     title: string
     onRestore: () => void
     onDiscard: () => void
+    onDismiss?: () => void
+    labels?: EditorLabels
   } = $props()
+
+  let dialog = $state<HTMLDivElement>()
+  let restoreFocus: (() => void) | undefined
+
+  onMount(() => {
+    if (dialog) restoreFocus = focusDialog(dialog)
+  })
+
+  onDestroy(() => {
+    restoreFocus?.()
+  })
+
+  const onKeydown = (event: KeyboardEvent) => {
+    if (event.key !== "Escape" || !onDismiss) return
+    event.preventDefault()
+    onDismiss()
+  }
 </script>
 
+<svelte:window onkeydown={onKeydown} />
+
 {#snippet body()}
-  <h1 id="edit-draft-dialog-title">A saved draft is available</h1>
+  <h1 id="edit-draft-dialog-title">{labels.draftTitle}</h1>
   <p>
-    A draft exists for this page. It has not been published as a revision, and the current
-    page text is still in the editor.
+    {labels.draftDescription}
   </p>
-  <p>Draft title: <strong>{title}</strong></p>
+  <p>{labels.draftTitleLabel} <strong>{title}</strong></p>
   <p>
-    You can restore the draft into the editor or discard it. The draft will not be changed
-    until you choose.
+    {labels.draftChoice}
   </p>
 {/snippet}
 
 {#snippet buttons()}
   <button class="btn btn-primary" onclick={onRestore} type="button">
-    Restore draft
+    {labels.draftRestore}
   </button>
   <button class="btn btn-danger" onclick={onDiscard} type="button">
-    Discard draft
+    {labels.draftDiscard}
   </button>
 {/snippet}
 
 <div class="modal-container" role="presentation">
   <div
     class="modal edit-draft-dialog"
-    aria-describedby="edit-draft-dialog-title"
+    bind:this={dialog}
+    aria-labelledby="edit-draft-dialog-title"
+    aria-modal="true"
     role="dialog"
+    tabindex="-1"
   >
     <div class="modal-message">
       {@render body()}
@@ -64,9 +93,9 @@
   .modal-container > .modal {
     display: inline-block;
     width: 30%;
+    max-height: 70vh;
     padding: 10px;
     margin: 20vh auto;
-    max-height: 70vh;
     overflow: auto;
     color: var(--wj-text);
     text-align: center;
@@ -78,5 +107,16 @@
   .modal-container > .modal h1 {
     margin-top: 0;
     font-size: 1.2em;
+  }
+
+  @media (width <= 480px), (pointer: coarse) {
+    .modal-container > .modal {
+      width: min(92vw, 26rem);
+      margin-block: 10vh;
+    }
+
+    .modal-container > .modal button {
+      min-height: 2.75rem;
+    }
   }
 </style>

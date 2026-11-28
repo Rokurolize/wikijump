@@ -10,6 +10,10 @@
   import { createPageDeniedMessage } from "$lib/wikidot/wikidot-locale"
   import { defaultPageTitleFromSlug } from "$lib/wikidot/wikidot-page-title"
   import {
+    currentEditorLabels,
+    formatEditorLabel
+  } from "$lib/wikidot/editor-labels-client"
+  import {
     classifyPropertyActionError,
     firstPropertyError,
     hasPropertyErrors,
@@ -43,6 +47,7 @@
   let { errorData }: { errorData: PageErrorData } = $props()
 
   const pageLayoutContext = getPageLayoutContext()
+  const editorLabels = $derived(currentEditorLabels())
 
   let showRestoreAction = $state<boolean>(false)
   let deletedPages = $state<PageDeletedGet[]>([])
@@ -403,8 +408,8 @@
       {/if}
 
       {#if draftSyncError}
-        <p class="edit-draft-sync-error" role="alert">
-          The page draft is not synchronized: {draftSyncError}
+        <p class="edit-draft-sync-error" role="alert" aria-live="assertive">
+          {formatEditorLabel(editorLabels, "draftSyncError", { message: draftSyncError })}
         </p>
       {/if}
       <form id="editor" class="editor" action="?/edit" method="POST" use:editEnhance>
@@ -434,12 +439,13 @@
           errors={propertiesErrors}
           creating={true}
           initialParent={initialParents}
+          labels={editorLabels}
           {templateLabel}
           slug={missingPageSlug}
         >
           <WikitextEditor
             name="wikitext"
-            label={errorData.internationalization?.["wiki-page-source"] ?? "Page source"}
+            label={editorLabels.source}
             bind:value={$editForm.wikitext}
           />
         </EditorPropertiesPanel>
@@ -479,7 +485,8 @@
         siteId={errorData.site.site_id}
         title={$editForm.title}
         wikitext={$editForm.wikitext}
-        label={errorData.internationalization?.preview ?? "Preview"}
+        label={editorLabels.preview}
+        labels={editorLabels}
       />
     {/if}
   {:else}
@@ -683,7 +690,9 @@
   <EditDraftDialog
     title={draftDialog.title}
     onDiscard={discardDraft}
+    onDismiss={() => (draftDialog = null)}
     onRestore={restoreDraft}
+    labels={editorLabels}
   />
 {/if}
 

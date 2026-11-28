@@ -4,6 +4,11 @@
   import { getPageLayoutContext } from "$lib/layout/page-layout-context"
   import { Layout } from "$lib/types"
   import { resolve } from "$app/paths"
+  import { focusAfterNavigation } from "$lib/util/editor-focus"
+  import {
+    currentEditorLabels,
+    formatEditorLabel
+  } from "$lib/wikidot/editor-labels-client"
   import { classifyEditLeaseSaveError } from "$lib/wikidot/wikidot-edit-lease.js"
   import { defaultPageTitleFromSlug } from "$lib/wikidot/wikidot-page-title"
   import { superForm } from "sveltekit-superforms"
@@ -41,6 +46,8 @@
 
   let { data, params }: PageProps = $props()
   const pageLayoutContext = getPageLayoutContext()
+  const labels = $derived(currentEditorLabels())
+  let announcement = $state("")
 
   const leaseRequired = untrack(
     () => typeof data.page?.page_id === "number" && data.page.page_id > 0
@@ -126,8 +133,7 @@
       }
       draftCheckState = "ready"
     } catch (error) {
-      draftSyncError =
-        error instanceof Error ? error.message : "The page draft could not be checked."
+      draftSyncError = error instanceof Error ? error.message : labels.draftCheckError
       draftCheckState = "error"
     }
   }
@@ -149,7 +155,7 @@
             message?: string
           } | null
           if (error?.code !== 4304) {
-            draftSyncError = error?.message ?? "The page draft could not be synchronized."
+            draftSyncError = error?.message ?? labels.draftSyncFailure
           }
         }
       } else {
@@ -162,10 +168,7 @@
       }
       return synchronized
     } catch (error) {
-      draftSyncError =
-        error instanceof Error
-          ? error.message
-          : "The page draft could not be synchronized."
+      draftSyncError = error instanceof Error ? error.message : labels.draftSyncFailure
       return false
     } finally {
       activeDraftPayload = null
@@ -189,6 +192,7 @@
       comments: draft.comments
     })
     draftSyncError = null
+    announcement = labels.draftRestored
   }
 
   const discardDraft = async () => {
@@ -199,9 +203,9 @@
       draftDialog = null
       draftBaselineFingerprint = initialDraftFingerprint
       draftSyncError = null
+      announcement = labels.draftDiscarded
     } catch (error) {
-      draftSyncError =
-        error instanceof Error ? error.message : "The page draft could not be discarded."
+      draftSyncError = error instanceof Error ? error.message : labels.draftDiscardFailure
     } finally {
       draftActionBusy = false
     }
@@ -216,9 +220,9 @@
       .filter(([, enabled]) => enabled)
       .map(([key]) => `/${key}`)
 
-    goto(resolve(`${params.slug}${options.join("")}`), {
+    void goto(resolve(`${params.slug}${options.join("")}`), {
       reset: false
-    })
+    }).then(focusAfterNavigation)
   }
 
   const forceLease = async () => {
@@ -262,8 +266,7 @@
       } catch (error) {
         errorPopupState.current = {
           state: true,
-          message:
-            error instanceof Error ? error.message : "The edit lock request failed.",
+          message: error instanceof Error ? error.message : labels.lockRequestFailure,
           data: null
         }
         cancelEdit()
@@ -289,7 +292,7 @@
         if (hasPropertyErrors(errors)) {
           propertiesReport = {
             state: "invalid",
-            message: firstPropertyError(errors) ?? "Check the page properties."
+            message: firstPropertyError(errors) ?? labels.checkProperties
           }
           cancel()
           return
@@ -303,8 +306,8 @@
           state: "saving",
           step: pendingParentChange ? "parent" : "content",
           message: pendingParentChange
-            ? "Saving page content, then applying the page-tree move…"
-            : "Saving page properties…"
+            ? labels.saveContentAndParent
+            : labels.saveProperties
         }
         const submitForm = {
           ...$form,
@@ -335,14 +338,15 @@
             propertiesReport = {
               state: "saving",
               step: "parent",
-              message: "Page content saved. Applying the page-tree move…"
+              message: labels.saveParent
             }
             const applied = await runParentMutation()
             if (!applied) return
           }
-          goto(resolve(`${params.slug}`), {
+          announcement = labels.saveResult
+          void goto(resolve(`${params.slug}`), {
             reset: false
-          })
+          }).then(focusAfterNavigation)
         }
         if (result.type === "failure" && result.data) {
           const kind = leaseRequired
@@ -401,16 +405,15 @@
           propertiesReport = {
             state: "partial",
             step: "parent",
-            message: parentReportMessage(
-              true,
-              "The page-tree move request failed. Check the parent page and try again."
-            )
+            message: parentReportMessage(true, labels.parentMoveFailure)
           }
+          announcement = labels.savePartial
         } else {
           propertiesReport = {
             state: "saved",
-            message: "Page properties and the page-tree move were saved."
+            message: labels.saveParentSuccess
           }
+          announcement = labels.saveResult
         }
         parentResultResolve?.(applied)
         parentResultResolve = null
@@ -433,7 +436,7 @@
     propertiesReport = {
       state: "saving",
       step: "parent",
-      message: "Applying the page-tree move…"
+      message: labels.saveParentApply
     }
     void runParentMutation().then((applied) => {
       if (applied) {
@@ -482,24 +485,33 @@
   })
 </script>
 
+<p
+  class="editor-announcer visually-hidden"
+  role="status"
+  aria-live="polite"
+  aria-atomic="true"
+  data-editor-announcement
+>
+  {announcement}
+</p>
+
 {#if leaseRequired && leaseSnapshot.status === "acquiring"}
-  <p role="status">Acquiring the page edit lock&hellip;</p>
+  <p role="status" aria-live="polite">{labels.acquiringLock}</p>
 {:else if leaseRequired && leaseSnapshot.status === "conflict"}
-  <p role="alert">This page is being edited by another user.</p>
+  <p role="alert" aria-live="assertive">{labels.lockConflict}</p>
 {:else}
   {#if leaseSnapshot.superseded}
-    <p class="edit-lease-superseded" role="alert">
-      Your edit lock was taken by another user. Saving will be rejected until you take the
-      lock back.
+    <p class="edit-lease-superseded" role="alert" aria-live="assertive">
+      {labels.lockSuperseded}
       <button class="btn" onclick={reacquireLease} type="button">
-        Take the lock back
+        {labels.takeLockBack}
       </button>
     </p>
   {/if}
 
   {#if draftSyncError}
-    <p class="edit-draft-sync-error" role="alert">
-      The page draft is not synchronized: {draftSyncError}
+    <p class="edit-draft-sync-error" role="alert" aria-live="assertive">
+      {formatEditorLabel(labels, "draftSyncError", { message: draftSyncError })}
     </p>
   {/if}
 
@@ -561,10 +573,11 @@
         {currentLayoutLabel}
         onRetryParent={retryParentChange}
         slug={params.slug}
+        {labels}
       >
         <WikitextEditor
           name="wikitext"
-          label={data.internationalization?.["wiki-page-source"] ?? "Page source"}
+          label={labels.source}
           bind:value={$form.wikitext}
         />
       </EditorPropertiesPanel>
@@ -611,7 +624,8 @@
       siteId={data.site.site_id}
       title={$form.title}
       wikitext={$form.wikitext}
-      label={data.internationalization?.preview ?? "Preview"}
+      label={labels.preview}
+      {labels}
     />
   {/if}
 {/if}
@@ -620,7 +634,9 @@
   <EditDraftDialog
     title={draftDialog.title}
     onDiscard={discardDraft}
+    onDismiss={() => (draftDialog = null)}
     onRestore={restoreDraft}
+    {labels}
   />
 {/if}
 
@@ -657,5 +673,25 @@
     align-items: stretch;
     justify-content: stretch;
     width: 100%;
+  }
+
+  @media (width <= 480px), (pointer: coarse) {
+    .editor-actions button,
+    .buttons input[type="button"],
+    .buttons input[type="submit"] {
+      min-height: 2.75rem;
+    }
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(50%);
+    border: 0;
   }
 </style>

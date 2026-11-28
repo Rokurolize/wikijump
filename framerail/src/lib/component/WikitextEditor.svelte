@@ -19,6 +19,10 @@
   import { diagnosticCount, setDiagnosticsEffect } from "@codemirror/lint"
   import { classHighlighter } from "@lezer/highlight"
   import WikitextEditorToolbar from "$lib/component/WikitextEditorToolbar.svelte"
+  import {
+    currentEditorLabels,
+    formatEditorLabel
+  } from "$lib/wikidot/editor-labels-client"
   import { wikitextAssistExtensions } from "$lib/wikidot/wikitext-editor-assist"
   import {
     applyToolbarOperation,
@@ -45,12 +49,16 @@
   let host: HTMLDivElement
   let enhanced = $state(false)
   let hintCount = $state(0)
+  let direction = $state<"ltr" | "rtl">("ltr")
   let view: EditorView | undefined
+  let composing = false
+  let pendingExternalValue: string | null = null
+  const labels = $derived(currentEditorLabels())
   let mirroredValue = value
   const synchronizeValue = EditorView.updateListener.of((update) => {
     if (update.docChanged) {
       mirroredValue = update.state.doc.toString()
-      value = mirroredValue
+      if (!composing && !view?.composing) value = mirroredValue
     }
     if (
       update.transactions.some((transaction) =>
@@ -73,13 +81,13 @@
     const options: { linkTarget?: string; imageSource?: string } = {}
     if (operation === "link") {
       // eslint-disable-next-line no-alert
-      const target = globalThis.prompt("Link target")
+      const target = globalThis.prompt(labels.linkPrompt)
       if (target === null) return
       options.linkTarget = target
     }
     if (operation === "image") {
       // eslint-disable-next-line no-alert
-      const source = globalThis.prompt("Image source")
+      const source = globalThis.prompt(labels.imagePrompt)
       if (source === null) return
       options.imageSource = source
     }
@@ -107,6 +115,17 @@
   )
 
   onMount(() => {
+    const syncDirection = () => {
+      direction = document.documentElement.dir.toLowerCase() === "rtl" ? "rtl" : "ltr"
+      if (view) view.contentDOM.dir = direction
+    }
+    syncDirection()
+    const directionObserver = new MutationObserver(syncDirection)
+    directionObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["dir"]
+    })
+
     view = new EditorView({
       parent: host,
       state: EditorState.create({
@@ -132,7 +151,34 @@
             "role": "textbox",
             "aria-label": label,
             "aria-multiline": "true",
+            "aria-describedby": `${id}-toolbar-note`,
+            "autocapitalize": "off",
+            "autocorrect": "off",
+            "spellcheck": "true",
+            "dir": direction,
             "tabindex": "0"
+          }),
+          EditorView.domEventHandlers({
+            compositionstart: () => {
+              composing = true
+              return false
+            },
+            compositionend: () => {
+              composing = false
+              const documentText = view?.state.doc.toString() ?? mirroredValue
+              if (pendingExternalValue !== null) {
+                const next = pendingExternalValue
+                pendingExternalValue = null
+                if (next !== documentText) {
+                  view?.dispatch({
+                    changes: { from: 0, to: view.state.doc.length, insert: next }
+                  })
+                }
+              }
+              mirroredValue = view?.state.doc.toString() ?? documentText
+              value = mirroredValue
+              return false
+            }
           }),
           synchronizeValue,
           placeholder ? editorPlaceholder(placeholder) : [],
@@ -143,6 +189,7 @@
     })
     enhanced = true
     return () => {
+      directionObserver.disconnect()
       view?.destroy()
       view = undefined
     }
@@ -153,7 +200,12 @@
   }
 
   $effect(() => {
-    if (!view || value === mirroredValue) return
+    if (!view) return
+    if (composing || view.composing) {
+      pendingExternalValue = value
+      return
+    }
+    if (value === mirroredValue || value === view.state.doc.toString()) return
     mirroredValue = value
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: value }
@@ -161,9 +213,13 @@
   })
 </script>
 
-<div class="wikitext-editor" class:wikitext-editor-enhanced={enhanced}>
+<div class="wikitext-editor" class:wikitext-editor-enhanced={enhanced} dir={direction}>
   {#if enhanced}
-    <WikitextEditorToolbar onOperate={runToolbarOperation} />
+    <WikitextEditorToolbar
+      noteId={`${id}-toolbar-note`}
+      {labels}
+      onOperate={runToolbarOperation}
+    />
   {/if}
   <textarea
     {id}
@@ -172,13 +228,19 @@
     aria-label={label}
     aria-hidden={enhanced ? "true" : undefined}
     tabindex={enhanced ? -1 : undefined}
+    spellcheck="true"
     {placeholder}
     onfocus={focusEnhancedEditor}
     bind:value></textarea>
   <div class="wikitext-editor-cm" bind:this={host}></div>
   {#if enhanced && hintCount > 0}
-    <p class="wikitext-editor-hint-notice" role="status">
-      {hintCount} editor heuristic warning{hintCount === 1 ? "" : "s"} — not render errors.
+    <p
+      class="wikitext-editor-hint-notice"
+      role="status"
+      aria-live="polite"
+      aria-atomic="true"
+    >
+      {formatEditorLabel(labels, "hintNotice", { count: hintCount })}
     </p>
   {/if}
 </div>
@@ -291,14 +353,14 @@
   }
 
   .wikitext-editor .cm-line {
-    padding: 0 0.55em;
+    padding-inline: 0.55em;
     overflow-wrap: anywhere;
   }
 
   .wikitext-editor .cm-gutters {
     color: var(--col-text-dim, rgb(105, 105, 105));
     background: var(--col-background, rgb(246, 246, 246));
-    border-right: 1px solid var(--col-border, rgb(221, 221, 221));
+    border-inline-end: 1px solid var(--col-border, rgb(221, 221, 221));
   }
 
   .wikitext-editor .cm-activeLine {
@@ -385,10 +447,22 @@
     color: rgb(120, 78, 10);
   }
 
+  @media (pointer: coarse) {
+    .wikitext-editor-toolbar button {
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+    }
+  }
+
   @media (width <= 480px) {
     .wikitext-editor .cm-editor {
       height: 52vh;
       min-height: 12rem;
+    }
+
+    .wikitext-editor-toolbar button {
+      min-width: 2.75rem;
+      min-height: 2.75rem;
     }
   }
 </style>

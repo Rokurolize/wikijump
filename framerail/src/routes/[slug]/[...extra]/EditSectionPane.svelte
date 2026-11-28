@@ -3,6 +3,7 @@
   import { deserialize } from "$app/forms"
   import { resolve } from "$app/paths"
   import { errorPopupState } from "$lib/layout/stores.svelte"
+  import { currentEditorLabels } from "$lib/wikidot/editor-labels-client"
   import { buildWikidotSectionEditSubmission } from "$lib/wikidot/wikidot-edit-sections"
   import { classifyEditLeaseSaveError } from "$lib/wikidot/wikidot-edit-lease.js"
   import {
@@ -32,6 +33,7 @@
     section,
     close
   }: PageProps & { section: EditSection; close: () => void } = $props()
+  const labels = $derived(currentEditorLabels())
   const originalSource = untrack(() => data.wikitext)
   const selectedSection = untrack(() => section)
   let permissionState = $state<"checking" | "allowed" | "denied">("checking")
@@ -241,29 +243,24 @@
 </script>
 
 <div id="edit-section-content">
-  <h1 class="page-edit-header">Edit Section</h1>
+  <h1 class="page-edit-header">{labels.sectionHeading}</h1>
   {#if permissionState === "checking"}
-    <p role="status">Checking edit permission…</p>
+    <p role="status" aria-live="polite">{labels.checkingPermission}</p>
   {:else if permissionState === "allowed" && leaseSnapshot.status === "acquiring"}
-    <p role="status">Acquiring the page edit lock&hellip;</p>
+    <p role="status" aria-live="polite">{labels.acquiringLock}</p>
   {:else if permissionState === "allowed" && leaseSnapshot.status === "conflict"}
-    <p role="alert">This page is being edited by another user.</p>
+    <p role="alert" aria-live="assertive">{labels.lockConflict}</p>
   {:else if permissionState === "allowed"}
     {#if leaseSnapshot.superseded}
-      <p class="edit-lease-superseded" role="alert">
-        Your edit lock was taken by another user. Saving will be rejected until you take
-        the lock back.
+      <p class="edit-lease-superseded" role="alert" aria-live="assertive">
+        {labels.lockSuperseded}
         <button class="btn" onclick={reacquireLease} type="button">
-          Take the lock back
+          {labels.takeLockBack}
         </button>
       </p>
     {/if}
     <form id="editor" class="editor" action="?/edit" method="POST" use:enhance>
-      <WikitextEditor
-        name="wikitext"
-        label={data.internationalization?.["wiki-page-source"] ?? "Page source"}
-        bind:value={$form.wikitext}
-      />
+      <WikitextEditor name="wikitext" label={labels.source} bind:value={$form.wikitext} />
       <textarea
         name="comments"
         class="editor-comments"

@@ -1,6 +1,11 @@
 <script lang="ts">
   import { deserialize } from "$app/forms"
   import { buildGeneratedPageStylesHead } from "$lib/generated-page-styles"
+  import {
+    currentEditorLabels,
+    formatEditorLabel
+  } from "$lib/wikidot/editor-labels-client"
+  import type { EditorLabels } from "$lib/wikidot/editor-labels"
   import { onDestroy } from "svelte"
 
   const PREVIEW_DEBOUNCE_MS = 450
@@ -12,13 +17,17 @@
     siteId,
     title,
     wikitext,
-    label = "Preview"
+    label,
+    labels = currentEditorLabels()
   }: {
     siteId: number
     title: string
     wikitext: string
     label?: string
+    labels?: EditorLabels
   } = $props()
+
+  const previewLabel = $derived(label ?? labels.preview)
 
   let renderedHtml = $state("")
   let renderedStyles = $state<string[]>([])
@@ -52,14 +61,14 @@
   )
   let statusText = $derived(
     status === "paused"
-      ? "Preview paused. Changes are not being rendered."
+      ? labels.previewPaused
       : status === "error"
-        ? "Preview failed. Editing and saving remain available."
+        ? labels.previewError
         : status === "stale"
-          ? "Preview is stale. Waiting for the latest edit to render."
+          ? labels.previewStale
           : status === "current"
-            ? "Preview is up to date."
-            : "Rendering preview…"
+            ? labels.previewCurrent
+            : labels.previewLoading
   )
 
   async function renderPreview(key: string) {
@@ -142,6 +151,14 @@
     failureMessage = ""
   }
 
+  function returnToSource() {
+    const editor = document.querySelector<HTMLElement>(
+      ".wikitext-editor .cm-content, .wikitext-editor-fallback"
+    )
+    editor?.scrollIntoView({ block: "center" })
+    editor?.focus()
+  }
+
   $effect(() => {
     const key = sourceKey
     if (paused || key === renderedKey || key === failedKey) return
@@ -157,9 +174,14 @@
   })
 </script>
 
-<section class="wikitext-live-preview" data-preview-state={status} aria-label={label}>
+<section
+  class="wikitext-live-preview"
+  data-preview-state={status}
+  aria-label={previewLabel}
+  aria-busy={renderOutstanding}
+>
   <div class="wikitext-live-preview-header">
-    <h2 class="wikitext-live-preview-heading">{label}</h2>
+    <h2 class="wikitext-live-preview-heading">{previewLabel}</h2>
     <div class="wikitext-live-preview-controls">
       {#if status === "error"}
         <button
@@ -168,7 +190,7 @@
           class="wikitext-live-preview-control"
           onclick={retryPreview}
         >
-          Retry preview
+          {labels.previewRetry}
         </button>
       {/if}
       <button
@@ -178,7 +200,15 @@
         aria-pressed={paused}
         onclick={togglePaused}
       >
-        {paused ? "Resume preview" : "Pause preview"}
+        {paused ? labels.previewResume : labels.previewPause}
+      </button>
+      <button
+        type="button"
+        class="wikitext-live-preview-control wikitext-live-preview-back-to-source"
+        data-preview-action="back-to-source"
+        onclick={returnToSource}
+      >
+        {labels.backToSource}
       </button>
     </div>
   </div>
@@ -187,12 +217,14 @@
     class="wikitext-live-preview-status"
     class:wikitext-live-preview-status-error={status === "error"}
     role="status"
+    aria-live="polite"
+    aria-atomic="true"
   >
     {statusText}
   </p>
   {#if status === "error"}
-    <p class="wikitext-live-preview-error" role="alert">
-      Preview render failed: {failureMessage}
+    <p class="wikitext-live-preview-error" role="alert" aria-live="assertive">
+      {formatEditorLabel(labels, "previewFailure", { message: failureMessage })}
     </p>
   {/if}
   <div id="live-preview-body" class="wikitext-live-preview-body">
@@ -238,6 +270,10 @@
     cursor: pointer;
   }
 
+  .wikitext-live-preview-back-to-source {
+    display: none;
+  }
+
   .wikitext-live-preview-status {
     padding: 0.35em 0.7em;
     margin: 0;
@@ -268,5 +304,34 @@
     min-height: 4em;
     padding: 0.7em;
     overflow-wrap: anywhere;
+  }
+
+  @media (width <= 480px), (pointer: coarse) {
+    .wikitext-live-preview-control {
+      min-width: 2.75rem;
+      min-height: 2.75rem;
+    }
+  }
+
+  @media (width <= 480px) {
+    .wikitext-live-preview {
+      margin-block: 0.75em 1.5em;
+    }
+
+    .wikitext-live-preview-header {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .wikitext-live-preview-back-to-source {
+      display: inline-block;
+    }
+
+    .wikitext-live-preview-body {
+      max-height: 45vh;
+      overflow: auto;
+      overscroll-behavior: auto;
+    }
   }
 </style>
