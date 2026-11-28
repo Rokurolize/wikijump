@@ -8,7 +8,8 @@ name: ${STANDING_PROJECT_NAME:?STANDING_PROJECT_NAME is required}
 # per-container bridge/NAT programming, not by application initialization.
 #
 # Consequences, which are intentional for this topology:
-#   * Inter-service traffic uses ::1 where the consumer is IPv6-safe, otherwise 127.0.0.1, not Compose service DNS.
+#   * Inter-service traffic uses ::1, not Compose service DNS; Deepwell's
+#     PostgreSQL DSN carries hostaddr=::1 for sqlx.
 #   * Caddy reaches the application upstreams through extra_hosts.
 #   * Recreating Caddy restarts the services that share its namespace; routine
 #     Tier 1 refreshes recreate only Deepwell/Framerail/WWS, so this does not
@@ -125,7 +126,7 @@ services:
     restart: unless-stopped
     network_mode: "service:caddy"
     environment:
-      DATABASE_URL: postgres://wikijump:${STANDING_DB_PASSWORD:?STANDING_DB_PASSWORD is required}@127.0.0.1:5432/wikijump
+      DATABASE_URL: postgres://wikijump:${STANDING_DB_PASSWORD:?STANDING_DB_PASSWORD is required}@127.0.0.1:5432/wikijump?hostaddr=::1
       REDIS_URL: redis://[::1]:6379
       S3_FILES_BUCKET: deepwell-files
       S3_TEXT_BLOCKS_BUCKET: deepwell-text-blocks
