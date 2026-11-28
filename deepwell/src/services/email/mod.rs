@@ -30,7 +30,7 @@ pub use email_token::{
 };
 pub use mailer::EmailMailer;
 pub use service::EmailService;
-pub(crate) use service::is_well_formed_email;
+pub(crate) use service::{check_email_nfkc, is_well_formed_email};
 pub use structs::{
     EmailClassification, EmailSender, EmailValidationOutput, InvitationEmail,
     MailFormMessage, SendEmail, SendEmailOutput,

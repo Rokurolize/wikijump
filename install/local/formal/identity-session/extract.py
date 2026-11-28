@@ -20,6 +20,7 @@ GET_SESSION = "framerail/src/lib/server/auth/get-session.ts"
 EMAIL_UI = "framerail/src/lib/server/load/email-token.ts"
 SLUG_SQL = "deepwell/migrations/20261105010000_user_slug_active_unique.sql"
 EMAIL_SQL = "deepwell/migrations/20261105020000_user_email_active_unique.sql"
+NFKC_EMAIL_SQL = "deepwell/migrations/20261128010000_user_email_nfkc_active_unique.sql"
 
 
 class ModelDrift(Exception):
@@ -153,18 +154,30 @@ def session_constants(facts: list[str]) -> dict[str, bool]:
 def account_constants(facts: list[str]) -> dict[str, bool]:
     slug_sql = text_of(SLUG_SQL)
     email_sql = text_of(EMAIL_SQL)
+    nfkc_email_sql = text_of(NFKC_EMAIL_SQL)
     if "WHERE deleted_at IS NULL" not in slug_sql:
         raise ModelDrift(f"{SLUG_SQL}: live slug index lost its deleted_at predicate")
     if "deleted_at IS NULL" not in email_sql or "email <> ''" not in email_sql:
-        raise ModelDrift(f"{EMAIL_SQL}: live email index lost its live-address predicate")
+        raise ModelDrift(f"{EMAIL_SQL}: original live email index lost its live-address predicate")
+    if "DROP INDEX IF EXISTS user_email_active_unique_idx" not in nfkc_email_sql:
+        raise ModelDrift(f"{NFKC_EMAIL_SQL}: NFKC migration no longer replaces the original email index")
+    if "lower(normalize(email, nfkc))" not in nfkc_email_sql:
+        raise ModelDrift(f"{NFKC_EMAIL_SQL}: live email index lost its NFKC key")
+    if "deleted_at IS NULL" not in nfkc_email_sql or "email <> ''" not in nfkc_email_sql:
+        raise ModelDrift(f"{NFKC_EMAIL_SQL}: live email index lost its live-address predicate")
     slug_unique = "CREATE UNIQUE INDEX user_slug_active_unique_idx" in slug_sql
-    email_unique = "CREATE UNIQUE INDEX user_email_active_unique_idx" in email_sql
+    email_unique = "CREATE UNIQUE INDEX user_email_active_unique_idx" in nfkc_email_sql
     facts.append(f"slug index {SLUG_SQL} unique={slug_unique}")
-    facts.append(f"email index {EMAIL_SQL} unique={email_unique}")
+    facts.append(f"email index {NFKC_EMAIL_SQL} unique={email_unique} nfkc=True")
+
+    helper_start, helper = rust(USER, "fn nfkc_email_eq(")
+    require(USER, helper_start, helper, "lower(normalize(email, nfkc)) = lower(normalize($1, nfkc))")
+    facts.append(f"email key {USER}:{helper_start}")
 
     create_start, create = rust(USER, "async fn create_internal(")
+    require(USER, create_start, create, "check_email_nfkc(&email)?")
     require(USER, create_start, create, "user::Column::Slug.eq(slug.as_str())")
-    require(USER, create_start, create, "user::Column::Email.eq(email.as_str())")
+    require(USER, create_start, create, "nfkc_email_eq(&email)")
     require(USER, create_start, create, "user::Column::DeletedAt.is_null()")
     facts.append(f"create lookup {USER}:{create_start}")
 
@@ -180,8 +193,10 @@ def account_constants(facts: list[str]) -> dict[str, bool]:
     facts.append(f"delete {USER}:{delete_start} marks_deleted={deletes}")
 
     update_start, update = rust(USER, "pub async fn update(")
+    require(USER, update_start, update, "check_email_nfkc(&email)?")
     require(USER, update_start, update, "displace_pending_email_claims(")
     displace_start, displace = rust(USER, "async fn displace_pending_email_claims(")
+    require(USER, displace_start, displace, "nfkc_email_eq(email)")
     require(USER, displace_start, displace, "email: Set(String::new())")
     facts.append(f"verify displace {USER}:{update_start}")
     return {
