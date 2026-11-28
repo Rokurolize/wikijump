@@ -5,10 +5,11 @@ import type { JSONRPCRequest } from "json-rpc-2.0"
 import type { RequestContext } from "../request-context"
 import { stripPrivateDeepwellErrorData } from "./public-error.ts"
 import { deepwellRpcAuthorization } from "./rpc-auth.ts"
+import { deepwellJsonRpcUrl } from "./url.ts"
 
 export const DEEPWELL_HOST = process.env.DEEPWELL_HOST || "localhost"
 export const DEEPWELL_PORT = process.env.DEEPWELL_PORT || 2747
-export const DEEPWELL_URL = `http://${DEEPWELL_HOST}:${DEEPWELL_PORT}/jsonrpc`
+export const DEEPWELL_URL = deepwellJsonRpcUrl(DEEPWELL_HOST, DEEPWELL_PORT)
 
 export const client = new JSONRPCClient<RequestContext>(sendJsonRpcRequest)
 
