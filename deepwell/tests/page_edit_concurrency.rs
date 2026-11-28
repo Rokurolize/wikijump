@@ -854,6 +854,131 @@ async fn move_racing_leased_edit_both_commit_serialized() {
 }
 
 #[tokio::test]
+async fn concurrent_moves_from_one_base_revision_loser_gets_typed_conflict() {
+    let fixture = setup().await;
+    let slug = format!("race-move-base-{}", cuid());
+    let (page_id, base_revision) = fixture.create_page(1, &slug, "move race base").await;
+
+    let gate = fixture
+        .gate_lock("LOCK TABLE page_lock IN ACCESS EXCLUSIVE MODE")
+        .await;
+
+    let spawn_move = |id: usize, new_slug: String| {
+        let client = fixture.client.clone();
+        let address = fixture.address;
+        let session = fixture.session.clone();
+        let site_id = fixture.site_id;
+        tokio::spawn(async move {
+            rpc(
+                &client,
+                address,
+                &session,
+                site_id,
+                &page_id.to_string(),
+                (
+                    id,
+                    "page_move",
+                    json!({
+                        "site_id": site_id,
+                        "page": page_id,
+                        "new_slug": new_slug,
+                        "last_revision_id": base_revision,
+                        "revision_comments": "concurrent move race",
+                        "user_id": ADMIN_USER_ID,
+                        "ip_address": IP,
+                    }),
+                ),
+            )
+            .await
+        })
+    };
+
+    let first = spawn_move(2, format!("race-move-first-{}", cuid()));
+    let first_parked = fixture
+        .wait_for_activity(
+            "wait_event_type = 'Lock' AND query ILIKE '%page_lock%'",
+            Duration::from_secs(30),
+        )
+        .await;
+    assert!(
+        first_parked.is_some(),
+        "first move should park on the page-lock gate while holding the page row lock"
+    );
+
+    let second = spawn_move(3, format!("race-move-second-{}", cuid()));
+    let second_parked = fixture
+        .wait_for_activity(
+            "wait_event_type = 'Lock' AND query ILIKE '%FOR UPDATE%'",
+            Duration::from_secs(30),
+        )
+        .await;
+    assert!(
+        second_parked.is_some(),
+        "second move should park on the page row lock after passing the unlocked base check"
+    );
+
+    gate.commit().await.expect("page-lock gate should release");
+    let first = first.await.expect("first move task should join");
+    let second = second.await.expect("second move task should join");
+    let winner = assert_one_winner_one_conflict(&first, &second);
+    fixture.assert_gapless_chain_at_tip(page_id, winner).await;
+
+    let stale = rpc(
+        &fixture.client,
+        fixture.address,
+        &fixture.session,
+        fixture.site_id,
+        &page_id.to_string(),
+        (
+            4,
+            "page_move",
+            json!({
+                "site_id": fixture.site_id,
+                "page": page_id,
+                "new_slug": format!("race-move-stale-{}", cuid()),
+                "last_revision_id": base_revision,
+                "revision_comments": "serialized stale move control",
+                "user_id": ADMIN_USER_ID,
+                "ip_address": IP,
+            }),
+        ),
+    )
+    .await;
+    stale.assert_typed_conflict();
+
+    let legitimate = rpc(
+        &fixture.client,
+        fixture.address,
+        &fixture.session,
+        fixture.site_id,
+        &page_id.to_string(),
+        (
+            5,
+            "page_move",
+            json!({
+                "site_id": fixture.site_id,
+                "page": page_id,
+                "new_slug": format!("race-move-legitimate-{}", cuid()),
+                "last_revision_id": winner,
+                "revision_comments": "serialized legitimate move control",
+                "user_id": ADMIN_USER_ID,
+                "ip_address": IP,
+            }),
+        ),
+    )
+    .await;
+    let legitimate_revision = legitimate.result_revision_id().unwrap_or_else(|| {
+        panic!(
+            "serialized legitimate move should succeed: {}",
+            legitimate.describe()
+        )
+    });
+    fixture
+        .assert_gapless_chain_at_tip(page_id, legitimate_revision)
+        .await;
+}
+
+#[tokio::test]
 async fn rollback_racing_edit_at_insert_race_loser_gets_typed_conflict() {
     let fixture = setup().await;
     let (page_id, _rev0, rev1) = fixture.page_at_revision_one("rp2-rollback").await;

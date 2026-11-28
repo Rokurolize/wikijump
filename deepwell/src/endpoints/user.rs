@@ -537,7 +537,7 @@ pub async fn user_password_change(
         ctx,
         AuthenticateUser {
             name_or_email: user.name.clone(),
-            password: current_password,
+            password: current_password.clone(),
         },
         ip_address,
     )
@@ -553,6 +553,7 @@ pub async fn user_password_change(
     let outcome = UserService::change_password(
         ctx,
         user.user_id,
+        &current_password,
         &session.session_token,
         new_password,
         ip_address,

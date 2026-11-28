@@ -1174,8 +1174,7 @@ WHERE page.site_id = $1
 
         let PageModel {
             page_id,
-            slug: old_slug,
-            latest_revision_id,
+            slug: unlocked_slug,
             ..
         } = Self::get(ctx, site_id, reference)
             .await
@@ -1185,20 +1184,17 @@ WHERE page.site_id = $1
             Error::new(
                 format!(
                     "failed to move page '{}' to '{}' (ID {}) in site ID {}, performed by user ID {}",
-                    old_slug, new_slug, page_id, site_id, user_id,
+                    unlocked_slug, new_slug, page_id, site_id, user_id,
                 ),
                 ErrorType::Page,
             )
         };
 
-        check_last_revision(None, latest_revision_id, last_revision_id)
-            .or_raise(make_error)?;
-
         let locked_page = Self::get_direct_optional_for_update(ctx, page_id, false)
             .await
             .or_raise(make_error)?;
 
-        if locked_page.is_none() {
+        let Some(locked_page) = locked_page else {
             bail!(Error::new(
                 format!(
                     "page ID {} was deleted before the move could proceed",
@@ -1206,16 +1202,14 @@ WHERE page.site_id = $1
                 ),
                 ErrorType::Page,
             ));
-        }
+        };
+        let old_slug = locked_page.slug.clone();
 
-        PageLockService::require_write_allowed_for_page(
-            ctx,
-            locked_page
-                .as_ref()
-                .expect("locked page presence was checked"),
-            user_id,
-        )
-        .await?;
+        check_last_revision(None, locked_page.latest_revision_id, last_revision_id)
+            .or_raise(make_error)?;
+
+        PageLockService::require_write_allowed_for_page(ctx, &locked_page, user_id)
+            .await?;
 
         let lease_conflicts = PageEditLockService::conflicting_live_rows(
             ctx,
