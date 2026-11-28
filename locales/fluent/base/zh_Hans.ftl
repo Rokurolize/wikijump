@@ -21,6 +21,24 @@ navigated-to = 导航至 { $path }
 ## 通用
 
 about = 关于
+
+about-info = 平台信息
+  .backend = 后端
+  .frontend = 前端
+  .package-name = 软件包名称
+  .package-description = 软件包描述
+  .package-license = 软件包许可证
+  .package-repository = 软件包仓库
+  .package-version = 软件包版本
+  .rustc-version = Rustc 版本
+  .cargo-version = Cargo 版本
+  .built-at = 构建时间
+  .git-commit = Git 提交
+  .ftml-commit = FTML 提交
+  .blurb = Wikijump 是一个用于协作小说创作与世界观构建的免费开源平台：它是 Wikidot 的现代替代品，由 Wikijump 团队和 SCP 社区共同开发。
+  .blog = Wikijump 博客
+  .node-version = Node 版本
+  .pnpm-version = pnpm 版本
 account = 账号
 applications = 应用
 alt-title = 替代标题
@@ -73,7 +91,7 @@ terminology = 术语
 terms-conditions = 条款
 title = 标题
 upload = 上传
-view = 检视
+view = 查看
 vote = 评分
 
 search = 搜索
@@ -89,7 +107,8 @@ logout = 登出
 
 register = 注册
   .toast = 您已注册。
-  .legal-notice = 创建帐户即表示您接受我们的
+  .disabled-notice = 此 Wikijump 实例未开放账号创建功能。账号由实例管理员创建。
+  .legal-notice = 创建账号即表示您接受我们的
   .legal-terms = 服务条款
   .legal-conjunction = 和
   .legal-privacy = 隐私政策
@@ -124,7 +143,10 @@ create-account = 创建账号
 
 field-required = 此字段必须被填写
 
-characters-left = 剩余 { $count } 个字符
+characters-left = { $count ->
+  [1] 剩余 1 个字符
+  *[other] 剩余 { $count } 个字符
+}
 
 hold-to-show-password = 按住以查看密码
 
@@ -138,6 +160,8 @@ error-404 =
 error-form =
   .missing-fields = 请填入所有必填字段。
   .password-mismatch = 密码不一致。
+  .password-too-short = 密码长度不得少于 15 个字符。
+  .email-invalid = 电子邮箱地址格式不正确。
 
 error-api =
   .GENERIC = 您的请求出现了错误。
@@ -161,8 +185,8 @@ error-api =
   .INVALID_USERNAME = 用户名不可用。
   .LOGIN_FAILED = 登入失败。请检查您的凭证。
   .NOT_LOGGED_IN = 您并未登入。
-  .UNKNOWN_EMAIL = 该电子邮箱地址无对应的账户。
-  .UNKNOWN_USER = 该用户名无对应的账户。
+  .UNKNOWN_EMAIL = 该电子邮箱地址无对应的账号。
+  .UNKNOWN_USER = 该用户名无对应的账号。
   .WRONG_PASSWORD = 密码不正确。
 
 error-418 = 我是个茶壶
