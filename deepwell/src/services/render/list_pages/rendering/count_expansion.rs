@@ -29,6 +29,7 @@ impl RenderService {
         let CountPagesExpansionOptions {
             current_site_id,
             current_page_id,
+            viewer_user_id,
         } = options;
         let Some(current_site_id) = current_site_id else {
             return Ok(wikitext);
@@ -51,6 +52,7 @@ impl RenderService {
         let page_context = ListPagesPageContext {
             site_id: current_site_id,
             page_id: current_page_id,
+            viewer_user_id,
             url: UrlArguments::default(),
         };
         let batched_required_tag_totals = Self::load_count_pages_required_tag_totals(
@@ -229,6 +231,7 @@ impl RenderService {
         let ListPagesPageContext {
             site_id: current_site_id,
             page_id: current_page_identity,
+            viewer_user_id,
             url: _,
         } = page_context;
         let CountPagesRequiredTagSource {
@@ -302,7 +305,7 @@ impl RenderService {
             match PermissionService::check_user_can(
                 ctx,
                 &CheckPermissionContext {
-                    user_id: None,
+                    user_id: viewer_user_id,
                     site_id: current_site_id,
                     page_reference: current_page_identity.map(Reference::Id),
                 },

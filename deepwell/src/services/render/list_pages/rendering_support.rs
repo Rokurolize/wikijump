@@ -561,7 +561,6 @@ pub(in crate::services::render) struct ListPagesBlockRenderArgs<'a, 'ctx, 'info,
     pub(in crate::services::render) module_offset: usize,
     pub(in crate::services::render) module_block_position: bool,
     pub(in crate::services::render) compat_html: &'a mut CompatHtmlFragments,
-    pub(in crate::services::render) viewer_user_id: Option<i64>,
     pub(in crate::services::render) page_info: &'a PageInfo<'info>,
     pub(in crate::services::render) page_preview: bool,
     pub(in crate::services::render) settings: &'a WikitextSettings,
@@ -720,6 +719,7 @@ pub(in crate::services::render) struct CountPagesRequiredTagSource<'a> {
 pub(in crate::services::render) struct ListPagesPageContext<'a> {
     pub(in crate::services::render) site_id: i64,
     pub(in crate::services::render) page_id: Option<i64>,
+    pub(in crate::services::render) viewer_user_id: Option<i64>,
 
     pub(in crate::services::render) url: UrlArguments<'a>,
 }
@@ -1460,6 +1460,7 @@ pub(in crate::services::render) struct ListPagesExpansionOptions<'a> {
 pub(in crate::services::render) struct CountPagesExpansionOptions {
     pub(in crate::services::render) current_site_id: Option<i64>,
     pub(in crate::services::render) current_page_id: Option<i64>,
+    pub(in crate::services::render) viewer_user_id: Option<i64>,
 }
 
 impl RenderService {

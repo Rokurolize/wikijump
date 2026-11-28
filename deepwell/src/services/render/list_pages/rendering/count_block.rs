@@ -30,6 +30,7 @@ impl RenderService {
         let ListPagesPageContext {
             site_id: current_site_id,
             page_id: current_page_identity,
+            viewer_user_id,
             url: _,
         } = page_context;
         let current_page_id = current_page_identity.unwrap_or(0);
@@ -195,21 +196,25 @@ impl RenderService {
             },
             fields: FoundPageFields {
                 page_category_id: true,
+                slug: true,
                 ..Default::default()
             },
         };
 
-        if unbounded_all_category_shape && !current_page_only {
-            return Self::render_count_pages_exact_total(
+        if unbounded_all_category_shape
+            && !current_page_only
+            && let Some(rendered) = Self::render_count_pages_exact_total(
                 ctx,
-                current_site_id,
-                query,
+                page_context,
+                query.clone(),
                 body,
                 exclude_current_page,
                 offset > 0 || offset_beyond_render_window.is_some(),
                 permission_cache,
             )
-            .await;
+            .await?
+        {
+            return Ok(rendered);
         }
         if offset_beyond_render_window.is_some() {
             return Ok(CountPagesBlockRenderResult::Expanded(
@@ -238,7 +243,7 @@ impl RenderService {
             CountPagesSample::Complete(FoundPages { pages: Vec::new() })
         } else {
             let target_count = count_pages_query_limit.min(usize::MAX as u64) as usize;
-            let found = RenderRuntime::new(ctx)
+            let found = RenderRuntime::for_viewer(ctx, viewer_user_id)
                 .find_viewable_count_pages_rows_unordered(
                     query,
                     target_count,
@@ -296,13 +301,18 @@ impl RenderService {
 
     async fn render_count_pages_exact_total(
         ctx: &ServiceContext<'_>,
-        current_site_id: i64,
+        page_context: ListPagesPageContext<'_>,
         mut query: PageQuery<'_>,
         body: &str,
         exclude_current_page: bool,
         post_query_offset_applied: bool,
         permission_cache: &mut BTreeMap<(i64, Option<i64>), bool>,
-    ) -> Result<CountPagesBlockRenderResult> {
+    ) -> Result<Option<CountPagesBlockRenderResult>> {
+        let ListPagesPageContext {
+            site_id: current_site_id,
+            viewer_user_id,
+            ..
+        } = page_context;
         let categories = CategoryService::get_all(ctx, current_site_id).await?;
         let category_ids = categories
             .iter()
@@ -310,7 +320,7 @@ impl RenderService {
             .collect::<Vec<_>>();
         let viewable = PermissionService::batch_check_page_view_without_page_roles(
             ctx,
-            None,
+            viewer_user_id,
             current_site_id,
             &category_ids,
             permission_cache,
@@ -323,6 +333,9 @@ impl RenderService {
             .map(|(category, _)| Cow::Owned(category.slug.clone()))
             .collect::<Vec<_>>();
         if viewable_slugs.len() != categories.len() {
+            if viewer_user_id.is_some() {
+                return Ok(None);
+            }
             query.categories.included_categories =
                 IncludedCategories::List(&viewable_slugs);
         }
@@ -340,10 +353,10 @@ impl RenderService {
             evaluation.diagnostics,
         );
         if let Some(total) = evaluation.exact_total {
-            return Ok(CountPagesBlockRenderResult::Expanded(
+            return Ok(Some(CountPagesBlockRenderResult::Expanded(
                 substitute_count_pages_variables(body, total.total()),
-            ));
+            )));
         }
-        Ok(CountPagesBlockRenderResult::PreserveOriginal)
+        Ok(Some(CountPagesBlockRenderResult::PreserveOriginal))
     }
 }

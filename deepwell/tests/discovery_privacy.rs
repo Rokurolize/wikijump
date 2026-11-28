@@ -41,7 +41,9 @@ use deepwell::services::render::{
     RenderService, UrlArguments, WikidotListPagesFeedInput,
 };
 use deepwell::services::role::{GrantUserRoleInput, RoleService};
-use deepwell::services::site::{BootstrapNewSite, CreateSite, SiteService};
+use deepwell::services::site::{
+    BootstrapNewSite, CreateSite, STANDARD_TEMPLATE_PAGES, SiteService,
+};
 use deepwell::services::user::{CreateUser, UserService};
 use deepwell::types::{
     AccessPolicy, Action, PageId, Permission, Reference, Resource, UserType,
@@ -168,6 +170,29 @@ async fn site_can_view(
     )
     .await
     .expect("site view check should resolve")
+}
+
+async fn viewable_bootstrap_page_count(
+    ctx: &ServiceContext<'_>,
+    site_id: i64,
+    viewer_user_id: Option<i64>,
+) -> usize {
+    let mut count = 0;
+    for (slug, _, _) in STANDARD_TEMPLATE_PAGES {
+        if *slug == "_admin" {
+            continue;
+        }
+        let page = PageService::get(ctx, site_id, Reference::from(*slug))
+            .await
+            .expect("bootstrap template page should exist");
+        if PermissionService::check_user_can_view_page(ctx, viewer_user_id, &page)
+            .await
+            .expect("bootstrap page view permission should resolve")
+        {
+            count += 1;
+        }
+    }
+    count
 }
 
 async fn grant_root_to_admin(ctx: &ServiceContext<'_>, site_id: i64) {
@@ -345,6 +370,234 @@ async fn list_pages_feed_excludes_private_category_pages_for_anonymous() {
             .iter()
             .all(|item| !item.body_html.contains(&private_body)),
         "the feed must not serve the private-category page body",
+    );
+}
+
+#[tokio::test]
+async fn ajax_list_pages_module_withholds_view_gated_rows_from_anonymous() {
+    let mut runner = TestRunner::setup().await;
+    let ctx = runner.context();
+    let n = next_n();
+
+    let site_id = create_site(ctx, n, "lpgate", AccessPolicy::Open).await;
+    let category_id = CategoryService::get_or_create(ctx, site_id, "_admin")
+        .await
+        .expect("gated category should be created")
+        .category_id;
+
+    let root_role =
+        RoleService::get(ctx, site_id, Reference::Slug(Cow::Borrowed("root")))
+            .await
+            .expect("root role should exist");
+    role_permission::ActiveModel {
+        role_id: Set(root_role.role_id),
+        site_id: Set(site_id),
+        resource_type: Set(Resource::Page),
+        resource_category_id: Set(Some(category_id)),
+        action: Set(Action::View),
+        ..Default::default()
+    }
+    .insert(ctx.transaction())
+    .await
+    .expect("root-only category permission should be created");
+    grant_root_to_admin(ctx, site_id).await;
+    PermissionCache::invalidate_site(ctx, site_id)
+        .await
+        .expect("category permission change must be visible");
+
+    let private_slug = format!("_admin:c3f2-lpgate-private-{n}");
+    let private_title = format!("C3F2 LPGATE PRIVATE TITLE {n}");
+    let private_page_id = create_page(
+        ctx,
+        site_id,
+        &private_slug,
+        &private_title,
+        "C3F2LPGATEPRIVATEBODY",
+    )
+    .await;
+    let public_slug = format!("c3f2-lpgate-public-{n}");
+    let public_title = format!("C3F2 LPGATE PUBLIC TITLE {n}");
+    create_page(
+        ctx,
+        site_id,
+        &public_slug,
+        &public_title,
+        "C3F2LPGATEPUBLICBODY",
+    )
+    .await;
+
+    let can_view_private = |viewer_user_id: Option<i64>| async move {
+        PermissionService::check_user_can(
+            ctx,
+            &CheckPermissionContext {
+                user_id: viewer_user_id,
+                site_id,
+                page_reference: Some(Reference::Id(private_page_id)),
+            },
+            Permission {
+                resource_type: Resource::Page,
+                resource_category: Some(Reference::Id(category_id)),
+                action: Action::View,
+            },
+        )
+        .await
+        .expect("fixture view permission should resolve")
+    };
+    assert!(
+        !can_view_private(None).await,
+        "the fixture page must be genuinely view-gated for anonymous visitors",
+    );
+    assert!(
+        can_view_private(Some(ADMIN_USER_ID)).await,
+        "the root-granted admin must be able to view the fixture page",
+    );
+
+    let expected_anonymous_all =
+        viewable_bootstrap_page_count(ctx, site_id, None).await + 1;
+    let expected_authorized_all =
+        viewable_bootstrap_page_count(ctx, site_id, Some(ADMIN_USER_ID)).await + 2;
+
+    let module_body =
+        "%%fullname%%|%%title%%|%%created_at%%|%%revisions%%|TOTAL=%%total%%";
+    let expected_public_control_total = STANDARD_TEMPLATE_PAGES
+        .iter()
+        .filter(|(slug, _, _)| !slug.contains(':') && *slug != "_admin")
+        .count()
+        + 1;
+    let request = |category: String| {
+        json!({
+            "site_id": site_id,
+            "module_body": module_body,
+            "parameters": {
+                "category": category,
+                "order": "name",
+                "limit": "20",
+                "perPage": "20",
+                "separate": "no",
+                "wrapper": "no"
+            }
+        })
+    };
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let anonymous = run_endpoint!(
+        runner,
+        wikidot_list_pages_module,
+        request(String::from("_admin")),
+    );
+    assert!(
+        !anonymous.body.contains(&private_slug)
+            && !anonymous.body.contains(&private_title),
+        "anonymous connector output leaked gated page metadata:\n{}",
+        anonymous.body,
+    );
+    assert!(
+        !anonymous.body.contains(r#"class="pager""#),
+        "anonymous connector output leaked the gated row count through pagination:\n{}",
+        anonymous.body,
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let authorized = run_endpoint!(
+        runner,
+        wikidot_list_pages_module,
+        request(String::from("_admin")),
+    );
+    assert!(
+        authorized.body.contains(&private_slug)
+            && authorized.body.contains(&private_title),
+        "authorized connector output lost the viewable gated row:\n{}",
+        authorized.body,
+    );
+    assert!(
+        authorized.body.contains("TOTAL=1"),
+        "authorized connector total must include the viewable gated row:\n{}",
+        authorized.body,
+    );
+
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let public_control = run_endpoint!(
+        runner,
+        wikidot_list_pages_module,
+        request(String::from("_default")),
+    );
+    assert!(
+        public_control.body.contains(&public_slug)
+            && public_control.body.contains(&public_title),
+        "anonymous connector output lost the public control row:\n{}",
+        public_control.body,
+    );
+    assert!(
+        public_control
+            .body
+            .contains(format!("TOTAL={expected_public_control_total}").as_str()),
+        "anonymous connector total must retain only the public control rows:\n{}",
+        public_control.body,
+    );
+
+    let count_source = concat!(
+        "[[module CountPages category=\"_admin\"]]COUNT=%%total%%[[/module]]\n",
+        "[[module CountPages category=\"*\"]]ALL=%%total%%[[/module]]",
+    );
+    runner.set_request_context(RequestContext {
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let anonymous_count = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "c3f2-lpgate-count-preview",
+        count_source.to_owned(),
+    )
+    .await
+    .expect("anonymous CountPages preview should render")
+    .html_output
+    .body;
+    assert!(
+        anonymous_count.contains("COUNT=0"),
+        "anonymous CountPages must count only the filtered row set:\n{}",
+        anonymous_count,
+    );
+    assert!(
+        anonymous_count.contains(format!("ALL={expected_anonymous_all}").as_str()),
+        "anonymous CountPages must not count the reserved or gated pages:\n{}",
+        anonymous_count,
+    );
+
+    runner.set_request_context(RequestContext {
+        user_id: Some(ADMIN_USER_ID),
+        site_id: Some(site_id),
+        ..Default::default()
+    });
+    let authorized_count = RenderService::render_wikidot_page_preview(
+        runner.context(),
+        site_id,
+        "c3f2-lpgate-count-preview",
+        count_source.to_owned(),
+    )
+    .await
+    .expect("authorized CountPages preview should render")
+    .html_output
+    .body;
+    assert!(
+        authorized_count.contains("COUNT=1"),
+        "authorized CountPages must use the authorized viewer's row set:\n{}",
+        authorized_count,
+    );
+    assert!(
+        authorized_count.contains(format!("ALL={expected_authorized_all}").as_str()),
+        "authorized CountPages must count the rows visible to that viewer:\n{}",
+        authorized_count,
     );
 }
 

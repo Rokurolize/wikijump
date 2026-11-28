@@ -635,7 +635,7 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
             module_body: moduleBody,
             parameters
           },
-          { siteId }
+          requestContext
         )
       ) as Promise<WikidotListPagesModuleOutput>,
     renderSearchModule: ({ siteId, query }: { siteId: number; query: string }) =>

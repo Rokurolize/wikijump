@@ -65,6 +65,7 @@ fn list_pages_total_query<'a>(
     total_query.pagination.limit = Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS));
     total_query.fields = FoundPageFields {
         page_category_id: true,
+        slug: true,
         tags: exact_visible_tags,
         ..FoundPageFields::default()
     };
@@ -82,7 +83,6 @@ impl RenderService {
             module_offset,
             module_block_position,
             compat_html,
-            viewer_user_id,
             page_info,
             page_preview,
             settings,
@@ -104,6 +104,7 @@ impl RenderService {
         let ListPagesPageContext {
             site_id: current_site_id,
             page_id: current_page_identity,
+            viewer_user_id,
             url,
         } = page_context;
         let current_page_id = current_page_identity.unwrap_or(0);
@@ -2038,6 +2039,7 @@ mod tests {
             Some(u64::from(MAX_LISTPAGES_RENDER_SCAN_ROWS))
         );
         assert!(total_query.fields.page_category_id);
+        assert!(total_query.fields.slug);
         assert!(!total_query.fields.title);
     }
 }
