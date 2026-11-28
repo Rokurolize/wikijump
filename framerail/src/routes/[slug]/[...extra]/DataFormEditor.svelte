@@ -7,10 +7,13 @@
     buildWikidotDataFormPagepathLevels,
     buildWikidotDataFormState,
     getWikidotDataFormFieldPresentation,
+    isWikidotDataFormLongTextField,
     serializeWikidotDataFormSource,
     wikidotDataFormFieldNames,
     wikidotDataFormPagepathSelectorClass
   } from "$lib/wikidot/wikidot-data-form.js"
+  import WikitextEditor from "$lib/component/WikitextEditor.svelte"
+  import WikitextPreviewPane from "$lib/component/WikitextPreviewPane.svelte"
   import WikidotDataFormMatchWorker from "$lib/wikidot/wikidot-data-form-match.worker.ts?worker"
   import { superForm } from "sveltekit-superforms"
   import { onDestroy, onMount, tick, untrack } from "svelte"
@@ -97,6 +100,10 @@
   const writeSupported = $derived(
     !definition.fields.some((field) => field.field_type === "file")
   )
+  const hasLongTextField = $derived(
+    definition.fields.some((field) => isWikidotDataFormLongTextField(field))
+  )
+  const previewWikitext = $derived(serializeWikidotDataFormSource(definition, values))
   let pagepathCreateNew = $state<
     Record<string, { parent: string; value: string } | undefined>
   >({})
@@ -549,7 +556,17 @@
               class={`form-value field-${field.name}`}
               class:form-error={validationErrors.has(field.name)}
             >
-              {field.before ? `${field.before} ` : " "}{#if field.height >= 2}
+              {field.before
+                ? `${field.before} `
+                : " "}{#if isWikidotDataFormLongTextField(field)}
+                <WikitextEditor
+                  id={`field-${field.name}-editor`}
+                  name={`field-${field.name}`}
+                  label={field.label || field.name}
+                  placeholder={field.hint}
+                  bind:value={values[field.name]}
+                />
+              {:else if field.height >= 2}
                 <textarea
                   name={`field-${field.name}`}
                   class="form-control form-wiki"
@@ -787,3 +804,12 @@
     </div>
   </div>
 </form>
+
+{#if hasLongTextField}
+  <WikitextPreviewPane
+    {siteId}
+    title={$form.title}
+    wikitext={previewWikitext}
+    label="Preview"
+  />
+{/if}

@@ -128,6 +128,11 @@ export const getWikidotDataFormFieldPresentation = (
   }
 }
 
+export const isWikidotDataFormLongTextField = (field: {
+  field_type: string | null
+  height?: number
+}): boolean => field.field_type === "wiki" && (field.height ?? 1) >= 2
+
 export const wikidotDataFormPagepathSelectorClass = (fullname: string): string =>
   `dataform-pagepath-select-children-of-${fullname.replaceAll(":", "---")}`
 
