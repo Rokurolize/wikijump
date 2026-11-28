@@ -1347,7 +1347,7 @@
       "src/parsing/rule/impls/comment.rs"
     ],
     "repository": "https://github.com/Rokurolize/ftml",
-    "revision": "d12840bfb2562a5331710d93f6249a3165ea0435"
+    "revision": "9ebe44674b2193d62dbf136c88f4ae6570f8e18c"
   },
   "syntax": [
     {
