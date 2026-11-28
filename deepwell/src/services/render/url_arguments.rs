@@ -219,7 +219,10 @@ pub fn wikitext_reads_url_arguments(wikitext: &str) -> bool {
 }
 
 pub fn wikitext_has_visibility_sensitive_module(wikitext: &str) -> bool {
-    PLATFORM_DIRECTORY_MODULE_REGEX.is_match(wikitext)
+    LIST_DRAFTS_MODULE_REGEX.is_match(wikitext)
+        || ORPHANED_PAGES_MODULE_REGEX.is_match(wikitext)
+        || WANTED_PAGES_MODULE_REGEX.is_match(wikitext)
+        || PLATFORM_DIRECTORY_MODULE_REGEX.is_match(wikitext)
         || LEGACY_PLATFORM_DIRECTORY_MODULE_REGEX.is_match(wikitext)
         || ACTOR_SENSITIVE_SITE_CHANGES_MODULE_REGEX.is_match(wikitext)
 }

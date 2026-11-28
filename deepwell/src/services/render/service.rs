@@ -1616,6 +1616,11 @@ impl RenderService {
             super::runtime_modules::theme_previewer_url(&wikitext)
         };
         let mut module_query_cache = super::categories::ModuleQueryCache::default();
+        let member_gated_module_access =
+            super::runtime_modules::MemberGatedModuleAccess::new(
+                current_site_id,
+                viewer_user_id,
+            );
         {
             let mut runtime_module_expansion_state = RuntimeModuleExpansionState {
                 module_query_cache: &mut module_query_cache,
@@ -1631,6 +1636,7 @@ impl RenderService {
                     current_site_id,
                     current_page_id,
                     viewer_user_id,
+                    member_gated_module_access: &member_gated_module_access,
                     page_preview,
                     view_independent_compiled,
                     url,
@@ -1659,6 +1665,7 @@ impl RenderService {
                 wikitext,
                 settings,
                 current_site_id,
+                &member_gated_module_access,
                 &mut wikidot_compat_html,
             )
             .await

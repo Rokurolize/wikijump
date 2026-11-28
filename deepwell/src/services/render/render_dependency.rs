@@ -79,6 +79,7 @@ const MODULE_QUERY_NAMES: &[&str] = &[
     "previouspage",
     "orphanedpages",
     "wantedpages",
+    "listdrafts",
 ];
 const MODULE_VIEWER_NAMES: &[&str] = &[
     "rate",
@@ -89,6 +90,9 @@ const MODULE_VIEWER_NAMES: &[&str] = &[
     "join",
     "membershipapply",
     "membershipbypassword",
+    "orphanedpages",
+    "wantedpages",
+    "listdrafts",
     "managesite",
     "petitionadmin",
 ];
@@ -236,15 +240,15 @@ fn classify_dependencies(source: &str, anonymous: bool) -> RenderDependencyClass
         if name == "members" {
             continue;
         }
-        if MODULE_QUERY_NAMES.contains(&name.as_str()) {
+        let query_dependent = MODULE_QUERY_NAMES.contains(&name.as_str());
+        let viewer_dependent = MODULE_VIEWER_NAMES.contains(&name.as_str());
+        if query_dependent {
             classes.insert(RenderDependencyClass::QueryDependent);
-            continue;
         }
-
-        if MODULE_VIEWER_NAMES.contains(&name.as_str()) {
-            if !(anonymous && name == "rate") {
-                classes.insert(RenderDependencyClass::ViewerDependent);
-            }
+        if viewer_dependent && !(anonymous && name == "rate") {
+            classes.insert(RenderDependencyClass::ViewerDependent);
+        }
+        if query_dependent || viewer_dependent {
             continue;
         }
 
