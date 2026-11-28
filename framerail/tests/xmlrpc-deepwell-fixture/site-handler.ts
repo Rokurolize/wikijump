@@ -352,11 +352,13 @@ export const handleSiteRpc = ({ rpcRequest }: { rpcRequest: any }) => {
     const pageLabels: Record<string, string> = isJapanese
       ? {
           "wiki-page-layout": "ページレイアウト",
+          "wiki-page-source": "ページソース",
           "wiki-page-meta-tag-name": "メタタグ名",
           "wiki-page-meta-tag-content": "メタタグの内容"
         }
       : {
           "wiki-page-layout": "Page layout",
+          "wiki-page-source": "Page source",
           "wiki-page-meta-tag-name": "Meta tag name",
           "wiki-page-meta-tag-content": "Meta tag content"
         }

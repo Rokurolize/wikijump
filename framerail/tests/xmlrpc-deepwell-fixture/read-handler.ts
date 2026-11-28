@@ -5,6 +5,7 @@ import { handleAuthRpc } from "./auth-handler.ts"
 import { handleForumRpc } from "./forum-handler.ts"
 import { handlePageReadRpc } from "./page-read-handler.ts"
 import { handleVoteReadRpc } from "./vote-read-handler.ts"
+import { handleWikidotPagePreviewRpc } from "./render-preview-handler.ts"
 
 export const handleReadRpc = (input: {
   rpcRequest: any
@@ -17,6 +18,7 @@ export const handleReadRpc = (input: {
     handleArticleRpc(input) ??
     handlePageReadRpc(input) ??
     handleVoteReadRpc(input) ??
+    handleWikidotPagePreviewRpc(input) ??
     handleForumRpc(input)
   )
 }

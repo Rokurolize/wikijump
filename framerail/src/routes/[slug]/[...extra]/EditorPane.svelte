@@ -10,6 +10,8 @@
   import { superForm } from "sveltekit-superforms"
   import { onDestroy, onMount, untrack } from "svelte"
 
+  import WikitextEditor from "$lib/component/WikitextEditor.svelte"
+
   import DataFormEditor from "./DataFormEditor.svelte"
   import EditLeaseDialog from "./EditLeaseDialog.svelte"
   import { createPageEditLeaseSession, startEditLeaseTimers } from "./edit-lease-client"
@@ -293,8 +295,11 @@
         type="text"
         bind:value={$form.altTitle}
       />
-      <textarea name="wikitext" class="editor-wikitext" bind:value={$form.wikitext}
-      ></textarea>
+      <WikitextEditor
+        name="wikitext"
+        label={data.internationalization?.["wiki-page-source"] ?? "Page source"}
+        bind:value={$form.wikitext}
+      />
       <input
         name="tags"
         class="editor-tags"
@@ -392,9 +397,5 @@
     align-items: stretch;
     justify-content: stretch;
     width: 100%;
-  }
-
-  .editor-wikitext {
-    height: 60vh;
   }
 </style>
