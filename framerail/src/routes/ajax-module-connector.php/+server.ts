@@ -284,18 +284,20 @@ export const POST: RequestHandler = async ({ request, cookies, getClientAddress 
       pageId,
       slug,
       title,
-      wikitext
+      wikitext,
+      comments
     }: {
       siteId: number
       pageId?: number
       slug: string
       title: string
       wikitext: string
+      comments: string
     }) => {
       const userId = await resolveNewPageUserId()
       if (userId === undefined) throw new Error("page draft requires a mutation actor")
       await pageDraftSave(
-        { siteId: requestSiteId, userId, pageId, slug, title, wikitext },
+        { siteId: requestSiteId, userId, pageId, slug, title, wikitext, comments },
         { ...requestContext, page: slug }
       )
     },

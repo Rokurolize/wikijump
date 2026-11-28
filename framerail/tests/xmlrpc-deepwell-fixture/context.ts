@@ -99,6 +99,8 @@ export const fixtureState = {
     pageEdit: [],
     pageEditLockAcquire: [],
     pageEditLockRelease: [],
+    pageDraftSave: [],
+    pageDraftRemove: [],
     pageRollback: [],
     pageMove: [],
     parentGetAll: [],
@@ -138,6 +140,19 @@ export const fixtureState = {
       user_id: number
       mode: string
       section_index: number | null
+      base_revision_id: number
+    }
+  >,
+  pageDrafts: {} as Record<
+    string,
+    {
+      site_id: number
+      user_id: number
+      page_id: number | null
+      slug: string
+      title: string
+      wikitext: string
+      comments: string
     }
   >,
   ratingScores: {

@@ -103,10 +103,12 @@ const acceptNextPrompt = (page: Page, value: string) => {
 
 test.beforeEach(async ({ request }) => {
   await request.post(`${FIXTURE_URL}/clear-page-edit-locks`)
+  await request.post(`${FIXTURE_URL}/clear-page-drafts`)
 })
 
 test.afterEach(async ({ request }) => {
   await request.post(`${FIXTURE_URL}/clear-page-edit-locks`)
+  await request.post(`${FIXTURE_URL}/clear-page-drafts`)
 })
 
 test("every toolbar button applies its deterministic source transformation", async ({

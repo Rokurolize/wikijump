@@ -19,6 +19,8 @@ pub struct Model {
     pub title: String,
     #[sea_orm(column_type = "Text")]
     pub wikitext: String,
+    #[sea_orm(column_type = "Text")]
+    pub comments: String,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

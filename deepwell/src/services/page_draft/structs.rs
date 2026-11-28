@@ -28,6 +28,8 @@ pub struct SavePageDraft {
     pub slug: String,
     pub title: String,
     pub wikitext: String,
+    #[serde(default)]
+    pub comments: String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -36,6 +38,25 @@ pub struct PageDraftIdentity {
     pub user_id: i64,
     pub page_id: Option<i64>,
     pub slug: String,
+}
+
+#[derive(Serialize, Debug, Clone, PartialEq, Eq)]
+pub struct PageDraftContent {
+    pub slug: String,
+    pub title: String,
+    pub wikitext: String,
+    pub comments: String,
+}
+
+impl From<PageDraftModel> for PageDraftContent {
+    fn from(draft: PageDraftModel) -> Self {
+        Self {
+            slug: draft.slug,
+            title: draft.title,
+            wikitext: draft.wikitext,
+            comments: draft.comments,
+        }
+    }
 }
 
 #[derive(Serialize, Debug, Clone, PartialEq, Eq)]

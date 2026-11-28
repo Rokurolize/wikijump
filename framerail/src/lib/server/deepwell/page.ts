@@ -183,6 +183,13 @@ export interface PageDraftView {
   title: string
 }
 
+export interface PageDraftContent {
+  slug: string
+  title: string
+  wikitext: string
+  comments: string
+}
+
 export interface PageDraftIdentityInput {
   siteId: number
   userId: number
@@ -193,6 +200,7 @@ export interface PageDraftIdentityInput {
 export interface SavePageDraftInput extends PageDraftIdentityInput {
   title: string
   wikitext: string
+  comments: string
 }
 
 export async function pageDraftSave(
@@ -207,7 +215,24 @@ export async function pageDraftSave(
       page_id: input.pageId,
       slug: input.slug,
       title: input.title,
-      wikitext: input.wikitext
+      wikitext: input.wikitext,
+      comments: input.comments
+    },
+    requestContext
+  )
+}
+
+export async function pageDraftGet(
+  input: PageDraftIdentityInput,
+  requestContext: RequestContext = {}
+): Promise<PageDraftContent | null> {
+  return client.request(
+    "page_draft_get",
+    {
+      site_id: input.siteId,
+      user_id: input.userId,
+      page_id: input.pageId,
+      slug: input.slug
     },
     requestContext
   )

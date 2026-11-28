@@ -321,6 +321,7 @@ export interface AjaxModuleConnectorOptions {
     slug: string
     title: string
     wikitext: string
+    comments: string
   }) => Promise<void>
   pageDraftExists?: (input: {
     siteId: number

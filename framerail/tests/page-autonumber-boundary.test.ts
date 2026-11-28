@@ -38,6 +38,7 @@ test("page creation binds parent follow-up to the assigned autonumbered slug", a
       if (method === "page_create") {
         return { page_id: 73, revision_id: 91, slug: "104", parser_errors: [] }
       }
+      if (method === "page_draft_remove") return null
       if (method === "parent_update") return { added: [], removed: [] }
       throw new Error(`Unexpected Deepwell method ${method}`)
     }
@@ -80,10 +81,10 @@ test("page creation binds parent follow-up to the assigned autonumbered slug", a
     assert.equal(result.res.slug, "104")
     assert.deepEqual(
       calls.map(({ method }) => method),
-      ["session_get", "page_create", "parent_update"]
+      ["session_get", "page_create", "page_draft_remove", "parent_update"]
     )
-    assert.equal(calls[2].params.child, "104")
-    assert.equal(calls[2].context.page, "104")
+    assert.equal(calls[3].params.child, "104")
+    assert.equal(calls[3].context.page, "104")
   } finally {
     if (client && originalRequest) client.request = originalRequest
     if (vite) await vite.close()

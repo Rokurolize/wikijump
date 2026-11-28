@@ -93,6 +93,15 @@ export const handlePageEditRpc = ({
   const lease = rpcRequest.params.lease
   if (typeof rpcRequest.params.wikitext === "string" && lease) {
     const held = fixtureState.editLocks[page.slug]
+    if (held && lease.mode === "page" && held.base_revision_id !== page.revision_id) {
+      sendRpcError(
+        response,
+        rpcRequest.id,
+        4303,
+        "Fixture page changed after the edit lease was acquired"
+      )
+      return { responded: true }
+    }
     if (
       !held ||
       lease.lock_id !== held.lock_id ||

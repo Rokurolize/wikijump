@@ -1,4 +1,5 @@
 import { handlePageCreateRpc } from "./page-create-handler.ts"
+import { handlePageDraftRpc } from "./page-draft-handler.ts"
 import { handlePageEditRpc } from "./page-edit-handler.ts"
 import { handlePageEditLockRpc } from "./page-edit-lock-handler.ts"
 
@@ -8,6 +9,9 @@ export const handlePageCreateEditRpc = (input: {
   response: import("node:http").ServerResponse
 }) => {
   return (
-    handlePageCreateRpc(input) ?? handlePageEditLockRpc(input) ?? handlePageEditRpc(input)
+    handlePageCreateRpc(input) ??
+    handlePageDraftRpc(input) ??
+    handlePageEditLockRpc(input) ??
+    handlePageEditRpc(input)
   )
 }

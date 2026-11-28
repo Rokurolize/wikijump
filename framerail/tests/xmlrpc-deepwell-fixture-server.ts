@@ -75,7 +75,8 @@ const handleDiagnosticRequest = (request: IncomingMessage, response: ServerRespo
       secret: `fixture-edit-lock-secret-${lockId}`,
       user_id: Number(url.searchParams.get("user_id") ?? "456"),
       mode: "page",
-      section_index: null
+      section_index: null,
+      base_revision_id: pages[slug].revision_id
     }
     sendJson(response, { held: true, lock_id: lockId })
     return true
@@ -136,7 +137,64 @@ const handleDiagnosticRequest = (request: IncomingMessage, response: ServerRespo
     } else {
       delete parentBySlug[slug]
     }
+    for (const [key, draft] of Object.entries(fixtureState.pageDrafts)) {
+      if (draft.slug === slug) delete fixtureState.pageDrafts[key]
+    }
     sendJson(response, { reset: true })
+    return true
+  }
+
+  if (request.method === "POST" && url.pathname === "/save-fixture-page") {
+    const slug = url.searchParams.get("slug")
+    const wikitext = url.searchParams.get("wikitext")
+    if (!slug || !pages[slug] || wikitext === null) {
+      response.writeHead(400).end("Unknown page slug")
+      return true
+    }
+    pages[slug].wikitext = wikitext
+    pages[slug].revision_id = fixtureState.counters.nextRevisionId++
+    pages[slug].page_revision_count += 1
+    sendJson(response, { saved: true, revision_id: pages[slug].revision_id })
+    return true
+  }
+  if (request.method === "POST" && url.pathname === "/seed-page-draft") {
+    const slug = url.searchParams.get("slug")
+    if (!slug) {
+      response.writeHead(400).end("Missing page slug")
+      return true
+    }
+    const pageId = pages[slug]?.page_id ?? null
+    const key = [6000005, 123, pageId === null ? `slug:${slug}` : `page:${pageId}`].join(
+      ":"
+    )
+    fixtureState.pageDrafts[key] = {
+      site_id: 6000005,
+      user_id: 123,
+      page_id: pageId,
+      slug,
+      title: url.searchParams.get("title") ?? "",
+      wikitext: url.searchParams.get("wikitext") ?? "",
+      comments: url.searchParams.get("comments") ?? ""
+    }
+    sendJson(response, { seeded: true })
+    return true
+  }
+  if (request.method === "POST" && url.pathname === "/clear-page-drafts") {
+    fixtureState.pageDrafts = {}
+    sendJson(response, { cleared: true })
+    return true
+  }
+  if (request.method === "GET" && url.pathname === "/fixture-page-draft") {
+    const slug = url.searchParams.get("slug")
+    if (!slug) {
+      response.writeHead(400).end("Missing page slug")
+      return true
+    }
+    const pageId = pages[slug]?.page_id ?? null
+    const key = [6000005, 123, pageId === null ? `slug:${slug}` : `page:${pageId}`].join(
+      ":"
+    )
+    sendJson(response, fixtureState.pageDrafts[key] ?? null)
     return true
   }
   if (request.method === "GET" && url.pathname === "/fixture-page-source") {

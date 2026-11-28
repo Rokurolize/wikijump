@@ -1,0 +1,2 @@
+ALTER TABLE page_draft
+    ADD COLUMN comments TEXT NOT NULL DEFAULT '';

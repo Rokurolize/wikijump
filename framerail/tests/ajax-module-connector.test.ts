@@ -27,6 +27,7 @@ type SavePageDraftInput = {
   slug: string
   title: string
   wikitext: string
+  comments: string
 }
 
 type PageDraftInput = { siteId: number; pageId?: number; slug: string }
@@ -2193,7 +2194,8 @@ test("dispatches the observed full-page draft synchronize and existence lifecycl
       pageId: 42,
       slug: "run-owned:draft-existing",
       title: "Draft title",
-      wikitext: "draft source"
+      wikitext: "draft source",
+      comments: "draft evidence"
     }
   ])
 

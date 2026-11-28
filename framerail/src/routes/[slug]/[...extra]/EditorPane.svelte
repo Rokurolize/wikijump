@@ -24,11 +24,19 @@
   } from "$lib/wikidot/editor-properties"
 
   import DataFormEditor from "./DataFormEditor.svelte"
+  import EditDraftDialog from "./EditDraftDialog.svelte"
   import EditLeaseDialog from "./EditLeaseDialog.svelte"
-  import { createPageEditLeaseSession, startEditLeaseTimers } from "./edit-lease-client"
+  import {
+    createPageDraftEditLeaseSession,
+    discardPageDraft,
+    getPageDraft,
+    startEditLeaseTimers,
+    synchronizePageDraft
+  } from "./edit-lease-client"
 
   import type { ParentChange, PropertiesReport } from "$lib/wikidot/editor-properties"
   import type { EditLeaseConflict } from "$lib/wikidot/wikidot-edit-lease.js"
+  import type { PageDraftContent, PageDraftPayload } from "./edit-lease-client"
   import type { PageProps } from "./$types"
 
   let { data, params }: PageProps = $props()
@@ -37,7 +45,17 @@
   const leaseRequired = untrack(
     () => typeof data.page?.page_id === "number" && data.page.page_id > 0
   )
-  const leaseSession = createPageEditLeaseSession()
+  let activeDraftPayload: PageDraftPayload | null = null
+  const pageDraftPayload = (): PageDraftPayload =>
+    activeDraftPayload ?? {
+      ...(typeof data.page?.page_id === "number" && data.page.page_id > 0
+        ? { pageId: data.page.page_id }
+        : {}),
+      title: $form.title ?? "",
+      wikitext: $form.wikitext ?? "",
+      comments: $form.comments ?? ""
+    }
+  const leaseSession = createPageDraftEditLeaseSession(pageDraftPayload)
   let leaseSnapshot = $state<{
     status: string
     conflicts: EditLeaseConflict[]
@@ -51,6 +69,16 @@
   })
   let leaseDialog = $state<"page_changed" | "other_locks" | null>(null)
   let stopLeaseTimers: (() => void) | undefined
+  let stopDraftInterval: (() => void) | undefined
+  let draftDialog = $state<PageDraftContent | null>(null)
+  let draftCheckState = $state<"idle" | "checking" | "ready" | "error">("idle")
+  let draftSyncError = $state<string | null>(null)
+  let draftActionBusy = $state(false)
+  let draftBaselineFingerprint: string | null = null
+  let initialDraftFingerprint: string | null = null
+  let draftSyncInFlight = false
+  let draftDebounce: ReturnType<typeof setTimeout> | undefined
+  const draftsEnabled = untrack(() => !data.data_form)
 
   let initialParents = $state<string[]>([])
   let parentReady = $state(false)
@@ -72,6 +100,110 @@
       conflicts: leaseSession.conflictRows(),
       seconds: leaseSession.secondsRemaining(),
       superseded: leaseSession.status === "superseded"
+    }
+    if (leaseSession.status === "held") void ensureDraftChecked()
+  }
+
+  const draftFingerprint = (payload: PageDraftPayload = pageDraftPayload()) =>
+    JSON.stringify(payload)
+
+  const canSynchronizeDraft = () =>
+    draftsEnabled &&
+    draftCheckState === "ready" &&
+    draftDialog === null &&
+    (!leaseRequired || leaseSession.status === "held")
+
+  async function ensureDraftChecked() {
+    if (!draftsEnabled || draftCheckState !== "idle") return
+    if (leaseRequired && leaseSession.status !== "held") return
+    draftCheckState = "checking"
+    try {
+      const draft = (await getPageDraft(data.page?.page_id)) as PageDraftContent | null
+      if (draft) {
+        draftDialog = draft
+      } else {
+        draftBaselineFingerprint = initialDraftFingerprint
+      }
+      draftCheckState = "ready"
+    } catch (error) {
+      draftSyncError =
+        error instanceof Error ? error.message : "The page draft could not be checked."
+      draftCheckState = "error"
+    }
+  }
+
+  async function synchronizeDraft(force = false): Promise<boolean> {
+    if (!canSynchronizeDraft() || draftSyncInFlight) return false
+    const payload = { ...pageDraftPayload() }
+    const fingerprint = draftFingerprint(payload)
+    if (!force && fingerprint === draftBaselineFingerprint) return true
+    draftSyncInFlight = true
+    activeDraftPayload = payload
+    try {
+      let synchronized = false
+      if (leaseRequired) {
+        synchronized = await leaseSession.renew()
+        if (!synchronized) {
+          const error = leaseSession.lastRenewError as {
+            code?: unknown
+            message?: string
+          } | null
+          if (error?.code !== 4304) {
+            draftSyncError = error?.message ?? "The page draft could not be synchronized."
+          }
+        }
+      } else {
+        await synchronizePageDraft(payload)
+        synchronized = true
+      }
+      if (synchronized) {
+        draftBaselineFingerprint = fingerprint
+        draftSyncError = null
+      }
+      return synchronized
+    } catch (error) {
+      draftSyncError =
+        error instanceof Error
+          ? error.message
+          : "The page draft could not be synchronized."
+      return false
+    } finally {
+      activeDraftPayload = null
+      draftSyncInFlight = false
+    }
+  }
+
+  const restoreDraft = () => {
+    const draft = draftDialog
+    if (!draft) return
+    $form.title = draft.title
+    $form.wikitext = draft.wikitext
+    $form.comments = draft.comments
+    draftDialog = null
+    draftBaselineFingerprint = draftFingerprint({
+      ...(typeof data.page?.page_id === "number" && data.page.page_id > 0
+        ? { pageId: data.page.page_id }
+        : {}),
+      title: draft.title,
+      wikitext: draft.wikitext,
+      comments: draft.comments
+    })
+    draftSyncError = null
+  }
+
+  const discardDraft = async () => {
+    if (draftActionBusy) return
+    draftActionBusy = true
+    try {
+      await discardPageDraft(data.page?.page_id)
+      draftDialog = null
+      draftBaselineFingerprint = initialDraftFingerprint
+      draftSyncError = null
+    } catch (error) {
+      draftSyncError =
+        error instanceof Error ? error.message : "The page draft could not be discarded."
+    } finally {
+      draftActionBusy = false
     }
   }
 
@@ -111,8 +243,17 @@
   }
 
   onMount(() => {
-    if (!leaseRequired) return
-    stopLeaseTimers = startEditLeaseTimers(leaseSession, syncLease)
+    const interval = setInterval(() => {
+      void synchronizeDraft()
+    }, 15000)
+    stopDraftInterval = () => clearInterval(interval)
+    if (!leaseRequired) {
+      void ensureDraftChecked()
+      return
+    }
+    stopLeaseTimers = startEditLeaseTimers(leaseSession, syncLease, () =>
+      synchronizeDraft(true)
+    )
     void (async () => {
       try {
         const opening = leaseSession.open("page", undefined)
@@ -134,6 +275,8 @@
 
   onDestroy(() => {
     stopLeaseTimers?.()
+    stopDraftInterval?.()
+    clearTimeout(draftDebounce)
     void leaseSession.close()
   })
 
@@ -326,6 +469,17 @@
       parentReady
     })
   )
+  initialDraftFingerprint = untrack(() => draftFingerprint())
+
+  $effect(() => {
+    if (!canSynchronizeDraft()) return
+    const fingerprint = draftFingerprint()
+    if (fingerprint === draftBaselineFingerprint) return
+    clearTimeout(draftDebounce)
+    draftDebounce = setTimeout(() => {
+      void synchronizeDraft()
+    }, 2000)
+  })
 </script>
 
 {#if leaseRequired && leaseSnapshot.status === "acquiring"}
@@ -340,6 +494,12 @@
       <button class="btn" onclick={reacquireLease} type="button">
         Take the lock back
       </button>
+    </p>
+  {/if}
+
+  {#if draftSyncError}
+    <p class="edit-draft-sync-error" role="alert">
+      The page draft is not synchronized: {draftSyncError}
     </p>
   {/if}
 
@@ -454,6 +614,14 @@
       label={data.internationalization?.preview ?? "Preview"}
     />
   {/if}
+{/if}
+
+{#if draftDialog}
+  <EditDraftDialog
+    title={draftDialog.title}
+    onDiscard={discardDraft}
+    onRestore={restoreDraft}
+  />
 {/if}
 
 {#if leaseRequired && leaseSnapshot.status === "conflict"}
