@@ -2,7 +2,7 @@
   import { defaultKeymap, history, historyKeymap } from "@codemirror/commands"
   import { bracketMatching, syntaxHighlighting } from "@codemirror/language"
   import { highlightSelectionMatches, searchKeymap } from "@codemirror/search"
-  import { EditorState } from "@codemirror/state"
+  import { EditorState, Prec } from "@codemirror/state"
   import {
     crosshairCursor,
     drawSelection,
@@ -17,6 +17,12 @@
     rectangularSelection
   } from "@codemirror/view"
   import { classHighlighter } from "@lezer/highlight"
+  import WikitextEditorToolbar from "$lib/component/WikitextEditorToolbar.svelte"
+  import {
+    applyToolbarOperation,
+    toolbarOperations,
+    type ToolbarOperationId
+  } from "$lib/wikidot/wikitext-editor-toolbar"
   import { wikitextEditorLanguage } from "$lib/wikidot/wikitext-editor-language"
   import { onMount } from "svelte"
 
@@ -43,6 +49,51 @@
     mirroredValue = update.state.doc.toString()
     value = mirroredValue
   })
+
+  const runToolbarOperation = (operation: ToolbarOperationId) => {
+    if (!view) return
+    const state = view.state
+    const selection = state.selection.main
+    const input = {
+      text: state.doc.toString(),
+      from: selection.from,
+      to: selection.to
+    }
+    const options: { linkTarget?: string; imageSource?: string } = {}
+    if (operation === "link") {
+      // eslint-disable-next-line no-alert
+      const target = globalThis.prompt("Link target")
+      if (target === null) return
+      options.linkTarget = target
+    }
+    if (operation === "image") {
+      // eslint-disable-next-line no-alert
+      const source = globalThis.prompt("Image source")
+      if (source === null) return
+      options.imageSource = source
+    }
+    const result = applyToolbarOperation(input, operation, options)
+    if (!result) return
+    view.dispatch({
+      changes: { from: 0, to: state.doc.length, insert: result.text },
+      selection: { anchor: result.from, head: result.to }
+    })
+    view.focus()
+  }
+
+  const toolbarKeymap = toolbarOperations.flatMap((operation) =>
+    operation.shortcut
+      ? [
+          {
+            key: operation.shortcut.key,
+            run: () => {
+              runToolbarOperation(operation.id)
+              return true
+            }
+          }
+        ]
+      : []
+  )
 
   onMount(() => {
     view = new EditorView({
@@ -73,6 +124,7 @@
           }),
           synchronizeValue,
           placeholder ? editorPlaceholder(placeholder) : [],
+          Prec.high(keymap.of(toolbarKeymap)),
           keymap.of([...historyKeymap, ...searchKeymap, ...defaultKeymap])
         ]
       })
@@ -98,6 +150,9 @@
 </script>
 
 <div class="wikitext-editor" class:wikitext-editor-enhanced={enhanced}>
+  {#if enhanced}
+    <WikitextEditorToolbar onOperate={runToolbarOperation} />
+  {/if}
   <textarea
     {id}
     {name}
@@ -134,6 +189,52 @@
     overflow: hidden;
     border: 0;
     opacity: 0;
+  }
+
+  .wikitext-editor-toolbar {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    padding: 0.25rem;
+    margin: 0 0 0.25rem;
+    background: var(--col-background, rgb(246, 246, 246));
+    border: 1px solid var(--col-border, rgb(180, 180, 180));
+  }
+
+  .wikitext-editor-toolbar-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.2rem;
+    max-width: 100%;
+  }
+
+  .wikitext-editor-toolbar button {
+    min-width: 1.9rem;
+    min-height: 1.8rem;
+    padding: 0.15rem 0.35rem;
+    font: inherit;
+    font-size: 0.86em;
+    color: var(--col-text, rgb(20, 20, 20));
+    cursor: pointer;
+    background: var(--col-background-dim, rgb(255, 255, 255));
+    border: 1px solid var(--col-border, rgb(150, 150, 150));
+    border-radius: 2px;
+  }
+
+  .wikitext-editor-toolbar button:hover {
+    background: var(--col-background-hover, rgb(235, 240, 245));
+  }
+
+  .wikitext-editor-toolbar button:focus-visible {
+    outline: 2px solid var(--col-hint, rgb(50, 100, 180));
+    outline-offset: 1px;
+  }
+
+  .wikitext-editor-toolbar-note {
+    margin: 0.25rem 0 0;
+    font-size: 0.82em;
+    line-height: 1.35;
+    color: var(--col-text-dim, rgb(80, 80, 80));
   }
 
   .wikitext-editor-cm {
