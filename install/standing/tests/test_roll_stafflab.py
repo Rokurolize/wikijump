@@ -195,6 +195,16 @@ class RollStafflabTest(unittest.TestCase):
         second = git("rev-parse", "HEAD")
         return repo, first, second
 
+    def test_fetch_resolves_stafflab_loopback_ipv6_before_ipv4(self) -> None:
+        completed = subprocess.CompletedProcess([], 0, stdout="body\n200", stderr="")
+        with mock.patch.object(ROLL.subprocess, "run", return_value=completed) as run:
+            self.assertEqual(ROLL.fetch("scp-jp.localhost", "/x"), (200, "body"))
+        args = run.call_args.args[0]
+        self.assertEqual(
+            args[args.index("--resolve") + 1],
+            "scp-jp.localhost:28443:[::1],127.0.0.1",
+        )
+
     def test_descent_allows_forward_and_equal_heads(self) -> None:
         repo, first, second = self.make_repository()
         ROLL.check_descent(repo, first, second, allow_downgrade=False)

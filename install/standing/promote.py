@@ -340,7 +340,7 @@ def clone_standing_database(volume: str, log: Path, cwd: Path) -> None:
                 "--volume", f"{volume}:/var/lib/postgresql/data",
                 "--entrypoint", "pg_basebackup",
                 image,
-                "--host", "127.0.0.1", "--username", "wikijump",
+                "--host", "::1", "--username", "wikijump",
                 "--pgdata", "/var/lib/postgresql/data",
                 "--format", "plain", "--wal-method", "stream", "--checkpoint", "fast",
             ],
@@ -489,7 +489,7 @@ def _stale_saved_pages_from_where(
 def _psql_scalar(database_container: str, sql: str) -> str:
     return run(
         "docker", "exec", database_container, "sh", "-c",
-        'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -h 127.0.0.1 -U "$POSTGRES_USER" '
+        'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -h ::1 -U "$POSTGRES_USER" '
         '-d "$POSTGRES_DB" -At -v ON_ERROR_STOP=1 -c "$1"',
         "sh", sql,
     )
@@ -536,7 +536,7 @@ def psql(container: str, script: str) -> str:
     return subprocess.run(
         [
             "docker", "exec", "-i", container, "sh", "-c",
-            'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -q -h 127.0.0.1 -U "$POSTGRES_USER" '
+            'PGPASSWORD="$POSTGRES_PASSWORD" exec psql -q -h ::1 -U "$POSTGRES_USER" '
             '-d "$POSTGRES_DB" -At -v ON_ERROR_STOP=1 --single-transaction',
         ],
         input=script, check=True, text=True, capture_output=True,
@@ -1377,7 +1377,7 @@ def rehearse(
                 )
             origin = f"scp-wiki.wikijump.localhost:{ports['public']}"
             canary = http_canary(
-                f"https://{origin}/scp-9506", f"{origin}:127.0.0.1"
+                f"https://{origin}/scp-9506", f"{origin}:[::1],127.0.0.1"
             )
             parity = browser_parity(
                 source_root, "candidate", evidence / "rehearsal-browser-parity", reference,
