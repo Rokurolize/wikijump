@@ -38,7 +38,7 @@ use crate::types::{Maybe, Reference, RerenderDepth};
 use crate::utils::now;
 use crate::utils::{validate_locale, validate_wikidot_site_language};
 use ftml::layout::Layout;
-use paste::paste;
+use pastey::paste;
 use sea_orm::NotSet;
 use sea_orm::sea_query::Expr;
 use sea_orm::{

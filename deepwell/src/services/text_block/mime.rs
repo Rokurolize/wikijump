@@ -18,7 +18,7 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-use paste::paste;
+use pastey::paste;
 
 macro_rules! mime {
     ($name:ident, $mime:expr) => {

@@ -44,7 +44,7 @@ tower = "0.5"
 log = "0.4"
 missive = { version = "0.7", features = ["local", "mailjet"] }
 notify = { version = "9", optional = true }
-paste = "1"
+pastey = "0.1.1"
 rand = "0.10"
 quick-xml = "0.42"
 redis = { version = "1", features = ["aio", "connection-manager", "tokio-comp", "tokio-rustls-comp"] }
@@ -174,9 +174,6 @@ opt-level = 0
 opt-level = 0
 
 [profile.dev.package.ouroboros_macro]
-opt-level = 0
-
-[profile.dev.package.paste]
 opt-level = 0
 
 [profile.dev.package.pastey]

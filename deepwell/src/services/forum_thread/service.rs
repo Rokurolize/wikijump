@@ -34,7 +34,7 @@ use crate::services::{
     ForumService, MutationAuthorization, PermissionService, ServiceContext,
 };
 use crate::utils::now;
-use paste::paste;
+use pastey::paste;
 use sea_orm::sea_query::OnConflict;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, IntoActiveModel, QueryFilter,

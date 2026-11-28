@@ -32,7 +32,7 @@ use crate::models::page_revision::{self, Entity as PageRevision};
 use crate::models::text::{self, Entity as Text};
 use crate::services::ServiceContext;
 use crate::services::permission::PermissionService;
-use paste::paste;
+use pastey::paste;
 use sea_orm::sea_query::{DynIden, IntoIden, OnConflict, TableRef};
 use sea_orm::{
     ColumnTrait, Condition, DeleteResult, EntityName, EntityTrait, Identity, Iterable,

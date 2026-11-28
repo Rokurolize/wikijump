@@ -24,7 +24,7 @@ use crate::error::prelude::{Error, ErrorType, Result, ResultExt};
 use crate::models::filter::{self, Entity as Filter, Model as FilterModel};
 use crate::services::ServiceContext;
 use crate::utils::now;
-use paste::paste;
+use pastey::paste;
 use regex::{Regex, RegexSet};
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, ExprTrait, QueryFilter, Set,

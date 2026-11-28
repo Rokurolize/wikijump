@@ -36,7 +36,7 @@ use crate::services::{PageService, RelationService, ServiceContext};
 use crate::types::Maybe;
 use crate::types::Reference;
 use crate::utils::now;
-use paste::paste;
+use pastey::paste;
 use sea_orm::prelude::Expr;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, JoinType, QueryFilter,

@@ -34,7 +34,7 @@ use crate::services::forum_thread::{
     ForumThreadService, GetForumThread, TouchForumThread,
 };
 use crate::utils::now;
-use paste::paste;
+use pastey::paste;
 use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 use sea_query::Expr;
 

@@ -34,7 +34,7 @@ use crate::services::blob::EMPTY_BLOB_HASH;
 use crate::services::{OutdateService, PageService};
 use crate::types::{FetchDirection, RerenderDepth};
 use crate::types::{FileRevisionType, Maybe, Reference};
-use paste::paste;
+use pastey::paste;
 use sea_orm::{
     ActiveModelTrait, ColumnTrait, Condition, EntityTrait, PaginatorTrait, QueryFilter,
     QueryOrder, QuerySelect, Set,

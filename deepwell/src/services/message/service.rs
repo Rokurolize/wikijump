@@ -39,7 +39,7 @@ use cuid2::cuid;
 use ftml::data::{PageInfo, ScoreValue};
 use ftml::layout::Layout;
 use ftml::settings::{WikitextMode, WikitextSettings};
-use paste::paste;
+use pastey::paste;
 use sea_orm::DatabaseTransaction;
 use sea_orm::{ActiveModelTrait, ColumnTrait, Condition, EntityTrait, QueryFilter, Set};
 
