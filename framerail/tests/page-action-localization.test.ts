@@ -144,6 +144,14 @@ test("English fallback and localized catalogs define the exact page action label
     new URL("../../locales/fluent/wiki-page/pl.ftl", import.meta.url),
     "utf8"
   )
+  const baseVi = await readFile(
+    new URL("../../locales/fluent/base/vi.ftl", import.meta.url),
+    "utf8"
+  )
+  const wikiVi = await readFile(
+    new URL("../../locales/fluent/wiki-page/vi.ftl", import.meta.url),
+    "utf8"
+  )
 
   const baseLabels: Record<string, string> = {
     delete: "削除",
@@ -230,6 +238,33 @@ test("English fallback and localized catalogs define the exact page action label
   }
   for (const [key, label] of Object.entries(polishPageLabels)) {
     assert.match(wikiPl, new RegExp(`^${key} = ${label}$`, "mu"), `pl: ${key}`)
+  }
+
+  const vietnameseBaseLabels: Record<string, string> = {
+    delete: "Xóa",
+    edit: "Chỉnh sửa",
+    files: "Tệp",
+    history: "Lịch sử",
+    layout: "Bố cục",
+    options: "Tùy chọn",
+    parents: "Trang cha",
+    vote: "Đánh giá"
+  }
+  const vietnamesePageLabels: Record<string, string> = {
+    "wiki-page-view-source": "Xem mã nguồn",
+    "wiki-page-action-append": "Thêm",
+    "wiki-page-action-edit-sections": "Chỉnh sửa các phần",
+    "wiki-page-action-edit-meta": "Chỉnh sửa thẻ meta",
+    "wiki-page-action-watchers": "Người theo dõi",
+    "wiki-page-action-backlinks": "Liên kết ngược",
+    "wiki-page-action-lock": "Khóa trang",
+    "wiki-page-action-rename-move": "Di chuyển"
+  }
+  for (const [key, label] of Object.entries(vietnameseBaseLabels)) {
+    assert.match(baseVi, new RegExp(`^${key} = ${label}$`, "mu"), `vi: ${key}`)
+  }
+  for (const [key, label] of Object.entries(vietnamesePageLabels)) {
+    assert.match(wikiVi, new RegExp(`^${key} = ${label}$`, "mu"), `vi: ${key}`)
   }
 })
 
